@@ -1,8 +1,14 @@
+import type { Persistence } from '@/data/persistence'
 import { PlaceholderPage } from './PlaceholderPage'
 import { TopBar } from './TopBar'
 import { useHashRoute } from './useHashRoute'
 
-export function App() {
+interface AppProps {
+  /** 测试里可以不传；Task 11 用它显示出错界面 */
+  persistence?: Persistence
+}
+
+export function App(_props: AppProps) {
   const [route, setRoute] = useHashRoute()
 
   return (
