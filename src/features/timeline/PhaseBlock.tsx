@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Phase } from '@/data/schema'
 import { useStore } from '@/data/store'
+import { openEditor } from '@/features/editor/editorStore'
 import { fromDay, toDay } from './days'
 import { formatDuration, formatRange, formatRangeWithYear } from './format'
 import { ROW_HEIGHT } from './layout'
@@ -29,8 +30,6 @@ interface PhaseBlockProps {
   scale: Scale
   top: number
   today: number
-  /** 单击（没有拖动）时调用，Task 10 用它打开编辑面板 */
-  onActivate?: (phaseId: string, element: HTMLElement) => void
 }
 
 function dragResult(
@@ -47,7 +46,7 @@ function dragResult(
     : resizePhase(startDay, endDay, 'end', endDay + delta)
 }
 
-export function PhaseBlock({ phase, scale, top, today, onActivate }: PhaseBlockProps) {
+export function PhaseBlock({ phase, scale, top, today }: PhaseBlockProps) {
   const selected = useStore(
     (state) => state.selection?.kind === 'phase' && state.selection.id === phase.id,
   )
@@ -119,7 +118,7 @@ export function PhaseBlock({ phase, scale, top, today, onActivate }: PhaseBlockP
       const store = useStore.getState()
       if (!moved) {
         store.select({ kind: 'phase', id: phase.id })
-        onActivate?.(phase.id, block)
+        openEditor('phase', phase.id)
         return
       }
       const result = dragResult(mode, startDay, endDay, upEvent.clientX - startX, pxPerDay)

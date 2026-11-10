@@ -1,3 +1,4 @@
+import { Toaster } from '@/components/ui/sonner'
 import type { Persistence } from '@/data/persistence'
 import { Timeline } from '@/features/timeline/Timeline'
 import { PlaceholderPage } from './PlaceholderPage'
@@ -18,6 +19,7 @@ export function App(_props: AppProps) {
       <main className="flex min-h-0 flex-1 flex-col">
         {route === 'timeline' ? <Timeline /> : <PlaceholderPage />}
       </main>
+      <Toaster position="bottom-center" />
     </div>
   )
 }

@@ -92,3 +92,70 @@
     z-index: 10;
   }
 }
+
+@layer components {
+  .phase-block,
+  .milestone-dot {
+    animation: item-in var(--dur-base) var(--ease-out);
+  }
+  @keyframes item-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@layer components {
+  /* Panels fade in and float up 4px. */
+  .editor-panel[data-state='open'] {
+    animation: panel-in var(--dur-base) var(--ease-out);
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      translate: 0 4px;
+    }
+  }
+  .phase-block,
+  .milestone-dot {
+    animation: item-in var(--dur-base) var(--ease-out);
+  }
+  @keyframes item-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+@layer components {
+  /* Panels fade in and float up 4px. */
+  .editor-panel[data-state='open'] {
+    animation: panel-in var(--dur-base) var(--ease-out);
+  }
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      translate: 0 4px;
+    }
+  }
+  .phase-block,
+  .milestone-dot {
+    animation: item-in var(--dur-base) var(--ease-out);
+  }
+  @keyframes item-in {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+/* Panels fade in and float up 4px. Unlayered on purpose so it replaces the component library's zoom animation. */
+.editor-panel[data-state='open'] {
+  animation: panel-in var(--dur-base) var(--ease-out);
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}

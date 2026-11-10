@@ -2,6 +2,11 @@ import { useEffect, useMemo, type PointerEvent as ReactPointerEvent } from 'reac
 import { PlusIcon } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useStore } from '@/data/store'
+import { addLaneAndRename } from '@/features/editor/AddMenu'
+import { closeEditor, setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
+import { MilestoneEditor } from '@/features/editor/MilestoneEditor'
+import { PhaseEditor } from '@/features/editor/PhaseEditor'
+import { TermsDialog } from '@/features/editor/TermsDialog'
 import { EmptyState } from './EmptyState'
 import { LaneRow } from './LaneRow'
 import { Ruler } from './Ruler'
@@ -14,7 +19,8 @@ const WHEEL_ZOOM_FACTOR = 1.1
 
 export function Timeline() {
   const data = useStore((state) => state.data)
-  const addLane = useStore((state) => state.addLane)
+  const editing = useEditorStore((state) => state.editing)
+  const termsOpen = useEditorStore((state) => state.termsOpen)
   const { scale, width, animating, containerRef, zoomAt, panBy } = useViewport()
   const today = useToday()
 
@@ -106,7 +112,7 @@ export function Timeline() {
               <button
                 type="button"
                 className="flex items-center gap-1 rounded-[6px] px-2 py-1 text-[14px] text-(--text-muted) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-panel) hover:text-(--text)"
-                onClick={() => addLane()}
+                onClick={addLaneAndRename}
               >
                 <PlusIcon className="size-4" aria-hidden />
                 添加板块
@@ -126,6 +132,23 @@ export function Timeline() {
             </div>
           </div>
         )}
+        {editing?.kind === 'phase' && (
+          <PhaseEditor
+            phaseId={editing.id}
+            anchor={null}
+            selectName={editing.selectName}
+            onClose={closeEditor}
+          />
+        )}
+        {editing?.kind === 'milestone' && (
+          <MilestoneEditor
+            milestoneId={editing.id}
+            anchor={null}
+            selectName={editing.selectName}
+            onClose={closeEditor}
+          />
+        )}
+        <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />
       </div>
     </TooltipProvider>
   )

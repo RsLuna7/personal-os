@@ -1,0 +1,186 @@
+import { useId, useLayoutEffect, useState, type ReactNode } from 'react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { NAME_MAX, type ISODate, type Lane } from '@/data/schema'
+
+export const FALLBACK_NAME = '未命名'
+export const ERROR_DATE_REQUIRED = '请填写日期'
+export const ERROR_END_BEFORE_START = '结束日期不能早于开始日期'
+
+/** 输入框里的草稿；数据从别处变了（拖动、撤销）就跟着更新。 */
+export function useDraft(source: string) {
+  const [draft, setDraft] = useState(source)
+  const [previous, setPrevious] = useState(source)
+  if (previous !== source) {
+    setPrevious(source)
+    setDraft(source)
+  }
+  return [draft, setDraft] as const
+}
+
+/** 去掉首尾空白；空名称退回“未命名”。 */
+export function cleanName(value: string): string {
+  return value.trim().slice(0, NAME_MAX) || FALLBACK_NAME
+}
+
+/** 日期输入框在输入年份的过程中会给出 0002、0020 这样的中间值，不当真。 */
+export function isPlausibleDate(value: string): value is ISODate {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number(value.slice(0, 4)) >= 1900
+}
+
+export function ErrorText({ children }: { children: ReactNode }) {
+  return (
+    <p role="alert" className="text-[12px] text-(--danger)">
+      {children}
+    </p>
+  )
+}
+
+interface NameFieldProps {
+  value: string
+  onCommit: (name: string) => void
+  /** 让外面能在关闭面板前拿到没提交的草稿 */
+  inputRef?: (element: HTMLInputElement | null) => void
+}
+
+export function NameField({ value, onCommit, inputRef }: NameFieldProps) {
+  const id = useId()
+  const [draft, setDraft] = useDraft(value)
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor={id}>名称</Label>
+      <Input
+        id={id}
+        ref={inputRef}
+        data-name-field
+        value={draft}
+        maxLength={NAME_MAX}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => onCommit(cleanName(draft))}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') onCommit(cleanName(draft))
+        }}
+      />
+    </div>
+  )
+}
+
+interface DateFieldProps {
+  label: string
+  value: ISODate
+  /** 返回错误文案表示没有保存；返回 null 表示已保存 */
+  onCommit: (value: ISODate) => string | null
+}
+
+export function DateField({ label, value, onCommit }: DateFieldProps) {
+  const id = useId()
+  const [draft, setDraft] = useDraft(value)
+  const [error, setError] = useState<string | null>(null)
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        type="date"
+        value={draft}
+        aria-invalid={error !== null}
+        onChange={(event) => {
+          const next = event.target.value
+          setDraft(next)
+          if (isPlausibleDate(next)) setError(onCommit(next))
+        }}
+        onBlur={() => {
+          if (!isPlausibleDate(draft)) setError(ERROR_DATE_REQUIRED)
+        }}
+      />
+      {error && <ErrorText>{error}</ErrorText>}
+    </div>
+  )
+}
+
+interface LaneSelectProps {
+  value: string
+  lanes: Lane[]
+  onChange: (laneId: string) => void
+}
+
+export function LaneSelect({ value, lanes, onChange }: LaneSelectProps) {
+  const id = useId()
+  const sorted = [...lanes].sort((a, b) => a.order - b.order)
+  return (
+    <div className="flex flex-col gap-1">
+      <Label htmlFor={id}>板块</Label>
+      <select
+        id={id}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-8 w-full rounded-[6px] border border-(--border) bg-transparent px-2 text-[14px] text-(--text) outline-none focus-visible:border-(--text)"
+      >
+        {sorted.map((lane) => (
+          <option key={lane.id} value={lane.id}>
+            {lane.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+interface EditorPopoverProps {
+  label: string
+  /** 面板贴着的元素；为空时按 selector 去找（新建的色块此时刚挂上） */
+  anchor: HTMLElement | null
+  anchorSelector: string
+  selectName: boolean
+  onClose: () => void
+  children: ReactNode
+}
+
+export function EditorPopover({
+  label,
+  anchor,
+  anchorSelector,
+  selectName,
+  onClose,
+  children,
+}: EditorPopoverProps) {
+  const [found, setFound] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    // The anchor element only exists after the timeline has committed, so it has to be looked up here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!anchor) setFound(document.querySelector<HTMLElement>(anchorSelector))
+  }, [anchor, anchorSelector])
+  const element = anchor ?? found
+  if (!element) return null
+
+  return (
+    <Popover
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
+      <PopoverAnchor virtualRef={{ current: element }} />
+      <PopoverContent
+        aria-label={label}
+        align="start"
+        sideOffset={8}
+        collisionPadding={16}
+        className="editor-panel w-72 gap-3 rounded-[12px] border border-(--border) p-4 ring-0"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          const input = (event.currentTarget as HTMLElement).querySelector<HTMLInputElement>(
+            '[data-name-field]',
+          )
+          input?.focus()
+          if (selectName) input?.select()
+        }}
+        onCloseAutoFocus={(event) => event.preventDefault()}
+      >
+        {children}
+      </PopoverContent>
+    </Popover>
+  )
+}

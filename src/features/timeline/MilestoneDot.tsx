@@ -1,6 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Milestone } from '@/data/schema'
 import { useStore } from '@/data/store'
+import { openEditor } from '@/features/editor/editorStore'
 import { toDay } from './days'
 import { countdownText, formatDayWithYear } from './format'
 import { MILESTONE_BAND_HEIGHT } from './layout'
@@ -49,7 +50,10 @@ export function MilestoneDot({ milestone, scale, today, nextX }: MilestoneDotPro
             marginLeft: -DOT_SIZE / 2,
             gap: LABEL_GAP,
           }}
-          onClick={() => select({ kind: 'milestone', id: milestone.id })}
+          onClick={() => {
+            select({ kind: 'milestone', id: milestone.id })
+            openEditor('milestone', milestone.id)
+          }}
           onDoubleClick={(event) => event.stopPropagation()}
         >
           <span

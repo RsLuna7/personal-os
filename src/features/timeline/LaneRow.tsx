@@ -1,6 +1,8 @@
 import { useMemo, type MouseEvent } from 'react'
 import type { Lane, Milestone, Phase } from '@/data/schema'
 import { useStore } from '@/data/store'
+import { openEditor } from '@/features/editor/editorStore'
+import { LaneMenu } from '@/features/editor/LaneMenu'
 import { fromDay, toDay } from './days'
 import { assignRows, laneHeight, MILESTONE_BAND_HEIGHT, rowCount, rowTop } from './layout'
 import { MilestoneDot } from './MilestoneDot'
@@ -17,10 +19,9 @@ interface LaneRowProps {
   milestones: Milestone[]
   scale: Scale
   today: number
-  onPhaseCreated?: (phaseId: string) => void
 }
 
-export function LaneRow({ lane, phases, milestones, scale, today, onPhaseCreated }: LaneRowProps) {
+export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps) {
   const rows = useMemo(() => assignRows(phases), [phases])
   const sortedMilestones = useMemo(
     () => [...milestones].sort((a, b) => a.date.localeCompare(b.date)),
@@ -39,7 +40,7 @@ export function LaneRow({ lane, phases, milestones, scale, today, onPhaseCreated
       end: fromDay(start + NEW_PHASE_WEEKS * WEEK),
     })
     store.select({ kind: 'phase', id })
-    onPhaseCreated?.(id)
+    openEditor('phase', id, true)
   }
 
   return (
@@ -54,9 +55,7 @@ export function LaneRow({ lane, phases, milestones, scale, today, onPhaseCreated
         style={{ width: LABEL_COLUMN_WIDTH }}
       >
         <span className="size-2 shrink-0 rounded-full bg-(--lane-dot)" />
-        <span className="truncate text-[14px] font-medium text-(--text)" title={lane.name}>
-          {lane.name}
-        </span>
+        <LaneMenu laneId={lane.id} />
       </div>
       <div
         data-testid={`lane-${lane.id}-canvas`}

@@ -1,4 +1,5 @@
 import type { Term } from '@/data/schema'
+import { setTermsOpen } from '@/features/editor/editorStore'
 import { toDay } from './days'
 import { dayToX, MONTH_TICK_MIN_PX_PER_DAY, type Scale } from './scale'
 import { monthTicks } from './ticks'
@@ -63,11 +64,13 @@ export function Ruler({ scale, width, terms }: RulerProps) {
               const x = dayToX(scale, toDay(term.start))
               const termWidth = (toDay(term.end) - toDay(term.start)) * scale.pxPerDay
               return (
-                <div
+                <button
+                  type="button"
                   key={term.id}
+                  onClick={() => setTermsOpen(true)}
                   data-testid={`term-${term.id}`}
                   data-anim
-                  className="absolute top-0 left-0 flex h-6 items-center border-l border-(--border) bg-(--bg-panel) px-2"
+                  className="absolute top-0 left-0 flex h-6 cursor-pointer items-center border-l border-(--border) bg-(--bg-panel) px-2 text-left hover:text-(--text)"
                   style={{ transform: `translateX(${x}px)`, width: `${termWidth}px` }}
                 >
                   <span
@@ -77,7 +80,7 @@ export function Ruler({ scale, width, terms }: RulerProps) {
                   >
                     {term.name}
                   </span>
-                </div>
+                </button>
               )
             })}
           </div>

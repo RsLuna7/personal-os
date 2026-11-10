@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { AddMenu } from '@/features/editor/AddMenu'
 import type { ZoomPreset } from '@/features/timeline/scale'
 import { useViewport } from '@/features/timeline/useViewport'
 import { routeHref, type Route } from './useHashRoute'
@@ -91,7 +92,12 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
         })}
       </nav>
       <div className="ml-auto flex items-center gap-2">
-        {route === 'timeline' && <ZoomControls />}
+        {route === 'timeline' && (
+          <>
+            <ZoomControls />
+            <AddMenu />
+          </>
+        )}
       </div>
     </header>
   )
