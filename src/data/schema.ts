@@ -1,0 +1,149 @@
+import { z } from 'zod'
+
+export const CURRENT_SCHEMA_VERSION = 1
+
+export const LANE_COLORS = [
+  'iris',
+  'tomato',
+  'teal',
+  'amber',
+  'blue',
+  'grass',
+  'pink',
+  'bronze',
+] as const
+export type LaneColor = (typeof LANE_COLORS)[number]
+
+/** 'YYYY-MM-DD' */
+export type ISODate = string
+
+export const NAME_MAX = 40
+export const NOTE_MAX = 2000
+
+export interface Lane {
+  id: string
+  name: string
+  color: LaneColor
+  order: number
+}
+
+export interface Phase {
+  id: string
+  laneId: string
+  name: string
+  /** 含当天 */
+  start: ISODate
+  /** 不含当天（半开区间） */
+  end: ISODate
+  tentative: boolean
+  note: string
+}
+
+export interface Milestone {
+  id: string
+  laneId: string
+  name: string
+  date: ISODate
+  note: string
+}
+
+export interface Term {
+  id: string
+  name: string
+  start: ISODate
+  /** 不含当天 */
+  end: ISODate
+}
+
+export interface AppData {
+  schemaVersion: 1
+  lanes: Lane[]
+  phases: Phase[]
+  milestones: Milestone[]
+  terms: Term[]
+  lastExportAt: string | null
+}
+
+function isRealDate(value: string): boolean {
+  const time = Date.parse(`${value}T00:00:00Z`)
+  return !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === value
+}
+
+const idSchema = z.string().min(1)
+const nameSchema = z.string().trim().min(1).max(NAME_MAX)
+const noteSchema = z.string().max(NOTE_MAX)
+const dateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine(isRealDate, '日期不存在')
+
+const laneSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  color: z.enum(LANE_COLORS),
+  order: z.number().int(),
+})
+
+const phaseSchema = z.object({
+  id: idSchema,
+  laneId: idSchema,
+  name: nameSchema,
+  start: dateSchema,
+  end: dateSchema,
+  tentative: z.boolean(),
+  note: noteSchema,
+})
+
+const milestoneSchema = z.object({
+  id: idSchema,
+  laneId: idSchema,
+  name: nameSchema,
+  date: dateSchema,
+  note: noteSchema,
+})
+
+const termSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  start: dateSchema,
+  end: dateSchema,
+})
+
+export const appDataSchema: z.ZodType<AppData> = z
+  .object({
+    schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
+    lanes: z.array(laneSchema),
+    phases: z.array(phaseSchema),
+    milestones: z.array(milestoneSchema),
+    terms: z.array(termSchema),
+    lastExportAt: z.string().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
+
+    const seen = new Set<string>()
+    for (const item of [...data.lanes, ...data.phases, ...data.milestones, ...data.terms]) {
+      if (seen.has(item.id)) issue(`id 重复：${item.id}`)
+      seen.add(item.id)
+    }
+
+    const laneIds = new Set(data.lanes.map((lane) => lane.id))
+    for (const item of [...data.phases, ...data.milestones]) {
+      if (!laneIds.has(item.laneId)) issue(`「${item.name}」指向不存在的板块`)
+    }
+
+    for (const item of [...data.phases, ...data.terms]) {
+      if (item.start >= item.end) issue(`「${item.name}」的开始必须早于结束`)
+    }
+  })
+
+export function createEmptyData(): AppData {
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    lanes: [],
+    phases: [],
+    milestones: [],
+    terms: [],
+    lastExportAt: null,
+  }
+}
