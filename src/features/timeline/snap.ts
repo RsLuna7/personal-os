@@ -7,6 +7,11 @@ export function snapToMonday(day: number): number {
   return Math.round((day - MONDAY_OFFSET) / WEEK) * WEEK + MONDAY_OFFSET
 }
 
+/** day 所在那一周的周一。 */
+export function mondayOf(day: number): number {
+  return Math.floor((day - MONDAY_OFFSET) / WEEK) * WEEK + MONDAY_OFFSET
+}
+
 /** 平移：开始吸附到周一，长度不变。 */
 export function movePhase(
   startDay: number,

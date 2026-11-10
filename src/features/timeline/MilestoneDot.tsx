@@ -50,6 +50,7 @@ export function MilestoneDot({ milestone, scale, today, nextX }: MilestoneDotPro
             gap: LABEL_GAP,
           }}
           onClick={() => select({ kind: 'milestone', id: milestone.id })}
+          onDoubleClick={(event) => event.stopPropagation()}
         >
           <span
             className="shrink-0 rounded-full bg-(--lane-dot)"

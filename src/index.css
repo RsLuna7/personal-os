@@ -78,3 +78,17 @@
       width var(--dur-slow) var(--ease-out);
   }
 }
+
+@layer components {
+  /* After release the block eases onto the snapped week. */
+  .phase-block[data-settling='true'] {
+    transition:
+      transform var(--dur-fast) var(--ease-out),
+      width var(--dur-fast) var(--ease-out);
+  }
+  .phase-block[data-dragging='true'] {
+    transition: none !important;
+    cursor: grabbing;
+    z-index: 10;
+  }
+}
