@@ -49,3 +49,32 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+@layer components {
+  .phase-block {
+    background-color: var(--lane-fill);
+    border-color: var(--lane-border);
+    color: var(--lane-text);
+  }
+  .phase-block[data-past='true'] {
+    background-color: var(--lane-fill-past);
+    border-color: var(--lane-border-past);
+  }
+  .phase-block[data-tentative='true'] {
+    background-color: transparent;
+    border-style: dashed;
+  }
+  .phase-block[data-selected='true'],
+  .milestone-dot[data-selected='true'],
+  .phase-block:focus-visible,
+  .milestone-dot:focus-visible {
+    outline: 2px solid var(--text);
+    outline-offset: 2px;
+  }
+  /* Only animate on preset switch / go-to-today; panning and dragging must track the pointer. */
+  .timeline[data-animate='true'] [data-anim] {
+    transition:
+      transform var(--dur-slow) var(--ease-out),
+      width var(--dur-slow) var(--ease-out);
+  }
+}

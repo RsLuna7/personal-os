@@ -3,6 +3,8 @@ import type { Phase } from '@/data/schema'
 export const ROW_HEIGHT = 32
 export const ROW_GAP = 8
 export const LANE_PADDING = 12
+/** 有节点的泳道在色块上方多出的一条细带 */
+export const MILESTONE_BAND_HEIGHT = 20
 
 /** 重叠的阶段错开到不同的行：按开始日期排序，贪心放入第一个不冲突的行。 */
 export function assignRows(phases: Pick<Phase, 'id' | 'start' | 'end'>[]): Map<string, number> {
