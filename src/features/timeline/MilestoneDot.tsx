@@ -54,6 +54,7 @@ export function MilestoneDot({ milestone, scale, today, nextX }: MilestoneDotPro
             select({ kind: 'milestone', id: milestone.id })
             openEditor('milestone', milestone.id)
           }}
+          onFocus={() => select({ kind: 'milestone', id: milestone.id })}
           onDoubleClick={(event) => event.stopPropagation()}
         >
           <span

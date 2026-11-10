@@ -160,6 +160,7 @@ export function PhaseBlock({ phase, scale, top, today }: PhaseBlockProps) {
               top: `${top}px`,
               height: ROW_HEIGHT,
             }}
+            onFocus={() => useStore.getState().select({ kind: 'phase', id: phase.id })}
             onPointerDown={(event) => beginDrag(event, 'move')}
             onDoubleClick={(event) => event.stopPropagation()}
           >

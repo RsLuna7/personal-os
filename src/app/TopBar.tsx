@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { AddMenu } from '@/features/editor/AddMenu'
 import type { ZoomPreset } from '@/features/timeline/scale'
 import { useViewport } from '@/features/timeline/useViewport'
+import { MoreMenu } from './MoreMenu'
 import { routeHref, type Route } from './useHashRoute'
 
 const NAV: { route: Route; label: string }[] = [
@@ -98,6 +99,7 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
             <AddMenu />
           </>
         )}
+        <MoreMenu />
       </div>
     </header>
   )

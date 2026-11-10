@@ -121,12 +121,14 @@ export interface Persistence {
   saveError: () => SaveError | null
   /** saveError 变化时通知 */
   subscribe: (listener: () => void) => () => void
+  /** 已存数据损坏时，用一份有效数据（导入的备份）覆盖并恢复自动保存 */
+  recover: (data: AppData) => void
   stop: () => void
 }
 
 /**
  * 启动时读取数据放进状态，之后负责自动保存和跨标签页同步。
- * 已存数据损坏时不订阅保存，保证原数据不被覆盖。
+ * 已存数据损坏时不订阅保存，保证原数据不被覆盖；直到调用 recover。
  */
 export function startPersistence(
   storage: Storage,
@@ -136,73 +138,86 @@ export function startPersistence(
   const status = loadData(storage, registry)
   const listeners = new Set<() => void>()
   let saveError: SaveError | null = null
-  const base: Pick<Persistence, 'status' | 'saveError' | 'subscribe'> = {
+  let detach: (() => void) | null = null
+
+  const setSaveError = (next: SaveError | null) => {
+    if (next === saveError) return
+    saveError = next
+    listeners.forEach((listener) => listener())
+  }
+
+  /** 把数据放进状态并开始自动保存。alreadySaved 为 false 时立即写一次。 */
+  const attach = (initial: AppData, alreadySaved: boolean) => {
+    detach?.()
+    useStore.getState().hydrate(initial)
+
+    let saved: AppData | null = alreadySaved ? useStore.getState().data : null
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    const cancelTimer = () => {
+      if (timer !== null) clearTimeout(timer)
+      timer = null
+    }
+    const flush = () => {
+      cancelTimer()
+      const { data } = useStore.getState()
+      if (data === saved) return
+      const result = saveData(storage, data)
+      if (result.ok) saved = data
+      setSaveError(result.ok ? null : result.reason)
+    }
+
+    const unsubscribe = useStore.subscribe((state) => {
+      if (state.data === saved) return
+      cancelTimer()
+      timer = setTimeout(flush, SAVE_DEBOUNCE_MS)
+    })
+
+    const onPageHide = () => flush()
+    const onVisibility = () => {
+      if (win.document.visibilityState === 'hidden') flush()
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== DATA_KEY || event.newValue === null) return
+      const parsed = parseStored(event.newValue, registry)
+      if (!parsed.ok || parsed.from !== CURRENT_SCHEMA_VERSION) return
+      // 另一个标签页刚保存过：采用它的数据，并丢弃这边还没写出去的旧数据
+      cancelTimer()
+      useStore.getState().hydrate(parsed.data)
+      saved = useStore.getState().data
+      cancelTimer()
+    }
+
+    win.addEventListener('pagehide', onPageHide)
+    win.document.addEventListener('visibilitychange', onVisibility)
+    win.addEventListener('storage', onStorage)
+
+    detach = () => {
+      cancelTimer()
+      unsubscribe()
+      win.removeEventListener('pagehide', onPageHide)
+      win.document.removeEventListener('visibilitychange', onVisibility)
+      win.removeEventListener('storage', onStorage)
+    }
+
+    if (!alreadySaved) flush()
+  }
+
+  if (status.status !== 'corrupt') {
+    attach(status.status === 'ok' ? status.data : createEmptyData(), true)
+  }
+
+  return {
     status,
     saveError: () => saveError,
     subscribe: (listener) => {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
-  }
-
-  if (status.status === 'corrupt') return { ...base, stop: () => {} }
-
-  useStore.getState().hydrate(status.status === 'ok' ? status.data : createEmptyData())
-
-  let saved = useStore.getState().data
-  let timer: ReturnType<typeof setTimeout> | null = null
-
-  const flush = () => {
-    if (timer !== null) {
-      clearTimeout(timer)
-      timer = null
-    }
-    const { data } = useStore.getState()
-    if (data === saved) return
-    const result = saveData(storage, data)
-    const nextError = result.ok ? null : result.reason
-    if (result.ok) saved = data
-    if (nextError !== saveError) {
-      saveError = nextError
-      listeners.forEach((listener) => listener())
-    }
-  }
-
-  const unsubscribe = useStore.subscribe((state) => {
-    if (state.data === saved) return
-    if (timer !== null) clearTimeout(timer)
-    timer = setTimeout(flush, SAVE_DEBOUNCE_MS)
-  })
-
-  const onPageHide = () => flush()
-  const onVisibility = () => {
-    if (win.document.visibilityState === 'hidden') flush()
-  }
-  const onStorage = (event: StorageEvent) => {
-    if (event.key !== DATA_KEY || event.newValue === null) return
-    const parsed = parseStored(event.newValue, registry)
-    if (!parsed.ok || parsed.from !== CURRENT_SCHEMA_VERSION) return
-    if (timer !== null) {
-      clearTimeout(timer)
-      timer = null
-    }
-    saved = parsed.data
-    useStore.getState().hydrate(parsed.data)
-    saved = useStore.getState().data
-  }
-
-  win.addEventListener('pagehide', onPageHide)
-  win.document.addEventListener('visibilitychange', onVisibility)
-  win.addEventListener('storage', onStorage)
-
-  return {
-    ...base,
+    recover: (data) => attach(data, false),
     stop: () => {
-      if (timer !== null) clearTimeout(timer)
-      unsubscribe()
-      win.removeEventListener('pagehide', onPageHide)
-      win.document.removeEventListener('visibilitychange', onVisibility)
-      win.removeEventListener('storage', onStorage)
+      detach?.()
+      detach = null
     },
   }
 }

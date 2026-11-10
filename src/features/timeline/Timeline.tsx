@@ -3,15 +3,15 @@ import { PlusIcon } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useStore } from '@/data/store'
 import { addLaneAndRename } from '@/features/editor/AddMenu'
-import { closeEditor, setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
+import { closeEditor, useEditorStore } from '@/features/editor/editorStore'
 import { MilestoneEditor } from '@/features/editor/MilestoneEditor'
 import { PhaseEditor } from '@/features/editor/PhaseEditor'
-import { TermsDialog } from '@/features/editor/TermsDialog'
 import { EmptyState } from './EmptyState'
 import { LaneRow } from './LaneRow'
 import { Ruler } from './Ruler'
 import { dayToX, MONTH_TICK_MIN_PX_PER_DAY } from './scale'
 import { monthTicks } from './ticks'
+import { useTimelineKeys } from './useTimelineKeys'
 import { useToday } from './useToday'
 import { LABEL_COLUMN_WIDTH, useViewport } from './useViewport'
 
@@ -20,8 +20,8 @@ const WHEEL_ZOOM_FACTOR = 1.1
 export function Timeline() {
   const data = useStore((state) => state.data)
   const editing = useEditorStore((state) => state.editing)
-  const termsOpen = useEditorStore((state) => state.termsOpen)
-  const { scale, width, animating, containerRef, zoomAt, panBy } = useViewport()
+  const { scale, width, animating, containerRef, zoomAt, panBy, goToToday } = useViewport()
+  useTimelineKeys({ goToToday })
   const today = useToday()
 
   const lanes = useMemo(() => [...data.lanes].sort((a, b) => a.order - b.order), [data.lanes])
@@ -148,7 +148,6 @@ export function Timeline() {
             onClose={closeEditor}
           />
         )}
-        <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />
       </div>
     </TooltipProvider>
   )
