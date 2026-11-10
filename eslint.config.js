@@ -19,6 +19,10 @@ export default tseslint.config(
     },
   },
   {
+    files: ['src/components/ui/**/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     files: ['scripts/**/*.mjs'],
     extends: [js.configs.recommended],
     languageOptions: { ecmaVersion: 2023, globals: globals.node },

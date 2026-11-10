@@ -1,0 +1,134 @@
+/*
+ * 颜色对照表（设计文档第 4 节）。组件只使用这里的语义变量，不直接写色值。
+ */
+@import '@radix-ui/colors/sand.css';
+@import '@radix-ui/colors/orange.css';
+@import '@radix-ui/colors/iris.css';
+@import '@radix-ui/colors/tomato.css';
+@import '@radix-ui/colors/teal.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/blue.css';
+@import '@radix-ui/colors/grass.css';
+@import '@radix-ui/colors/pink.css';
+@import '@radix-ui/colors/bronze.css';
+
+:root {
+  --bg-page: var(--sand-1);
+  --bg-subtle: var(--sand-2);
+  --bg-panel: var(--sand-3);
+  --border: var(--sand-6);
+  --text: var(--sand-12);
+  --text-muted: var(--sand-11);
+  --today: var(--orange-9);
+  --danger: var(--tomato-11);
+
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* shadcn 主题变量指向语义变量 */
+  --background: var(--bg-page);
+  --foreground: var(--text);
+  --card: var(--bg-subtle);
+  --card-foreground: var(--text);
+  --popover: var(--bg-subtle);
+  --popover-foreground: var(--text);
+  --primary: var(--text);
+  --primary-foreground: var(--bg-page);
+  --secondary: var(--bg-panel);
+  --secondary-foreground: var(--text);
+  --muted: var(--bg-panel);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-panel);
+  --accent-foreground: var(--text);
+  --destructive: var(--danger);
+  --input: var(--border);
+  --ring: var(--text);
+  --radius: 12px;
+}
+
+[data-lane-color='iris'] {
+  --lane-fill: var(--iris-3);
+  --lane-border: var(--iris-7);
+  --lane-text: var(--iris-11);
+  --lane-fill-past: var(--iris-2);
+  --lane-border-past: var(--iris-5);
+  --lane-dot: var(--iris-9);
+}
+
+[data-lane-color='tomato'] {
+  --lane-fill: var(--tomato-3);
+  --lane-border: var(--tomato-7);
+  --lane-text: var(--tomato-11);
+  --lane-fill-past: var(--tomato-2);
+  --lane-border-past: var(--tomato-5);
+  --lane-dot: var(--tomato-9);
+}
+
+[data-lane-color='teal'] {
+  --lane-fill: var(--teal-3);
+  --lane-border: var(--teal-7);
+  --lane-text: var(--teal-11);
+  --lane-fill-past: var(--teal-2);
+  --lane-border-past: var(--teal-5);
+  --lane-dot: var(--teal-9);
+}
+
+[data-lane-color='amber'] {
+  --lane-fill: var(--amber-3);
+  --lane-border: var(--amber-7);
+  --lane-text: var(--amber-11);
+  --lane-fill-past: var(--amber-2);
+  --lane-border-past: var(--amber-5);
+  --lane-dot: var(--amber-9);
+}
+
+[data-lane-color='blue'] {
+  --lane-fill: var(--blue-3);
+  --lane-border: var(--blue-7);
+  --lane-text: var(--blue-11);
+  --lane-fill-past: var(--blue-2);
+  --lane-border-past: var(--blue-5);
+  --lane-dot: var(--blue-9);
+}
+
+[data-lane-color='grass'] {
+  --lane-fill: var(--grass-3);
+  --lane-border: var(--grass-7);
+  --lane-text: var(--grass-11);
+  --lane-fill-past: var(--grass-2);
+  --lane-border-past: var(--grass-5);
+  --lane-dot: var(--grass-9);
+}
+
+[data-lane-color='pink'] {
+  --lane-fill: var(--pink-3);
+  --lane-border: var(--pink-7);
+  --lane-text: var(--pink-11);
+  --lane-fill-past: var(--pink-2);
+  --lane-border-past: var(--pink-5);
+  --lane-dot: var(--pink-9);
+}
+
+[data-lane-color='bronze'] {
+  --lane-fill: var(--bronze-3);
+  --lane-border: var(--bronze-7);
+  --lane-text: var(--bronze-11);
+  --lane-fill-past: var(--bronze-2);
+  --lane-border-past: var(--bronze-5);
+  --lane-dot: var(--bronze-9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
