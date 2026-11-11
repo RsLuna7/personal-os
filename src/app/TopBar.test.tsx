@@ -38,3 +38,10 @@ it('keeps the lanes item active on a lane detail address', () => {
   expect(screen.getByRole('link', { name: '板块' })).toHaveAttribute('aria-current', 'page')
   expect(screen.getByRole('link', { name: '全局' })).not.toHaveAttribute('aria-current')
 })
+
+it('keeps the calendar item active on a month address', () => {
+  window.location.hash = '#/calendar/2026-11'
+  render(<App />)
+  expect(screen.getByRole('link', { name: '日历' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: '全局' })).not.toHaveAttribute('aria-current')
+})

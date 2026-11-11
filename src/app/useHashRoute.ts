@@ -5,7 +5,7 @@ export type Route = (typeof ROUTES)[number]
 
 interface ParsedHash {
   route: Route
-  /** 只有 modules 路由有参数（板块编号），其他路由一律为 null */
+  /** 只有 modules（板块编号）和 calendar（月份）有参数，其他路由一律为 null */
   param: string | null
 }
 
@@ -13,7 +13,8 @@ export function parseHash(hash: string): ParsedHash {
   const [name = '', rawParam = ''] = hash.replace(/^#\/?/, '').split('/', 2)
   if (!(ROUTES as readonly string[]).includes(name)) return { route: 'home', param: null }
   const route = name as Route
-  if (route !== 'modules' || rawParam === '') return { route, param: null }
+  if ((route !== 'modules' && route !== 'calendar') || rawParam === '')
+    return { route, param: null }
   try {
     return { route, param: decodeURIComponent(rawParam) }
   } catch {
@@ -23,7 +24,8 @@ export function parseHash(hash: string): ParsedHash {
 }
 
 export function routeHref(route: Route, param?: string | null): string {
-  if (route === 'modules' && param) return `#/modules/${encodeURIComponent(param)}`
+  if ((route === 'modules' || route === 'calendar') && param)
+    return `#/${route}/${encodeURIComponent(param)}`
   return `#/${route}`
 }
 
