@@ -3,7 +3,7 @@ import { createSampleData } from '@/data/sample'
 import { toDay } from '@/features/timeline/days'
 import { nextMilestone, summarizeLane, summarizeLanes } from './summary'
 
-const lane = { id: 'l1', name: '考研', color: 'iris' as const, order: 0 }
+const lane = { id: 'l1', name: '考研', color: 'iris' as const, order: 0, note: '', links: [] }
 const phase = (id: string, start: string, end: string, extra: Partial<Phase> = {}): Phase => ({
   id,
   laneId: 'l1',
@@ -91,8 +91,8 @@ describe('summarizeLanes', () => {
     const data: AppData = {
       ...createEmptyData(),
       lanes: [
-        { id: 'b', name: 'B', color: 'teal', order: 1 },
-        { id: 'a', name: 'A', color: 'iris', order: 0 },
+        { id: 'b', name: 'B', color: 'teal', order: 1, note: '', links: [] },
+        { id: 'a', name: 'A', color: 'iris', order: 0, note: '', links: [] },
       ],
     }
     expect(summarizeLanes(data, today).map((item) => item.lane.id)).toEqual(['a', 'b'])

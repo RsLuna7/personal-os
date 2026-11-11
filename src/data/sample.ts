@@ -13,9 +13,33 @@ export function createSampleData(today: ISODate): AppData {
   return {
     ...createEmptyData(),
     lanes: [
-      { id: 'sample-lane-exam', name: '示例考试 A', color: 'iris', order: 0 },
-      { id: 'sample-lane-course', name: '示例课程', color: 'teal', order: 1 },
-      { id: 'sample-lane-intern', name: '示例实习', color: 'amber', order: 2 },
+      {
+        id: 'sample-lane-exam',
+        name: '示例考试 A',
+        color: 'iris',
+        order: 0,
+        note: '这是一段示例备注：写下目标、注意事项或复盘。',
+        links: [
+          { id: 'sample-link-1', title: '示例真题合集', url: 'https://example.com/past-papers' },
+          { id: 'sample-link-2', title: '示例课程大纲', url: 'https://example.org/syllabus' },
+        ],
+      },
+      {
+        id: 'sample-lane-course',
+        name: '示例课程',
+        color: 'teal',
+        order: 1,
+        note: '期末前把作业和笔记整理一遍。',
+        links: [{ id: 'sample-link-3', title: '示例课程主页', url: 'https://example.com/course' }],
+      },
+      {
+        id: 'sample-lane-intern',
+        name: '示例实习',
+        color: 'amber',
+        order: 2,
+        note: '时间还没定，先收集信息。',
+        links: [{ id: 'sample-link-4', title: '示例招聘信息', url: 'https://example.org/jobs' }],
+      },
     ],
     phases: [
       {

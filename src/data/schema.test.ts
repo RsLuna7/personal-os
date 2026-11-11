@@ -1,7 +1,8 @@
 import { appDataSchema, createEmptyData } from './schema'
 
 const base = createEmptyData()
-const lane = { id: 'l1', name: '考研', color: 'iris', order: 0 }
+const lane = { id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] }
+const link = { id: 'k1', title: '真题', url: 'https://example.com/a' }
 const phase = {
   id: 'p1',
   laneId: 'l1',
@@ -17,6 +18,17 @@ it('accepts empty data', () => expect(appDataSchema.safeParse(base).success).toB
 
 it('accepts a valid lane with a phase', () =>
   expect(appDataSchema.safeParse({ ...base, lanes: [lane], phases: [phase] }).success).toBe(true))
+
+it('accepts a lane with a note and links', () => {
+  const data = { ...base, lanes: [{ ...lane, note: '目标：上岸', links: [link] }] }
+  expect(appDataSchema.safeParse(data).success).toBe(true)
+})
+
+it('accepts exactly 50 links and a 2000 character note', () => {
+  const links = Array.from({ length: 50 }, (_, i) => ({ ...link, id: `k${i}` }))
+  const data = { ...base, lanes: [{ ...lane, note: 'x'.repeat(2000), links }] }
+  expect(appDataSchema.safeParse(data).success).toBe(true)
+})
 
 it('trims names', () => {
   const parsed = appDataSchema.parse({ ...base, lanes: [{ ...lane, name: '  考研 ' }] })
@@ -48,5 +60,36 @@ it.each([
     'term whose start is not before end',
     { ...base, terms: [{ id: 't1', name: '大三上', start: '2027-01-10', end: '2027-01-10' }] },
   ],
-  ['wrong schema version', { ...base, schemaVersion: 2 }],
+  ['a newer schema version', { ...base, schemaVersion: 3 }],
+  ['the old schema version', { ...base, schemaVersion: 1 }],
+  ['a lane without a note', { ...base, lanes: [{ ...lane, note: undefined }] }],
+  ['a lane without links', { ...base, lanes: [{ ...lane, links: undefined }] }],
+  ['a lane note longer than 2000', { ...base, lanes: [{ ...lane, note: 'x'.repeat(2001) }] }],
+  [
+    'more than 50 links',
+    {
+      ...base,
+      lanes: [{ ...lane, links: Array.from({ length: 51 }, (_, i) => ({ ...link, id: `k${i}` })) }],
+    },
+  ],
+  [
+    'a javascript: link',
+    { ...base, lanes: [{ ...lane, links: [{ ...link, url: 'javascript:alert(1)' }] }] },
+  ],
+  [
+    'a data: link',
+    { ...base, lanes: [{ ...lane, links: [{ ...link, url: 'data:text/html,hi' }] }] },
+  ],
+  [
+    'a link with an empty title',
+    { ...base, lanes: [{ ...lane, links: [{ ...link, title: ' ' }] }] },
+  ],
+  [
+    'a link title longer than 40',
+    { ...base, lanes: [{ ...lane, links: [{ ...link, title: 'x'.repeat(41) }] }] },
+  ],
+  [
+    'a link id shared with a phase',
+    { ...base, lanes: [{ ...lane, links: [{ ...link, id: 'p1' }] }], phases: [phase] },
+  ],
 ])('rejects %s', (_, data) => expect(appDataSchema.safeParse(data).success).toBe(false))

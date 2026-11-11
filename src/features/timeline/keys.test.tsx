@@ -15,7 +15,7 @@ const dates = () => [phase()!.start, phase()!.end]
 
 const data: AppData = {
   ...createEmptyData(),
-  lanes: [{ id: 'l1', name: '考研', color: 'iris', order: 0 }],
+  lanes: [{ id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] }],
   phases: [
     {
       id: 'p1',

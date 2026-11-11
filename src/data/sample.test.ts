@@ -21,3 +21,11 @@ it('starts every phase on a Monday', () => {
   for (const p of createSampleData('2026-11-10').phases)
     expect(new Date(`${p.start}T00:00:00Z`).getUTCDay()).toBe(1)
 })
+
+it('gives every lane a note and at least one link, all fictional https urls', () => {
+  for (const lane of createSampleData('2026-11-10').lanes) {
+    expect(lane.note.length).toBeGreaterThan(0)
+    expect(lane.links.length).toBeGreaterThanOrEqual(1)
+    for (const link of lane.links) expect(link.url).toMatch(/^https:\/\/example\.(com|org)\//)
+  }
+})

@@ -19,7 +19,7 @@ const s = () => useStore.getState()
 const sample = createSampleData('2026-11-10')
 const mine: AppData = {
   ...createEmptyData(),
-  lanes: [{ id: 'l1', name: '考研', color: 'iris', order: 0 }],
+  lanes: [{ id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] }],
 }
 const jsonFile = (text: string) => new File([text], 'backup.json', { type: 'application/json' })
 

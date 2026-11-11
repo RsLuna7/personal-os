@@ -34,7 +34,20 @@ it.each([
       phases: [{ ...sample.phases[0], end: sample.phases[0].start }],
     }),
   ],
-  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 2 })],
+  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 3 })],
+  [
+    'invalid-shape',
+    JSON.stringify({
+      ...sample,
+      lanes: [
+        {
+          ...sample.lanes[0],
+          links: [{ id: 'bad', title: '坏链接', url: 'javascript:alert(1)' }],
+        },
+        ...sample.lanes.slice(1),
+      ],
+    }),
+  ],
   ['too-large', 'x'.repeat(5 * 1024 * 1024 + 1)],
 ])('rejects with %s', (reason, text) => expect(parseImport(text)).toEqual({ ok: false, reason }))
 
@@ -51,4 +64,18 @@ it('reminds after 30 days without an export', () => {
   expect(needsBackupReminder(null, '2026-11-10T00:00:00Z', now)).toBe(true)
   expect(needsBackupReminder('2026-12-01T00:00:00Z', '2026-11-10T00:00:00Z', now)).toBe(false)
   expect(needsBackupReminder(null, '2026-12-01T00:00:00Z', now)).toBe(false)
+})
+
+it('upgrades a version 1 backup on import', () => {
+  const v1 = {
+    ...sample,
+    schemaVersion: 1,
+    lanes: sample.lanes.map(({ note: _note, links: _links, ...lane }) => lane),
+  }
+  const result = parseImport(JSON.stringify(v1))
+  expect(result.ok).toBe(true)
+  if (!result.ok) return
+  expect(result.data.schemaVersion).toBe(2)
+  expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
+  expect(result.data.phases).toEqual(sample.phases)
 })

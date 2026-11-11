@@ -1,4 +1,4 @@
-import type { Migration } from './migrations'
+import { migrations, type Migration } from './migrations'
 import {
   backupKey,
   DATA_KEY,
@@ -40,7 +40,7 @@ function throwing(name: string): Storage {
 const sample = createSampleData('2026-11-10')
 const other: AppData = {
   ...createEmptyData(),
-  lanes: [{ id: 'x', name: '别处', color: 'blue', order: 0 }],
+  lanes: [{ id: 'x', name: '别处', color: 'blue', order: 0, note: '', links: [] }],
 }
 
 let stop: (() => void) | undefined
@@ -74,7 +74,7 @@ it('reports corrupt for unparseable or invalid content and leaves it in place', 
 })
 
 it('reports corrupt for data from a newer version', () => {
-  const st = mem({ [DATA_KEY]: JSON.stringify({ ...sample, schemaVersion: 2 }) })
+  const st = mem({ [DATA_KEY]: JSON.stringify({ ...sample, schemaVersion: 3 }) })
   expect(loadData(st).status).toBe('corrupt')
 })
 
@@ -91,12 +91,14 @@ it('writes a backup of the old version before saving migrated data', () => {
   const old = JSON.stringify({ ...sample, terms: undefined, schemaVersion: 0 })
   const registry: Record<number, Migration> = {
     0: (raw) => ({ ...(raw as object), schemaVersion: 1, terms: [] }),
+    1: migrations[1],
   }
   const st = mem({ [DATA_KEY]: old })
   const result = loadData(st, registry)
-  expect(result).toEqual({ status: 'ok', data: { ...sample, terms: [] } })
+  expect(result.status).toBe('ok')
+  expect(result).toMatchObject({ data: { schemaVersion: 2, terms: [] } })
   expect(st.getItem(backupKey(0))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(1)
+  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(2)
 })
 
 it('hydrates the store from storage on start', () => {
@@ -221,4 +223,21 @@ it('falls back to a storage that reports unavailable when localStorage is blocke
   const st = getStorage(blocked)
   expect(loadData(st).status).toBe('empty')
   expect(saveData(st, sample)).toEqual({ ok: false, reason: 'unavailable' })
+})
+
+it('upgrades stored version 1 data with the real migrations and keeps a v1 backup', () => {
+  const v1 = {
+    ...sample,
+    schemaVersion: 1,
+    lanes: sample.lanes.map(({ note: _note, links: _links, ...lane }) => lane),
+  }
+  const old = JSON.stringify(v1)
+  const st = mem({ [DATA_KEY]: old })
+  const result = loadData(st)
+  expect(result.status).toBe('ok')
+  if (result.status !== 'ok') return
+  expect(result.data.schemaVersion).toBe(2)
+  expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
+  expect(st.getItem(backupKey(1))).toBe(old)
+  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(2)
 })

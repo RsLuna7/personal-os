@@ -91,7 +91,10 @@ export const useStore = create<StoreState>()((set, get) => {
       const order = data.lanes.reduce((max, lane) => Math.max(max, lane.order + 1), 0)
       commit({
         ...data,
-        lanes: [...data.lanes, { id, name, color: nextLaneColor(data.lanes), order }],
+        lanes: [
+          ...data.lanes,
+          { id, name, color: nextLaneColor(data.lanes), order, note: '', links: [] },
+        ],
       })
       return id
     },

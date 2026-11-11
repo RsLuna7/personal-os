@@ -12,8 +12,8 @@ const exiting = () => [...document.querySelectorAll<HTMLElement>('[data-exiting=
 const data: AppData = {
   ...createEmptyData(),
   lanes: [
-    { id: 'l1', name: '考研', color: 'iris', order: 0 },
-    { id: 'l2', name: '四级', color: 'tomato', order: 1 },
+    { id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] },
+    { id: 'l2', name: '四级', color: 'tomato', order: 1, note: '', links: [] },
   ],
   phases: [
     {

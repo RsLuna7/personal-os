@@ -2,7 +2,7 @@ import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/app/App'
 import { UI_KEY } from '@/data/persistence'
-import { createEmptyData, type AppData } from '@/data/schema'
+import { createEmptyData, type AppData, type Lane } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { toDay } from './days'
 import { dayToX, type Scale } from './scale'
@@ -10,7 +10,7 @@ import { resetViewport, useViewportStore } from './useViewport'
 
 const SCALE: Scale = { originDay: toDay('2026-11-02'), pxPerDay: 2 }
 
-const lane = { id: 'l1', name: '考研', color: 'iris', order: 0 } as const
+const lane: Lane = { id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] }
 const phase = {
   id: 'p1',
   laneId: 'l1',
@@ -67,8 +67,8 @@ it('renders lanes in order with their names', () => {
   setup(
     withData({
       lanes: [
-        { id: 'l2', name: '四级', color: 'teal', order: 1 },
-        { id: 'l1', name: '考研', color: 'iris', order: 0 },
+        { id: 'l2', name: '四级', color: 'teal', order: 1, note: '', links: [] },
+        { id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] },
       ],
     }),
   )

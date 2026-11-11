@@ -1,6 +1,7 @@
 import { z } from 'zod'
+import { isHttpUrl } from './links'
 
-export const CURRENT_SCHEMA_VERSION = 1
+export const CURRENT_SCHEMA_VERSION = 2
 
 export const LANE_COLORS = [
   'iris',
@@ -19,12 +20,25 @@ export type ISODate = string
 
 export const NAME_MAX = 40
 export const NOTE_MAX = 2000
+export const LINKS_MAX = 50
+const URL_MAX = 2048
+
+export interface Link {
+  id: string
+  title: string
+  /** 只允许 http: 和 https: */
+  url: string
+}
 
 export interface Lane {
   id: string
   name: string
   color: LaneColor
   order: number
+  /** 板块备注，纯文本 */
+  note: string
+  /** 资料链接 */
+  links: Link[]
 }
 
 export interface Phase {
@@ -56,7 +70,7 @@ export interface Term {
 }
 
 export interface AppData {
-  schemaVersion: 1
+  schemaVersion: 2
   lanes: Lane[]
   phases: Phase[]
   milestones: Milestone[]
@@ -77,11 +91,19 @@ const dateSchema = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine(isRealDate, '日期不存在')
 
+const linkSchema = z.object({
+  id: idSchema,
+  title: nameSchema,
+  url: z.string().max(URL_MAX).refine(isHttpUrl, '网址必须以 http 或 https 开头'),
+})
+
 const laneSchema = z.object({
   id: idSchema,
   name: nameSchema,
   color: z.enum(LANE_COLORS),
   order: z.number().int(),
+  note: noteSchema,
+  links: z.array(linkSchema).max(LINKS_MAX),
 })
 
 const phaseSchema = z.object({
@@ -122,7 +144,14 @@ export const appDataSchema: z.ZodType<AppData> = z
     const issue = (message: string) => ctx.addIssue({ code: 'custom', message })
 
     const seen = new Set<string>()
-    for (const item of [...data.lanes, ...data.phases, ...data.milestones, ...data.terms]) {
+    const links = data.lanes.flatMap((lane) => lane.links)
+    for (const item of [
+      ...data.lanes,
+      ...links,
+      ...data.phases,
+      ...data.milestones,
+      ...data.terms,
+    ]) {
       if (seen.has(item.id)) issue(`id 重复：${item.id}`)
       seen.add(item.id)
     }

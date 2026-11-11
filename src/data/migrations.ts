@@ -8,8 +8,23 @@ export class NewerVersionError extends Error {
 /** 把第 n 版数据升级为第 n+1 版。 */
 export type Migration = (old: unknown) => unknown
 
-/** 第一版没有历史版本。以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3 }`。 */
-export const migrations: Record<number, Migration> = {}
+/**
+ * 版本 1 → 2：每个板块新增备注和资料链接。
+ * lanes 不是数组时原样放过，交给校验去拒绝。
+ */
+function v1ToV2(old: unknown): unknown {
+  const data = old as { lanes?: unknown }
+  return {
+    ...data,
+    schemaVersion: 2,
+    lanes: Array.isArray(data.lanes)
+      ? data.lanes.map((lane: object) => ({ note: '', links: [], ...lane }))
+      : data.lanes,
+  }
+}
+
+/** 以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3 }`。 */
+export const migrations: Record<number, Migration> = { 1: v1ToV2 }
 
 export function runMigrations(
   raw: unknown,
