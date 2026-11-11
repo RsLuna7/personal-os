@@ -246,3 +246,22 @@ describe('keys that belong to something else', () => {
     expect(s().data).toBe(before)
   })
 })
+
+describe('after the editor closes', () => {
+  it('puts the focus back on the item so its shortcuts keep working', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('phase-p1'))
+    await screen.findByRole('dialog', { name: '编辑阶段' })
+
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '编辑阶段' })).not.toBeInTheDocument(),
+    )
+    await waitFor(() => expect(screen.getByTestId('phase-p1')).toHaveFocus())
+
+    await user.keyboard('{ArrowRight}')
+    expect(dates('p1')).toEqual(['2026-11-10', '2026-11-15'])
+    await user.keyboard('{Delete}')
+    expect(s().data.phases.map((item) => item.id)).toEqual(['p2'])
+  })
+})

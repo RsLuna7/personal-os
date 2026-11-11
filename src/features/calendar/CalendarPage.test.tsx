@@ -1,9 +1,9 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/app/App'
 import { createEmptyData, type AppData } from '@/data/schema'
 import { useStore } from '@/data/store'
-import { resetEditor } from '@/features/editor/editorStore'
+import { resetEditor, useEditorStore } from '@/features/editor/editorStore'
 import { resetViewport } from '@/features/timeline/useViewport'
 import { getLastLaneId, pickLaneId, resetCalendarState, setLastLaneId } from './lastLane'
 
@@ -279,5 +279,29 @@ describe('overflow list', () => {
   it('has no +N button on a day with room', () => {
     setup()
     expect(screen.queryByRole('button', { name: /^\+\d+ 项$/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('the editor and its item', () => {
+  it('follows the item to its new month when the date leaves the visible month', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('milestone-m1'))
+    await screen.findByRole('dialog', { name: '编辑节点' })
+
+    act(() => s().updateMilestone('m1', { date: '2026-12-15' }))
+
+    await waitFor(() => expect(window.location.hash).toBe('#/calendar/2026-12'))
+    expect(await screen.findByRole('dialog', { name: '编辑节点' })).toBeInTheDocument()
+    expect(screen.getByTestId('milestone-m1')).toBeInTheDocument()
+  })
+
+  it('closes the panel when leaving the page so it does not reappear elsewhere', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('milestone-m1'))
+    await screen.findByRole('dialog', { name: '编辑节点' })
+
+    window.location.hash = '#/timeline'
+    await waitFor(() => expect(screen.queryByTestId('month-grid')).not.toBeInTheDocument())
+    expect(useEditorStore.getState().editing).toBeNull()
   })
 })

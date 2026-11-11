@@ -152,6 +152,9 @@ export function useCalendarDrag({ gridRef, weeks }: Options): {
 
   const beginCreate = useCallback(
     (event: ReactPointerEvent<HTMLElement>, anchorDay: number) => {
+      // 编辑面板或“+N 项”列表开着时，这一下按压只用来把它们关掉（它们自己会在
+      // 点到外面时关闭），不能同时当成“新建”；React 的处理先于它们的关闭。
+      if (document.querySelector('[role="dialog"]')) return
       run({
         event,
         anchorDay,

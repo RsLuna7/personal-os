@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/app/App'
 import { createEmptyData, type AppData } from '@/data/schema'
@@ -216,15 +216,65 @@ describe('creating a milestone by clicking a day', () => {
   })
 })
 
+describe('clicking away from an open panel', () => {
+  // Radix 只认真实的指针事件序列，所以这里用 user-event 点，而不是 fireEvent
+  it('only closes the editor and does not create another milestone', async () => {
+    const { user } = setup()
+    press('2026-11-12')
+    release('2026-11-12')
+    await screen.findByRole('dialog', { name: '编辑节点' })
+    expect(s().data.milestones).toHaveLength(1)
+
+    await user.click(cell('2026-11-20'))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '编辑节点' })).not.toBeInTheDocument(),
+    )
+    expect(s().data.milestones).toHaveLength(1)
+
+    // 面板关了之后，再点一下才是新建
+    press('2026-11-20')
+    release('2026-11-20')
+    expect(s().data.milestones).toHaveLength(2)
+  })
+
+  it('only closes the +N list and does not create a milestone', async () => {
+    const crowded: AppData = {
+      ...data,
+      phases: ['a', 'b', 'c', 'd'].map((id) => ({
+        id,
+        laneId: 'l1',
+        name: `阶段${id}`,
+        start: '2026-11-09',
+        end: '2026-11-12',
+        tentative: false,
+        note: '',
+      })),
+    }
+    const { user } = setup(crowded)
+    await user.click(within(cell('2026-11-09')).getByRole('button', { name: '+2 项' }))
+    await screen.findByRole('dialog', { name: '11月9日的项目' })
+
+    await user.click(cell('2026-11-20'))
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '11月9日的项目' })).not.toBeInTheDocument(),
+    )
+    expect(s().data.milestones).toHaveLength(0)
+  })
+})
+
 describe('default lane', () => {
   it('uses the lane the last edited item was moved to', async () => {
-    setup()
+    const { user } = setup()
     press('2026-11-12')
     move('2026-11-13')
     release('2026-11-13')
     const id = s().data.phases[0]!.id
     await screen.findByRole('dialog', { name: '编辑阶段' })
     act(() => s().updatePhase(id, { laneId: 'l2' }))
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: '编辑阶段' })).not.toBeInTheDocument(),
+    )
 
     press('2026-11-20')
     release('2026-11-20')

@@ -13,7 +13,15 @@ import { setLastLaneId } from './lastLane'
 import { MonthGrid } from './MonthGrid'
 import { useCalendarDrag, type Preview } from './useCalendarDrag'
 import { useCalendarKeys } from './useCalendarKeys'
-import { monthParam, monthTitle, monthWeeks, parseMonthParam, shiftMonth } from './month'
+import {
+  MAX_YEAR,
+  MIN_YEAR,
+  monthParam,
+  monthTitle,
+  monthWeeks,
+  parseMonthParam,
+  shiftMonth,
+} from './month'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
@@ -48,6 +56,32 @@ function hiddenAnchor(
     return null
   const day = toDay(milestone.date)
   return day >= firstDay && day <= lastDay ? { testId: `milestone-${milestone.id}`, day } : null
+}
+
+/**
+ * 正在编辑的项目存在，但这个月既没画出来、也没有收起的位置可贴（比如在面板里把日期
+ * 改到了别的月）：返回它该去的那一天；其他情况返回 null。
+ */
+function offscreenEditedDay(
+  editing: { kind: 'phase' | 'milestone'; id: string } | null,
+  data: CalendarData,
+  layouts: WeekLayout[],
+  anchorPlaceholder: unknown,
+): number | null {
+  if (!editing || anchorPlaceholder) return null
+  if (editing.kind === 'phase') {
+    const phase = data.phases.find((item) => item.id === editing.id)
+    if (!phase || layouts.some((week) => week.bars.some((bar) => bar.phase.id === phase.id)))
+      return null
+    return toDay(phase.start)
+  }
+  const milestone = data.milestones.find((item) => item.id === editing.id)
+  if (
+    !milestone ||
+    layouts.some((week) => week.dots.some((dot) => dot.milestone.id === milestone.id))
+  )
+    return null
+  return toDay(milestone.date)
 }
 
 /** 拖动中把被拖的那一项换成预览的日期，预览和最终结果用同一套排版。 */
@@ -113,6 +147,33 @@ export function CalendarPage({ param }: CalendarPageProps) {
   useEffect(() => {
     if (editedLaneId !== null) setLastLaneId(editedLaneId)
   }, [editedLaneId])
+
+  // 编辑面板跟着项目走：项目换到别的月，就翻到那个月；那个月翻不到就关掉面板
+  const offscreenDay = offscreenEditedDay(editing, calendarData, layouts, anchorPlaceholder)
+  useEffect(() => {
+    if (offscreenDay === null) return
+    const [year, monthNumber] = fromDay(offscreenDay).split('-').map(Number)
+    const target = { year: year!, month: monthNumber! }
+    if (target.year < MIN_YEAR || target.year > MAX_YEAR) closeEditor()
+    else window.location.replace(routeHref('calendar', monthParam(target)))
+  }, [offscreenDay])
+
+  // 面板关掉后焦点会掉到页面上，方向键、Delete、Esc 就没人接了：把焦点还给刚编辑的项目。
+  // 点到别处关掉的（焦点已经在别的东西上）不去抢。
+  const previousEditing = useRef(editing)
+  useEffect(() => {
+    const was = previousEditing.current
+    previousEditing.current = editing
+    if (!was || editing) return
+    const active = document.activeElement
+    if (active && active !== document.body) return
+    const item = document.querySelector<HTMLElement>(`[data-item-id="${was.id}"]`)
+    const fallback = document.querySelector<HTMLElement>('[data-day][tabindex="0"]')
+    ;(item ?? fallback)?.focus()
+  }, [editing])
+
+  // 离开日历页时面板要一起关，否则它会留在状态里，回到别的页面又冒出来
+  useEffect(() => closeEditor, [])
 
   if (data.lanes.length === 0) return <EmptyState />
 
