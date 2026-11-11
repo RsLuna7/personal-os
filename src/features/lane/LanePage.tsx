@@ -9,6 +9,7 @@ import { EmptyState } from '@/features/timeline/EmptyState'
 import { useToday } from '@/features/timeline/useToday'
 import { LaneHeader } from './LaneHeader'
 import { LaneSidebar } from './LaneSidebar'
+import { LinksCard } from './LinksCard'
 import { NoteCard } from './NoteCard'
 import { resolveLaneId } from './select'
 
@@ -44,6 +45,7 @@ export function LanePage({ param }: LanePageProps) {
           <div key={lane.id} className="flex flex-col gap-6">
             <LaneHeader summary={summary} today={today} />
             <NoteCard lane={lane} />
+            <LinksCard lane={lane} />
           </div>
         </div>
       </div>
