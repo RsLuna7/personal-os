@@ -9,6 +9,7 @@ import { EmptyState } from '@/features/timeline/EmptyState'
 import { useToday } from '@/features/timeline/useToday'
 import { LaneHeader } from './LaneHeader'
 import { LaneSidebar } from './LaneSidebar'
+import { NoteCard } from './NoteCard'
 import { resolveLaneId } from './select'
 
 interface LanePageProps {
@@ -38,8 +39,12 @@ export function LanePage({ param }: LanePageProps) {
     <div className="flex min-h-0 flex-1">
       <LaneSidebar lanes={lanes} selectedId={lane.id} today={today} />
       <div className="min-w-0 flex-1 overflow-y-auto bg-(--bg-canvas)">
-        <div className="mx-auto flex max-w-[960px] flex-col gap-6 px-6 py-6">
-          <LaneHeader key={lane.id} summary={summary} today={today} />
+        <div className="mx-auto max-w-[960px] px-6 py-6">
+          {/* 换板块时整块重新挂载，输入框里的草稿不会带到另一个板块 */}
+          <div key={lane.id} className="flex flex-col gap-6">
+            <LaneHeader summary={summary} today={today} />
+            <NoteCard lane={lane} />
+          </div>
         </div>
       </div>
       {editing?.kind === 'phase' && (
