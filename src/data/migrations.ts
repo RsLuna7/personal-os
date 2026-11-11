@@ -23,8 +23,13 @@ function v1ToV2(old: unknown): unknown {
   }
 }
 
-/** 以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3 }`。 */
-export const migrations: Record<number, Migration> = { 1: v1ToV2 }
+/** 版本 2 → 3：新增待办，旧数据没有待办。 */
+function v2ToV3(old: unknown): unknown {
+  return { todos: [], ...(old as object), schemaVersion: 3 }
+}
+
+/** 以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3, 3: v3ToV4 }`。 */
+export const migrations: Record<number, Migration> = { 1: v1ToV2, 2: v2ToV3 }
 
 export function runMigrations(
   raw: unknown,

@@ -28,6 +28,10 @@
   --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.08), 0 10px 28px rgb(60 50 30 / 0.16);
   --danger: var(--tomato-11);
 
+  /* 日历的日期格：没有待办时的中性灰底，已完成待办的色条 */
+  --cell-bg: var(--bg-subtle);
+  --done-bar: var(--sand-8);
+
   --dur-fast: 150ms;
   --dur-base: 200ms;
   --dur-slow: 250ms;
@@ -147,6 +151,19 @@
   --lane-border-past: var(--bronze-5);
   --lane-dot: var(--bronze-9);
   --lane-solid: var(--bronze-11);
+  --lane-solid-text: #fff;
+}
+
+/* 不挂板块的待办：中性灰，和八种板块色同一套变量 */
+[data-lane-color='neutral'] {
+  --lane-fill: var(--sand-3);
+  --lane-border: var(--sand-7);
+  --lane-text: var(--sand-12);
+  --lane-text-past: var(--sand-11);
+  --lane-fill-past: var(--sand-3);
+  --lane-border-past: var(--sand-6);
+  --lane-dot: var(--sand-9);
+  --lane-solid: var(--sand-11);
   --lane-solid-text: #fff;
 }
 

@@ -9,52 +9,35 @@ import {
 import { useStore } from '@/data/store'
 import { openEditor } from '@/features/editor/editorStore'
 import { fromDay, toDay } from '@/features/timeline/days'
-import {
-  createRange,
-  dayAtPoint,
-  exceedsThreshold,
-  resizeRange,
-  shiftRange,
-  type GridRect,
-} from './drag'
-import { pickLaneId, setLastLaneId } from './lastLane'
+import { dayAtPoint, exceedsThreshold, type GridRect } from './drag'
 
-/** 拖动时正在预览的东西。 */
-export type Preview =
-  | { kind: 'create'; start: number; end: number }
-  | { kind: 'phase'; id: string; start: number; end: number }
-  | { kind: 'milestone'; id: string; day: number }
-
-/** 按下的是哪个项目的哪个部分。 */
-export type MoveTarget =
-  { kind: 'phase'; id: string; mode: 'move' | 'start' | 'end' } | { kind: 'milestone'; id: string }
-
-/** 在某一天新建一个节点并打开编辑面板；没有板块时什么都不做。 */
-export function addMilestoneOnDay(day: number): void {
-  const store = useStore.getState()
-  const laneId = pickLaneId(store.data.lanes)
-  if (laneId === null) return
-  const id = store.addMilestone({ laneId, date: fromDay(day) })
-  setLastLaneId(laneId)
-  store.select({ kind: 'milestone', id })
-  openEditor('milestone', id, true)
+/** 拖动时正在预览的东西：被拖的那一项暂时落在 day 这一天。 */
+export interface Preview {
+  kind: 'todo' | 'milestone'
+  id: string
+  day: number
 }
 
-function addPhaseOnRange(start: number, end: number): void {
+/** 按下的是哪个条目。 */
+export interface MoveTarget {
+  kind: 'todo' | 'milestone'
+  id: string
+}
+
+/** 在某一天新建一条待办（不挂板块）并打开编辑面板，标题已选中。 */
+export function addTodoOnDay(day: number): void {
   const store = useStore.getState()
-  const laneId = pickLaneId(store.data.lanes)
-  if (laneId === null) return
-  const id = store.addPhase({ laneId, start: fromDay(start), end: fromDay(end) })
-  setLastLaneId(laneId)
-  store.select({ kind: 'phase', id })
-  openEditor('phase', id, true)
+  const id = store.addTodo({ date: fromDay(day) })
+  openEditor('todo', id, true)
 }
 
 /** 一次按下到松手的整个过程。 */
 interface Gesture {
   event: ReactPointerEvent<HTMLElement>
-  /** 按下时指针所在的日期；为 null 时只能当单击用 */
+  /** 按下时指针所在的日期；为 null 表示按在网格外面（比如“未安排”列表） */
   anchorDay: number | null
+  /** 按在网格外面时是否也能拖进网格；否则只能当单击用 */
+  fromOutside?: boolean
   /** 指针移到 hover 这一天时画什么 */
   preview(hover: number): Preview
   /** 移动不到阈值就松手 */
@@ -62,7 +45,7 @@ interface Gesture {
   /** 拖动后在网格内松手 */
   drop(hover: number): void
   /** 拖动中这一项还在不在；不在了就取消 */
-  exists?(state: ReturnType<typeof useStore.getState>): boolean
+  exists(state: ReturnType<typeof useStore.getState>): boolean
 }
 
 interface Options {
@@ -71,10 +54,9 @@ interface Options {
   weeks: number[][]
 }
 
-/** 日历上的拖动：拖选新建，移动和改长短。预览只是界面状态，松手才写入一次。 */
+/** 日历上的拖动：待办和节点改期，也可以把未安排的待办拖进某一天。预览只是界面状态，松手才写入一次。 */
 export function useCalendarDrag({ gridRef, weeks }: Options): {
   preview: Preview | null
-  beginCreate(event: ReactPointerEvent<HTMLElement>, day: number): void
   beginMove(event: ReactPointerEvent<HTMLElement>, target: MoveTarget): void
 } {
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -83,16 +65,12 @@ export function useCalendarDrag({ gridRef, weeks }: Options): {
   // 页面换掉（比如切到别的路由）时，正在进行的拖动要一起结束
   useEffect(() => () => stopRef.current?.(), [])
 
-  const gridRect = useCallback((): GridRect | null => {
-    return gridRef.current?.getBoundingClientRect() ?? null
-  }, [gridRef])
-
   const dayUnder = useCallback(
     (x: number, y: number): number | null => {
-      const rect = gridRect()
+      const rect: GridRect | undefined = gridRef.current?.getBoundingClientRect()
       return rect ? dayAtPoint(rect, weeks, x, y) : null
     },
-    [gridRect, weeks],
+    [gridRef, weeks],
   )
 
   const run = useCallback(
@@ -105,26 +83,29 @@ export function useCalendarDrag({ gridRef, weeks }: Options): {
       let dragging = false
       let hover = anchorDay
 
-      const unsubscribe = gesture.exists
-        ? useStore.subscribe((state) => {
-            if (!gesture.exists!(state)) stop()
-          })
-        : null
+      const unsubscribe = useStore.subscribe((state) => {
+        if (!gesture.exists(state)) stop()
+      })
       const stop = () => {
         window.removeEventListener('pointermove', onMove)
         window.removeEventListener('pointerup', onUp)
         window.removeEventListener('pointercancel', onCancel)
         window.removeEventListener('keydown', onKey)
-        unsubscribe?.()
+        unsubscribe()
         stopRef.current = null
         setPreview(null)
       }
       const onMove = (move: PointerEvent) => {
-        if (anchorDay === null) return
+        if (anchorDay === null && !gesture.fromOutside) return
         if (!dragging && !exceedsThreshold(move.clientX - startX, move.clientY - startY)) return
         dragging = true
         const under = dayUnder(move.clientX, move.clientY)
         if (under !== null) hover = under
+        if (anchorDay === null) {
+          // 从网格外拖进来：指针在网格外时条目回到原处，不显示预览
+          setPreview(under === null ? null : gesture.preview(under))
+          return
+        }
         setPreview(gesture.preview(hover ?? anchorDay))
       }
       const onUp = (up: PointerEvent) => {
@@ -150,29 +131,10 @@ export function useCalendarDrag({ gridRef, weeks }: Options): {
     [dayUnder],
   )
 
-  const beginCreate = useCallback(
-    (event: ReactPointerEvent<HTMLElement>, anchorDay: number) => {
-      // 编辑面板或“+N 项”列表开着时，这一下按压只用来把它们关掉（它们自己会在
-      // 点到外面时关闭），不能同时当成“新建”；React 的处理先于它们的关闭。
-      if (document.querySelector('[role="dialog"]')) return
-      run({
-        event,
-        anchorDay,
-        preview: (hover) => ({ kind: 'create', ...createRange(anchorDay, hover) }),
-        click: () => addMilestoneOnDay(anchorDay),
-        drop: (hover) => {
-          const { start, end } = createRange(anchorDay, hover)
-          addPhaseOnRange(start, end)
-        },
-      })
-    },
-    [run],
-  )
-
   const beginMove = useCallback(
     (event: ReactPointerEvent<HTMLElement>, target: MoveTarget) => {
       const store = useStore.getState()
-      const rect = gridRect()
+      const rect = gridRef.current?.getBoundingClientRect()
       const pressDay = rect ? dayAtPoint(rect, weeks, event.clientX, event.clientY) : null
 
       if (target.kind === 'milestone') {
@@ -199,34 +161,27 @@ export function useCalendarDrag({ gridRef, weeks }: Options): {
         return
       }
 
-      const phase = store.data.phases.find((item) => item.id === target.id)
-      if (!phase) return
-      const start = toDay(phase.start)
-      const end = toDay(phase.end)
+      const todo = store.data.todos.find((item) => item.id === target.id)
+      if (!todo) return
+      const original = todo.date === null ? null : toDay(todo.date)
+      // 已有日期的待办按“拖了几天”挪；未安排的待办落在指针下的那一天
       const result = (hover: number) =>
-        target.mode === 'move'
-          ? shiftRange(start, end, hover - (pressDay ?? hover))
-          : resizeRange(start, end, target.mode, hover)
+        original === null ? hover : original + hover - (pressDay ?? hover)
       run({
         event,
         anchorDay: pressDay,
-        preview: (hover) => ({ kind: 'phase', id: target.id, ...result(hover) }),
-        click: () => {
-          useStore.getState().select({ kind: 'phase', id: target.id })
-          openEditor('phase', target.id)
-        },
+        fromOutside: original === null,
+        preview: (hover) => ({ kind: 'todo', id: target.id, day: result(hover) }),
+        click: () => openEditor('todo', target.id),
         drop: (hover) => {
-          const next = result(hover)
-          if (next.start === start && next.end === end) return
-          useStore
-            .getState()
-            .updatePhase(target.id, { start: fromDay(next.start), end: fromDay(next.end) })
+          const day = result(hover)
+          if (day !== original) useStore.getState().updateTodo(target.id, { date: fromDay(day) })
         },
-        exists: (state) => state.data.phases.some((item) => item.id === target.id),
+        exists: (state) => state.data.todos.some((item) => item.id === target.id),
       })
     },
-    [gridRect, run, weeks],
+    [gridRef, run, weeks],
   )
 
-  return { preview, beginCreate, beginMove }
+  return { preview, beginMove }
 }

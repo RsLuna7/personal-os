@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { isHttpUrl } from './links'
 
-export const CURRENT_SCHEMA_VERSION = 2
+export const CURRENT_SCHEMA_VERSION = 3
 
 export const LANE_COLORS = [
   'iris',
@@ -69,12 +69,25 @@ export interface Term {
   end: ISODate
 }
 
+export interface Todo {
+  id: string
+  title: string
+  /** null 表示未安排 */
+  date: ISODate | null
+  done: boolean
+  /** null 表示不挂板块 */
+  laneId: string | null
+  /** ISO 时间，只用来稳定排序 */
+  createdAt: string
+}
+
 export interface AppData {
-  schemaVersion: 2
+  schemaVersion: 3
   lanes: Lane[]
   phases: Phase[]
   milestones: Milestone[]
   terms: Term[]
+  todos: Todo[]
   lastExportAt: string | null
 }
 
@@ -124,6 +137,15 @@ const milestoneSchema = z.object({
   note: noteSchema,
 })
 
+const todoSchema = z.object({
+  id: idSchema,
+  title: nameSchema,
+  date: dateSchema.nullable(),
+  done: z.boolean(),
+  laneId: idSchema.nullable(),
+  createdAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), '时间不合法'),
+})
+
 const termSchema = z.object({
   id: idSchema,
   name: nameSchema,
@@ -138,6 +160,7 @@ export const appDataSchema: z.ZodType<AppData> = z
     phases: z.array(phaseSchema),
     milestones: z.array(milestoneSchema),
     terms: z.array(termSchema),
+    todos: z.array(todoSchema),
     lastExportAt: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
@@ -151,6 +174,7 @@ export const appDataSchema: z.ZodType<AppData> = z
       ...data.phases,
       ...data.milestones,
       ...data.terms,
+      ...data.todos,
     ]) {
       if (seen.has(item.id)) issue(`id 重复：${item.id}`)
       seen.add(item.id)
@@ -159,6 +183,12 @@ export const appDataSchema: z.ZodType<AppData> = z
     const laneIds = new Set(data.lanes.map((lane) => lane.id))
     for (const item of [...data.phases, ...data.milestones]) {
       if (!laneIds.has(item.laneId)) issue(`「${item.name}」指向不存在的板块`)
+    }
+
+    for (const todo of data.todos) {
+      if (todo.laneId !== null && !laneIds.has(todo.laneId)) {
+        issue(`待办「${todo.title}」指向不存在的板块`)
+      }
     }
 
     for (const item of [...data.phases, ...data.terms]) {
@@ -173,6 +203,7 @@ export function createEmptyData(): AppData {
     phases: [],
     milestones: [],
     terms: [],
+    todos: [],
     lastExportAt: null,
   }
 }

@@ -15,6 +15,7 @@ import {
   type Milestone,
   type Phase,
   type Term,
+  type Todo,
 } from './schema'
 import { normalizeLinkUrl } from './links'
 
@@ -44,6 +45,11 @@ interface StoreState {
   addMilestone(input: { laneId: string; date: ISODate; name?: string }): string
   updateMilestone(id: string, patch: Partial<Omit<Milestone, 'id'>>): void
   removeMilestone(id: string): void
+  /** 返回新待办的 id。不传标题时叫“新待办”；不传日期时未安排，不传板块时不挂板块。 */
+  addTodo(input?: { title?: string; date?: ISODate | null; laneId?: string | null }): string
+  updateTodo(id: string, patch: Partial<Pick<Todo, 'title' | 'date' | 'done' | 'laneId'>>): void
+  toggleTodo(id: string): void
+  removeTodo(id: string): void
   setTerms(terms: Term[]): void
   /** 整体替换数据，可撤销（导入、载入示例、清空）。 */
   replaceData(data: AppData): void
@@ -198,6 +204,8 @@ export const useStore = create<StoreState>()((set, get) => {
           .map((lane) => ({ ...lane, order: orderById.get(lane.id)! })),
         phases: data.phases.filter((phase) => phase.laneId !== id),
         milestones: data.milestones.filter((milestone) => milestone.laneId !== id),
+        // 待办不跟着板块走：变成不挂板块
+        todos: data.todos.map((todo) => (todo.laneId === id ? { ...todo, laneId: null } : todo)),
       })
     },
 
@@ -244,6 +252,37 @@ export const useStore = create<StoreState>()((set, get) => {
     removeMilestone(id) {
       const { data } = get()
       commit({ ...data, milestones: data.milestones.filter((milestone) => milestone.id !== id) })
+    },
+
+    addTodo({ title = '新待办', date = null, laneId = null } = {}) {
+      const { data } = get()
+      const id = newId()
+      commit({
+        ...data,
+        todos: [
+          ...data.todos,
+          { id, title, date, done: false, laneId, createdAt: new Date().toISOString() },
+        ],
+      })
+      return id
+    },
+
+    updateTodo(id, patch) {
+      const { data } = get()
+      commit({
+        ...data,
+        todos: data.todos.map((todo) => (todo.id === id ? { ...todo, ...patch } : todo)),
+      })
+    },
+
+    toggleTodo(id) {
+      const todo = get().data.todos.find((item) => item.id === id)
+      if (todo) get().updateTodo(id, { done: !todo.done })
+    },
+
+    removeTodo(id) {
+      const { data } = get()
+      commit({ ...data, todos: data.todos.filter((todo) => todo.id !== id) })
     },
 
     setTerms(terms) {
