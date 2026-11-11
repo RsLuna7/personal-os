@@ -134,6 +134,8 @@ export function LaneSelect({ value, lanes, onChange }: LaneSelectProps) {
  */
 export function useAnchorElement(anchor: HTMLElement | null, selector: string): HTMLElement | null {
   const [found, setFound] = useState<HTMLElement | null>(null)
+  // 故意不写依赖：元素可能在任何一次渲染里被换掉，所以每次渲染后都检查
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     if (anchor || found?.isConnected) return
     // The anchor element only exists after its page has committed, so it has to be looked up here.

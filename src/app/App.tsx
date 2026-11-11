@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner'
 import type { Persistence } from '@/data/persistence'
 import { setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
 import { TermsDialog } from '@/features/editor/TermsDialog'
+import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { Home } from '@/features/home/Home'
 import { LanePage } from '@/features/lane/LanePage'
 import { Timeline } from '@/features/timeline/Timeline'
@@ -58,6 +59,8 @@ export function App({ persistence }: AppProps) {
           <Home />
         ) : route === 'timeline' ? (
           <Timeline />
+        ) : route === 'calendar' ? (
+          <CalendarPage param={param} />
         ) : route === 'modules' ? (
           <LanePage param={param} />
         ) : (

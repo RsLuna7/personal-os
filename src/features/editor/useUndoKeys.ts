@@ -7,6 +7,12 @@ export function isTyping(target: EventTarget | null): boolean {
   return target.matches('input, textarea, select') || target.isContentEditable
 }
 
+/** 焦点在别的按钮、菜单或面板里时，不把按键当成对选中项的操作。 */
+export function isBusyElsewhere(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return target.closest('button, a, [role="menu"], [role="dialog"]') !== null
+}
+
 /** 撤销和重做的键盘快捷键；不依赖具体页面，时间线和板块页共用。 */
 export function useUndoKeys(enabled: boolean = true): void {
   useEffect(() => {

@@ -15,9 +15,9 @@ it('shows four nav items with timeline active by default', () => {
 
 it('shows a placeholder for unbuilt views', async () => {
   render(<App />)
-  await userEvent.click(screen.getByRole('link', { name: '日历' }))
+  await userEvent.click(screen.getByRole('link', { name: '今日' }))
   expect(screen.getByText('待开发')).toBeInTheDocument()
-  expect(window.location.hash).toBe('#/calendar')
+  expect(window.location.hash).toBe('#/today')
 })
 
 it('falls back to timeline for an unknown hash', () => {

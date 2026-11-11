@@ -2,16 +2,10 @@ import { useEffect } from 'react'
 import { useStore } from '@/data/store'
 import { showDeleteToast } from '@/features/editor/deleteToast'
 import { openEditor } from '@/features/editor/editorStore'
-import { isTyping, useUndoKeys } from '@/features/editor/useUndoKeys'
+import { isBusyElsewhere, isTyping, useUndoKeys } from '@/features/editor/useUndoKeys'
 import { addDays, toDay } from './days'
 import { WEEK } from './snap'
 import type { Viewport } from './useViewport'
-
-/** 焦点在别的按钮、菜单或面板里时，不把按键当成对选中项的操作。 */
-function isBusyElsewhere(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  return target.closest('button, a, [role="menu"], [role="dialog"]') !== null
-}
 
 function moveSelection(weeks: number, resize: boolean): void {
   const { selection, data, updatePhase, updateMilestone } = useStore.getState()
