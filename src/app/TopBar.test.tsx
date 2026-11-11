@@ -31,3 +31,10 @@ it('follows the hash when it changes outside the app', async () => {
   window.location.hash = '#/today'
   expect(await screen.findByRole('link', { name: '今日' })).toHaveAttribute('aria-current', 'page')
 })
+
+it('keeps the lanes item active on a lane detail address', () => {
+  window.location.hash = '#/modules/some-lane'
+  render(<App />)
+  expect(screen.getByRole('link', { name: '板块' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.getByRole('link', { name: '全局' })).not.toHaveAttribute('aria-current')
+})
