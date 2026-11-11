@@ -1,4 +1,4 @@
-import { createEmptyData, type AppData, type ISODate } from './schema'
+import { createEmptyData, type AppData, type ISODate, type Todo } from './schema'
 
 const DAY_MS = 86_400_000
 
@@ -9,6 +9,15 @@ export function createSampleData(today: ISODate): AppData {
   const mondayMs = todayMs - weekday * DAY_MS
   const at = (weeks: number, days = 0): ISODate =>
     new Date(mondayMs + (weeks * 7 + days) * DAY_MS).toISOString().slice(0, 10)
+
+  const todo = (n: number, title: string, date: ISODate | null, laneId: string | null): Todo => ({
+    id: `sample-todo-${n}`,
+    title,
+    date,
+    done: false,
+    laneId,
+    createdAt: `${today}T08:${String(n).padStart(2, '0')}:00.000Z`,
+  })
 
   return {
     ...createEmptyData(),
@@ -124,6 +133,18 @@ export function createSampleData(today: ISODate): AppData {
       { id: 'sample-term-1', name: '示例学期一', start: at(-10), end: at(10) },
       { id: 'sample-term-2', name: '示例假期', start: at(10), end: at(16) },
       { id: 'sample-term-3', name: '示例学期二', start: at(16), end: at(36) },
+    ],
+    todos: [
+      todo(1, '整理错题本', at(0, 1), 'sample-lane-exam'),
+      { ...todo(2, '背 50 个单词', at(0, 1), 'sample-lane-exam'), done: true },
+      todo(3, '提交课程作业', at(0, 3), 'sample-lane-course'),
+      todo(4, '打印复习资料', at(0, 3), 'sample-lane-course'),
+      todo(5, '联系学长问实习', at(0, 3), 'sample-lane-intern'),
+      todo(6, '买文具', at(0, 3), null),
+      todo(7, '周日复盘', at(0, 6), null),
+      todo(8, '做一套模拟题', at(1, 2), 'sample-lane-exam'),
+      todo(9, '看一遍课程大纲', null, 'sample-lane-course'),
+      todo(10, '预约体检', null, null),
     ],
   }
 }

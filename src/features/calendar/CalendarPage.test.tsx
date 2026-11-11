@@ -1,35 +1,13 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/app/App'
 import { createEmptyData, type AppData } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { resetEditor, useEditorStore } from '@/features/editor/editorStore'
 import { resetViewport } from '@/features/timeline/useViewport'
-import { getLastLaneId, pickLaneId, resetCalendarState, setLastLaneId } from './lastLane'
+import { calendarData as data, makeTodo } from '@/test/calendarFixtures'
 
 const s = () => useStore.getState()
-
-const data: AppData = {
-  ...createEmptyData(),
-  lanes: [
-    { id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] },
-    { id: 'l2', name: '实习', color: 'teal', order: 1, note: '', links: [] },
-  ],
-  phases: [
-    // 跨周：11 月 4 日到 11 月 11 日（含）
-    {
-      id: 'p1',
-      laneId: 'l1',
-      name: '强化',
-      start: '2026-11-04',
-      end: '2026-11-12',
-      tentative: false,
-      note: '',
-    },
-  ],
-  milestones: [{ id: 'm1', laneId: 'l2', name: '面试', date: '2026-11-20', note: '' }],
-  terms: [{ id: 't1', name: '秋季学期', start: '2026-09-01', end: '2027-01-15' }],
-}
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -38,7 +16,6 @@ beforeEach(() => {
   window.location.hash = '#/calendar'
   resetViewport()
   resetEditor()
-  resetCalendarState()
 })
 afterEach(() => vi.useRealTimers())
 
@@ -53,6 +30,7 @@ function setup(hash = '#/calendar', initial: AppData = data) {
 const grid = () => screen.getByTestId('month-grid')
 const dayCells = () => within(grid()).getAllByTestId(/^day-/)
 const heading = () => screen.getByRole('heading', { level: 1 })
+const cell = (iso: string) => screen.getByTestId(`day-${iso}`)
 
 describe('month and header', () => {
   it('shows November 2026 with a Monday-first header and six weeks', () => {
@@ -121,178 +99,272 @@ describe('month and header', () => {
   })
 })
 
-describe('items on the grid', () => {
-  it('draws a phase that crosses a week as one segment per week, named once', () => {
+describe('items on the cards', () => {
+  it('shows a todo as a bar and a title, coloured by its lane', () => {
     setup()
-    expect(screen.getAllByTestId('phase-p1')).toHaveLength(1)
-    expect(document.querySelectorAll('[data-segment="p1"]')).toHaveLength(1)
-    const named = screen.getByTestId('phase-p1')
-    expect(named).toHaveTextContent('强化')
-    expect(named).toHaveAttribute('data-lane-color', 'iris')
-    expect(named).toHaveAttribute('aria-label', expect.stringContaining('强化'))
-    expect(named).toHaveAttribute('aria-label', expect.stringContaining('11月4日'))
+    const item = within(cell('2026-11-12')).getByTestId('todo-t1')
+    expect(item).toHaveTextContent('写周报')
+    expect(item).toHaveAttribute('data-lane-color', 'iris')
+    expect(item).toHaveAttribute('data-done', 'false')
+    expect(item).toHaveAttribute('aria-label', expect.stringContaining('写周报'))
+    expect(item).toHaveAttribute('aria-label', expect.stringContaining('2026年11月12日'))
+    expect(item).toHaveAttribute('aria-label', expect.stringContaining('未完成'))
+    expect(item.querySelector('.todo-bar')).not.toBeNull()
   })
 
-  it('draws milestones as dots and the term as a band per week', () => {
+  it('shows a todo without a lane in the neutral colour', () => {
     setup()
-    const dot = screen.getByTestId('milestone-m1')
-    expect(dot).toHaveAttribute('data-lane-color', 'teal')
-    expect(dot).toHaveAttribute('aria-label', expect.stringContaining('面试'))
-    expect(screen.getByTestId('term-t1-0')).toHaveTextContent('秋季学期')
-    expect(screen.getByTestId('term-t1-5')).not.toHaveTextContent('秋季学期')
+    expect(screen.getByTestId('todo-t2')).toHaveAttribute('data-lane-color', 'neutral')
   })
 
-  it('shows the empty state without lanes', () => {
-    setup('#/calendar', createEmptyData())
-    expect(screen.getByText('开始规划你的时间线')).toBeInTheDocument()
-    expect(screen.queryByTestId('month-grid')).not.toBeInTheDocument()
+  it('keeps a finished todo in its cell, marked as done', () => {
+    setup()
+    const item = within(cell('2026-11-13')).getByTestId('todo-t3')
+    expect(item).toHaveAttribute('data-done', 'true')
+    expect(item).toHaveAttribute('aria-label', expect.stringContaining('已完成'))
+    expect(
+      within(cell('2026-11-13')).getByRole('checkbox', { name: '完成「交作业」' }),
+    ).toBeChecked()
+  })
+
+  it('draws a milestone differently from a todo, with its lane colour', () => {
+    setup()
+    const item = within(cell('2026-11-20')).getByTestId('milestone-m1')
+    expect(item).toHaveTextContent('面试')
+    expect(item).toHaveAttribute('data-lane-color', 'teal')
+    expect(item).toHaveAttribute('data-item', 'milestone')
+    expect(item.querySelector('.todo-bar')).toBeNull()
+    expect(item).toHaveAttribute('aria-label', expect.stringContaining('面试'))
+  })
+
+  it('does not draw phase bars or term bands any more', () => {
+    setup('#/calendar', {
+      ...data,
+      phases: [
+        {
+          id: 'p1',
+          laneId: 'l1',
+          name: '强化',
+          start: '2026-11-04',
+          end: '2026-11-12',
+          tentative: false,
+          note: '',
+        },
+      ],
+      terms: [{ id: 'tm1', name: '秋季学期', start: '2026-09-01', end: '2027-01-15' }],
+    })
+    expect(screen.queryByText('强化')).not.toBeInTheDocument()
+    expect(screen.queryByText('秋季学期')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-item="phase"]')).toBeNull()
+  })
+
+  it('shows todos on days outside the month too, faded', () => {
+    setup('#/calendar', {
+      ...data,
+      todos: [makeTodo('o1', { title: '上月的事', date: '2026-10-28' })],
+    })
+    expect(cell('2026-10-28')).toHaveAttribute('data-outside', 'true')
+    expect(within(cell('2026-10-28')).getByTestId('todo-o1')).toBeInTheDocument()
+  })
+
+  it('shows the grid even without lanes, so todos can be used on their own', () => {
+    setup('#/calendar', {
+      ...createEmptyData(),
+      todos: [makeTodo('a', { title: '孤零零', date: '2026-11-12' })],
+    })
+    expect(screen.queryByText('开始规划你的时间线')).not.toBeInTheDocument()
+    expect(dayCells()).toHaveLength(42)
+    expect(within(cell('2026-11-12')).getByTestId('todo-a')).toHaveAttribute(
+      'data-lane-color',
+      'neutral',
+    )
+  })
+
+  it('shows todos from other months when you go there', () => {
+    setup('#/calendar/2026-12', {
+      ...data,
+      todos: [makeTodo('d', { title: '十二月', date: '2026-12-24' })],
+    })
+    expect(within(cell('2026-12-24')).getByTestId('todo-d')).toBeInTheDocument()
+    expect(screen.queryByTestId('todo-t1')).not.toBeInTheDocument()
+  })
+})
+
+describe('card colours', () => {
+  it('tints the cell with the lane colour of its first unfinished todo', () => {
+    setup()
+    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'iris')
+    expect(cell('2026-11-12')).toHaveAttribute('data-lane-color', 'iris')
+  })
+
+  it('stays plain when every todo of the day is finished', () => {
+    setup()
+    expect(cell('2026-11-13')).toHaveAttribute('data-tint', 'none')
+    expect(cell('2026-11-13')).not.toHaveAttribute('data-lane-color')
+  })
+
+  it('stays plain on a day with nothing, or with only a milestone', () => {
+    setup()
+    expect(cell('2026-11-14')).toHaveAttribute('data-tint', 'none')
+    expect(cell('2026-11-20')).toHaveAttribute('data-tint', 'none')
+  })
+
+  it('uses the neutral tint when the first unfinished todo has no lane', () => {
+    setup('#/calendar', { ...data, todos: [data.todos[1]!] })
+    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'neutral')
+    expect(cell('2026-11-12')).toHaveAttribute('data-lane-color', 'neutral')
+  })
+
+  it('does not hand the cell tint to a lane-less todo inside it', () => {
+    setup()
+    // 这一格被染成 iris，但“买菜”不挂板块，自己的颜色仍是中性灰
+    expect(screen.getByTestId('todo-t2')).toHaveAttribute('data-lane-color', 'neutral')
+  })
+
+  it('follows the todos: a new finished state or a moved todo changes the tint', () => {
+    setup()
+    act(() => s().updateTodo('t1', { done: true }))
+    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'neutral')
+    act(() => s().updateTodo('t2', { done: true }))
+    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'none')
+    act(() => s().updateTodo('t1', { done: false, date: '2026-11-14' }))
+    expect(cell('2026-11-14')).toHaveAttribute('data-tint', 'iris')
+    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'none')
+  })
+
+  it('marks today and the days outside the month', () => {
+    setup()
+    expect(cell('2026-11-10')).toHaveAttribute('data-today', 'true')
+    expect(cell('2026-11-11')).toHaveAttribute('data-today', 'false')
+    expect(cell('2026-12-01')).toHaveAttribute('data-outside', 'true')
   })
 })
 
 describe('editing from the calendar', () => {
-  it('opens and selects the phase editor when a bar is clicked', async () => {
+  it('opens the todo editor when a todo is clicked', async () => {
     const user = setup()
-    await user.click(screen.getByTestId('phase-p1'))
-    expect(await screen.findByRole('dialog', { name: '编辑阶段' })).toBeInTheDocument()
-    expect(s().selection).toEqual({ kind: 'phase', id: 'p1' })
+    await user.click(screen.getByTestId('todo-t1'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    expect(within(dialog).getByLabelText('标题')).toHaveValue('写周报')
+    expect(within(dialog).getByLabelText('日期')).toHaveValue('2026-11-12')
+    expect(within(dialog).getByLabelText('板块')).toHaveValue('l1')
+    expect(useEditorStore.getState().editing).toMatchObject({ kind: 'todo', id: 't1' })
   })
 
-  it('opens the milestone editor when a dot is clicked', async () => {
+  it('opens the milestone editor when a milestone is clicked', async () => {
     const user = setup()
     await user.click(screen.getByTestId('milestone-m1'))
     expect(await screen.findByRole('dialog', { name: '编辑节点' })).toBeInTheDocument()
+    expect(s().selection).toEqual({ kind: 'milestone', id: 'm1' })
   })
 
-  it('keeps the editor open when the edited phase moves to another week', async () => {
+  it('edits the title, the lane, the date and the done state from the panel', async () => {
     const user = setup()
-    await user.click(screen.getByTestId('phase-p1'))
-    await screen.findByRole('dialog', { name: '编辑阶段' })
-    act(() => s().updatePhase('p1', { start: '2026-12-01', end: '2026-12-03' }))
-    expect(screen.getByTestId('phase-p1')).toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: '编辑阶段' })).toBeInTheDocument()
+    await user.click(screen.getByTestId('todo-t1'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+
+    const title = within(dialog).getByLabelText('标题')
+    await user.clear(title)
+    await user.type(title, '写月报{Enter}')
+    expect(s().data.todos[0]!.title).toBe('写月报')
+
+    await user.selectOptions(within(dialog).getByLabelText('板块'), '不挂板块')
+    expect(s().data.todos[0]!.laneId).toBeNull()
+    await user.selectOptions(within(dialog).getByLabelText('板块'), '实习')
+    expect(s().data.todos[0]!.laneId).toBe('l2')
+
+    await user.click(within(dialog).getByRole('switch', { name: '完成' }))
+    expect(s().data.todos[0]!.done).toBe(true)
+    expect(screen.getByTestId('todo-t1')).toHaveAttribute('data-done', 'true')
+    expect(screen.getByTestId('todo-t1')).toHaveAttribute('data-lane-color', 'teal')
   })
 
-  it('remembers the lane of the item last edited', async () => {
+  it('deletes from the panel with an undo toast', async () => {
     const user = setup()
-    expect(getLastLaneId()).toBeNull()
-    await user.click(screen.getByTestId('phase-p1'))
-    await screen.findByRole('dialog', { name: '编辑阶段' })
-    expect(getLastLaneId()).toBe('l1')
-    act(() => s().updatePhase('p1', { laneId: 'l2' }))
-    expect(getLastLaneId()).toBe('l2')
-    expect(pickLaneId(s().data.lanes)).toBe('l2')
+    await user.click(screen.getByTestId('todo-t1'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    await user.click(within(dialog).getByRole('button', { name: '删除' }))
+    expect(s().data.todos.map((todo) => todo.id)).toEqual(['t2', 't3', 't4'])
+    expect(await screen.findByText('已删除「写周报」')).toBeInTheDocument()
+    await user.keyboard('{Control>}z{/Control}')
+    expect(s().data.todos).toHaveLength(4)
+  })
+
+  it('keeps the editor open when the edited todo moves to another week', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('todo-t1'))
+    await screen.findByRole('dialog', { name: '编辑待办' })
+    act(() => s().updateTodo('t1', { date: '2026-11-26' }))
+    expect(within(cell('2026-11-26')).getByTestId('todo-t1')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: '编辑待办' })).toBeInTheDocument()
+  })
+
+  it('follows the todo to its new month when the date leaves the visible weeks', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('todo-t1'))
+    await screen.findByRole('dialog', { name: '编辑待办' })
+
+    act(() => s().updateTodo('t1', { date: '2027-03-15' }))
+
+    await waitFor(() => expect(window.location.hash).toBe('#/calendar/2027-03'))
+    expect(await screen.findByRole('dialog', { name: '编辑待办' })).toBeInTheDocument()
+    expect(screen.getByTestId('todo-t1')).toBeInTheDocument()
+  })
+
+  it('moves the panel to the unscheduled list when the date is cleared', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('todo-t1'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    await user.click(within(dialog).getByRole('button', { name: '清除日期' }))
+    expect(s().data.todos[0]!.date).toBeNull()
+    expect(within(screen.getByTestId('unscheduled')).getByTestId('todo-t1')).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: '编辑待办' })).toBeInTheDocument()
+    expect(within(cell('2026-11-12')).queryByTestId('todo-t1')).not.toBeInTheDocument()
+  })
+
+  it('puts an undated todo on a day when a date is typed in the panel', async () => {
+    const user = setup()
+    await user.click(within(screen.getByTestId('unscheduled')).getByTestId('todo-t4'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    const date = within(dialog).getByLabelText('日期')
+    expect(date).toHaveValue('')
+    await user.type(date, '2026-11-18')
+    expect(s().data.todos.find((todo) => todo.id === 't4')!.date).toBe('2026-11-18')
+    expect(within(cell('2026-11-18')).getByTestId('todo-t4')).toBeInTheDocument()
+  })
+
+  it('does not clear the date of a dated todo while its input is being retyped', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('todo-t1'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    const date = within(dialog).getByLabelText('日期')
+    const before = s().past.length
+    // 原生日期框删掉一段时会给出空值
+    fireEvent.change(date, { target: { value: '' } })
+    expect(s().data.todos[0]!.date).toBe('2026-11-12')
+    expect(s().past.length).toBe(before)
+    // 失焦后恢复成数据里的日期
+    fireEvent.blur(date)
+    expect(date).toHaveValue('2026-11-12')
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('does not nag about an empty date on an undated todo', async () => {
+    const user = setup()
+    await user.click(within(screen.getByTestId('unscheduled')).getByTestId('todo-t4'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    const date = within(dialog).getByLabelText('日期')
+    await user.click(date)
+    await user.tab()
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('undoes a change made on this page with Ctrl+Z', async () => {
     const user = setup()
-    act(() => s().updatePhase('p1', { name: '改了' }))
-    expect(screen.getByTestId('phase-p1')).toHaveTextContent('改了')
+    act(() => s().updateTodo('t1', { title: '改了' }))
+    expect(screen.getByTestId('todo-t1')).toHaveTextContent('改了')
     await user.keyboard('{Control>}z{/Control}')
-    expect(screen.getByTestId('phase-p1')).toHaveTextContent('强化')
-  })
-})
-
-describe('pickLaneId', () => {
-  const lanes = data.lanes
-
-  it('falls back to the lane with the smallest order, or null without lanes', () => {
-    expect(pickLaneId([...lanes].reverse())).toBe('l1')
-    expect(pickLaneId([])).toBeNull()
-  })
-
-  it('uses the remembered lane while it exists and ignores it once it is gone', () => {
-    setLastLaneId('l2')
-    expect(pickLaneId(lanes)).toBe('l2')
-    setLastLaneId('gone')
-    expect(pickLaneId(lanes)).toBe('l1')
-  })
-})
-
-describe('overflow list', () => {
-  const crowded = (milestones: AppData['milestones'] = []): AppData => ({
-    ...createEmptyData(),
-    lanes: data.lanes,
-    phases: ['a', 'b', 'c', 'd'].map((id, index) => ({
-      id,
-      laneId: index < 2 ? 'l1' : 'l2',
-      name: `阶段${id}`,
-      start: '2026-11-09',
-      end: '2026-11-12',
-      tentative: false,
-      note: '',
-    })),
-    milestones,
-  })
-
-  it('shows +N for a crowded day and lists every item of that day in lane order', async () => {
-    const user = setup('#/calendar', crowded())
-    const cell = screen.getByTestId('day-2026-11-09')
-    await user.click(within(cell).getByRole('button', { name: '+2 项' }))
-    const list = await screen.findByRole('dialog', { name: '11月9日的项目' })
-    const names = within(list)
-      .getAllByRole('button')
-      .map((button) => button.textContent)
-    expect(names).toEqual(['阶段a', '阶段b', '阶段c', '阶段d'])
-  })
-
-  it('puts milestones after the phases of their lane', async () => {
-    const user = setup(
-      '#/calendar',
-      crowded([{ id: 'mm', laneId: 'l1', name: '节点mm', date: '2026-11-09', note: '' }]),
-    )
-    const cell = screen.getByTestId('day-2026-11-09')
-    await user.click(within(cell).getByRole('button', { name: /^\+\d 项$/ }))
-    const list = await screen.findByRole('dialog', { name: '11月9日的项目' })
-    expect(
-      within(list)
-        .getAllByRole('button')
-        .map((button) => button.textContent),
-    ).toEqual(['阶段a', '阶段b', '节点mm', '阶段c', '阶段d'])
-  })
-
-  it('opens the editor for an item that is hidden on the grid', async () => {
-    const user = setup('#/calendar', crowded())
-    expect(screen.queryByTestId('phase-d')).not.toBeInTheDocument()
-    await user.click(
-      within(screen.getByTestId('day-2026-11-09')).getByRole('button', { name: '+2 项' }),
-    )
-    const list = await screen.findByRole('dialog', { name: '11月9日的项目' })
-    await user.click(within(list).getByRole('button', { name: '阶段d' }))
-    expect(screen.queryByRole('dialog', { name: '11月9日的项目' })).not.toBeInTheDocument()
-    expect(s().selection).toEqual({ kind: 'phase', id: 'd' })
-    expect(await screen.findByRole('dialog', { name: '编辑阶段' })).toBeInTheDocument()
-  })
-
-  it('closes with Escape and changes nothing', async () => {
-    const user = setup('#/calendar', crowded())
-    const before = s().data
-    await user.click(
-      within(screen.getByTestId('day-2026-11-09')).getByRole('button', { name: '+2 项' }),
-    )
-    await screen.findByRole('dialog', { name: '11月9日的项目' })
-    await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog', { name: '11月9日的项目' })).not.toBeInTheDocument()
-    expect(s().selection).toBeNull()
-    expect(s().data).toBe(before)
-  })
-
-  it('has no +N button on a day with room', () => {
-    setup()
-    expect(screen.queryByRole('button', { name: /^\+\d+ 项$/ })).not.toBeInTheDocument()
-  })
-})
-
-describe('the editor and its item', () => {
-  it('follows the item to its new month when the date leaves the visible month', async () => {
-    const user = setup()
-    await user.click(screen.getByTestId('milestone-m1'))
-    await screen.findByRole('dialog', { name: '编辑节点' })
-
-    act(() => s().updateMilestone('m1', { date: '2026-12-15' }))
-
-    await waitFor(() => expect(window.location.hash).toBe('#/calendar/2026-12'))
-    expect(await screen.findByRole('dialog', { name: '编辑节点' })).toBeInTheDocument()
-    expect(screen.getByTestId('milestone-m1')).toBeInTheDocument()
+    expect(screen.getByTestId('todo-t1')).toHaveTextContent('写周报')
   })
 
   it('closes the panel when leaving the page so it does not reappear elsewhere', async () => {
@@ -303,5 +375,72 @@ describe('the editor and its item', () => {
     window.location.hash = '#/timeline'
     await waitFor(() => expect(screen.queryByTestId('month-grid')).not.toBeInTheDocument())
     expect(useEditorStore.getState().editing).toBeNull()
+  })
+
+  it('follows a milestone to its new month, like before', async () => {
+    const user = setup()
+    await user.click(screen.getByTestId('milestone-m1'))
+    await screen.findByRole('dialog', { name: '编辑节点' })
+    act(() => s().updateMilestone('m1', { date: '2026-12-15' }))
+    await waitFor(() => expect(window.location.hash).toBe('#/calendar/2026-12'))
+    expect(await screen.findByRole('dialog', { name: '编辑节点' })).toBeInTheDocument()
+    expect(screen.getByTestId('milestone-m1')).toBeInTheDocument()
+  })
+})
+
+describe('a crowded day', () => {
+  const crowded = (extra: AppData['todos'] = [], milestones: AppData['milestones'] = []) =>
+    ({
+      ...createEmptyData(),
+      lanes: data.lanes,
+      milestones,
+      todos: [
+        makeTodo('a', { title: '甲', date: '2026-11-09', laneId: 'l1' }),
+        makeTodo('b', { title: '乙', date: '2026-11-09', laneId: 'l1' }),
+        makeTodo('c', { title: '丙', date: '2026-11-09', laneId: 'l2' }),
+        makeTodo('d', { title: '丁', date: '2026-11-09' }),
+        ...extra,
+      ],
+    }) satisfies AppData
+
+  const titles = (iso: string) =>
+    within(cell(iso))
+      .getAllByTestId(/^(todo|milestone)-/)
+      .map((item) => item.textContent)
+
+  it('keeps every entry in the cell, in order, with no “还有 N 项” button', () => {
+    setup('#/calendar', crowded())
+    expect(titles('2026-11-09')).toEqual(['甲', '乙', '丙', '丁'])
+    expect(screen.queryByRole('button', { name: /^还有/ })).not.toBeInTheDocument()
+  })
+
+  it('puts the entries in a list that scrolls inside the cell', () => {
+    setup('#/calendar', crowded())
+    const list = within(cell('2026-11-09')).getByTestId('entries-2026-11-09')
+    expect(list).toHaveClass('overflow-y-auto')
+    expect(within(list).getAllByTestId(/^todo-/)).toHaveLength(4)
+  })
+
+  it('lists milestones first', () => {
+    setup(
+      '#/calendar',
+      crowded([], [{ id: 'mm', laneId: 'l1', name: '节点mm', date: '2026-11-09', note: '' }]),
+    )
+    expect(titles('2026-11-09')).toEqual(['节点mm', '甲', '乙', '丙', '丁'])
+  })
+
+  it('puts finished todos after the unfinished ones', () => {
+    setup('#/calendar', {
+      ...crowded(),
+      todos: crowded().todos.map((todo) => (todo.id === 'a' ? { ...todo, done: true } : todo)),
+    })
+    expect(titles('2026-11-09')).toEqual(['乙', '丙', '丁', '甲'])
+  })
+
+  it('opens the editor for the last entry of a crowded day', async () => {
+    const user = setup('#/calendar', crowded())
+    await user.click(screen.getByTestId('todo-d'))
+    const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
+    expect(within(dialog).getByLabelText('标题')).toHaveValue('丁')
   })
 })

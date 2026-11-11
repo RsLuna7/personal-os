@@ -241,3 +241,101 @@ describe('lane notes and links', () => {
     expect(lane().links).toHaveLength(1)
   })
 })
+
+describe('todos', () => {
+  const todos = () => s().data.todos
+
+  it('adds an undated todo without a lane by default', () => {
+    const id = s().addTodo()
+    expect(todos()).toEqual([
+      {
+        id,
+        title: '新待办',
+        date: null,
+        done: false,
+        laneId: null,
+        createdAt: expect.any(String),
+      },
+    ])
+    expect(Number.isNaN(Date.parse(todos()[0].createdAt))).toBe(false)
+  })
+
+  it('adds a todo with a title, a date and a lane', () => {
+    const laneId = s().addLane('考研')
+    const id = s().addTodo({ title: '写周报', date: '2026-11-12', laneId })
+    expect(todos()[0]).toMatchObject({ id, title: '写周报', date: '2026-11-12', laneId })
+  })
+
+  it('refuses a todo on a lane that does not exist', () => {
+    const before = s().data
+    expect(() => s().addTodo({ laneId: 'missing' })).toThrow()
+    expect(s().data).toBe(before)
+  })
+
+  it('updates, toggles and removes, each as one undo step', () => {
+    const id = s().addTodo({ title: '甲' })
+    const n = s().past.length
+    s().updateTodo(id, { title: '乙', date: '2026-11-12' })
+    s().toggleTodo(id)
+    s().removeTodo(id)
+    expect(todos()).toEqual([])
+    expect(s().past.length).toBe(n + 3)
+    s().undo()
+    expect(todos()[0]).toMatchObject({ title: '乙', date: '2026-11-12', done: true })
+    s().undo()
+    expect(todos()[0].done).toBe(false)
+    s().undo()
+    expect(todos()[0]).toMatchObject({ title: '甲', date: null })
+    s().redo()
+    expect(todos()[0].title).toBe('乙')
+  })
+
+  it('clears a date with null and does not record a no-op', () => {
+    const id = s().addTodo({ date: '2026-11-12' })
+    s().updateTodo(id, { date: null })
+    expect(todos()[0].date).toBeNull()
+    const n = s().past.length
+    s().updateTodo(id, { date: null })
+    s().toggleTodo('missing')
+    expect(s().past.length).toBe(n)
+  })
+
+  it('rejects an invalid patch and leaves the data alone', () => {
+    const id = s().addTodo()
+    const before = s().data
+    expect(() => s().updateTodo(id, { title: '   ' })).toThrow()
+    expect(() => s().updateTodo(id, { date: '2026-02-30' })).toThrow()
+    expect(() => s().updateTodo(id, { laneId: 'missing' })).toThrow()
+    expect(s().data).toBe(before)
+  })
+
+  it('keeps todos when their lane is removed: they lose the lane instead', () => {
+    const laneId = s().addLane()
+    const id = s().addTodo({ title: '留下', laneId })
+    const other = s().addTodo({ title: '无关' })
+    s().removeLane(laneId)
+    expect(todos().map((todo) => [todo.id, todo.laneId])).toEqual([
+      [id, null],
+      [other, null],
+    ])
+  })
+
+  it('restores the lane and the todo link in a single undo', () => {
+    const laneId = s().addLane()
+    const id = s().addTodo({ laneId })
+    const n = s().past.length
+    s().removeLane(laneId)
+    expect(s().past.length).toBe(n + 1)
+    s().undo()
+    expect(s().data.lanes).toHaveLength(1)
+    expect(todos().find((todo) => todo.id === id)!.laneId).toBe(laneId)
+  })
+
+  it('is replaced as a whole by replaceData, and that can be undone', () => {
+    s().addTodo({ title: '甲' })
+    s().replaceData(createEmptyData())
+    expect(todos()).toEqual([])
+    s().undo()
+    expect(todos()).toHaveLength(1)
+  })
+})

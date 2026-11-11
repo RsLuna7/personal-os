@@ -29,3 +29,26 @@ it('gives every lane a note and at least one link, all fictional https urls', ()
     for (const link of lane.links) expect(link.url).toMatch(/^https:\/\/example\.(com|org)\//)
   }
 })
+
+it('includes todos of every kind: dated, undated, finished, on a lane and without one', () => {
+  const todos = createSampleData('2026-11-10').todos
+  expect(todos.some((todo) => todo.date !== null)).toBe(true)
+  expect(todos.some((todo) => todo.date === null)).toBe(true)
+  expect(todos.some((todo) => todo.done)).toBe(true)
+  expect(todos.some((todo) => todo.laneId !== null)).toBe(true)
+  expect(todos.some((todo) => todo.laneId === null)).toBe(true)
+})
+
+it('puts a crowded day in the sample so the overflow can be seen', () => {
+  const counts = new Map<string, number>()
+  for (const todo of createSampleData('2026-11-10').todos)
+    if (todo.date) counts.set(todo.date, (counts.get(todo.date) ?? 0) + 1)
+  expect(Math.max(...counts.values())).toBeGreaterThan(3)
+})
+
+it('keeps todo dates relative to the given day and does not read the clock', () => {
+  const a = createSampleData('2026-11-10').todos.map((todo) => todo.date)
+  const b = createSampleData('2027-03-01').todos.map((todo) => todo.date)
+  expect(a).not.toEqual(b)
+  expect(createSampleData('2026-11-10')).toEqual(createSampleData('2026-11-10'))
+})

@@ -38,8 +38,8 @@ describe('migrations[1] (v1 to v2)', () => {
     expect(result.lanes[0]).toEqual({ ...v1.lanes[0], note: '', links: [] })
   })
 
-  it('produces data that passes the current schema', () => {
-    expect(appDataSchema.safeParse(migrations[1](v1)).success).toBe(true)
+  it('produces data that passes the current schema once every step has run', () => {
+    expect(appDataSchema.safeParse(migrations[2](migrations[1](v1))).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -53,5 +53,37 @@ describe('migrations[1] (v1 to v2)', () => {
     const result = migrations[1](broken) as { lanes: unknown }
     expect(result.lanes).toBe('x')
     expect(appDataSchema.safeParse(result).success).toBe(false)
+  })
+})
+
+describe('migrations[2] (v2 to v3)', () => {
+  const v2 = {
+    schemaVersion: 2,
+    lanes: [{ id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] }],
+    phases: [],
+    milestones: [],
+    terms: [],
+    lastExportAt: null,
+  }
+
+  it('adds an empty todo list and bumps the version', () => {
+    const result = migrations[2](v2) as typeof v2 & { todos: unknown[] }
+    expect(result.schemaVersion).toBe(3)
+    expect(result.todos).toEqual([])
+    expect(result.lanes).toEqual(v2.lanes)
+  })
+
+  it('produces data that passes the current schema', () => {
+    expect(appDataSchema.safeParse(migrations[2](v2)).success).toBe(true)
+  })
+
+  it('does not mutate its input', () => {
+    const copy = structuredClone(v2)
+    migrations[2](v2)
+    expect(v2).toEqual(copy)
+  })
+
+  it('runs from version 2 up to the current version', () => {
+    expect(runMigrations(v2, migrations, 3).from).toBe(2)
   })
 })

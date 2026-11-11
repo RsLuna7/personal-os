@@ -42,14 +42,16 @@ interface NameFieldProps {
   onCommit: (name: string) => void
   /** 让外面能在关闭面板前拿到没提交的草稿 */
   inputRef?: (element: HTMLInputElement | null) => void
+  /** 标签文字，默认“名称” */
+  label?: string
 }
 
-export function NameField({ value, onCommit, inputRef }: NameFieldProps) {
+export function NameField({ value, onCommit, inputRef, label = '名称' }: NameFieldProps) {
   const id = useId()
   const [draft, setDraft] = useDraft(value)
   return (
     <div className="flex flex-col gap-1">
-      <Label htmlFor={id}>名称</Label>
+      <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
         ref={inputRef}
@@ -68,12 +70,18 @@ export function NameField({ value, onCommit, inputRef }: NameFieldProps) {
 
 interface DateFieldProps {
   label: string
-  value: ISODate
+  /** 空字符串表示还没有日期（只在 optional 时出现） */
+  value: ISODate | ''
   /** 返回错误文案表示没有保存；返回 null 表示已保存 */
   onCommit: (value: ISODate) => string | null
+  /**
+   * 日期可以留空：不再提示“请填写日期”。输入框清空或没输完时（原生日期框此时给出空值）
+   * 不写入数据，失焦后恢复成数据里的日期；要清除日期得由外面另给一个明确的操作。
+   */
+  optional?: boolean
 }
 
-export function DateField({ label, value, onCommit }: DateFieldProps) {
+export function DateField({ label, value, onCommit, optional = false }: DateFieldProps) {
   const id = useId()
   const [draft, setDraft] = useDraft(value)
   const [error, setError] = useState<string | null>(null)
@@ -92,7 +100,10 @@ export function DateField({ label, value, onCommit }: DateFieldProps) {
           if (isPlausibleDate(next)) setError(onCommit(next))
         }}
         onBlur={() => {
-          if (!isPlausibleDate(draft)) setError(ERROR_DATE_REQUIRED)
+          if (optional && draft === '') {
+            setDraft(value)
+            setError(null)
+          } else if (!isPlausibleDate(draft)) setError(ERROR_DATE_REQUIRED)
         }}
       />
       {error && <ErrorText>{error}</ErrorText>}
@@ -101,12 +112,15 @@ export function DateField({ label, value, onCommit }: DateFieldProps) {
 }
 
 interface LaneSelectProps {
+  /** 空字符串表示“不挂板块”（只在 allowNone 时出现） */
   value: string
   lanes: Lane[]
   onChange: (laneId: string) => void
+  /** 多一个“不挂板块”的选项，选它时 onChange 收到空字符串 */
+  allowNone?: boolean
 }
 
-export function LaneSelect({ value, lanes, onChange }: LaneSelectProps) {
+export function LaneSelect({ value, lanes, onChange, allowNone = false }: LaneSelectProps) {
   const id = useId()
   const sorted = [...lanes].sort((a, b) => a.order - b.order)
   return (
@@ -118,6 +132,7 @@ export function LaneSelect({ value, lanes, onChange }: LaneSelectProps) {
         onChange={(event) => onChange(event.target.value)}
         className="h-8 w-full rounded-[6px] border border-(--border) bg-transparent px-2 text-[14px] text-(--text) outline-none focus-visible:border-(--text)"
       >
+        {allowNone && <option value="">不挂板块</option>}
         {sorted.map((lane) => (
           <option key={lane.id} value={lane.id}>
             {lane.name}

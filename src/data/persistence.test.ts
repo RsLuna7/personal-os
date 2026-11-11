@@ -74,7 +74,7 @@ it('reports corrupt for unparseable or invalid content and leaves it in place', 
 })
 
 it('reports corrupt for data from a newer version', () => {
-  const st = mem({ [DATA_KEY]: JSON.stringify({ ...sample, schemaVersion: 3 }) })
+  const st = mem({ [DATA_KEY]: JSON.stringify({ ...sample, schemaVersion: 4 }) })
   expect(loadData(st).status).toBe('corrupt')
 })
 
@@ -88,17 +88,23 @@ it('reports unavailable for other write failures', () =>
   }))
 
 it('writes a backup of the old version before saving migrated data', () => {
-  const old = JSON.stringify({ ...sample, terms: undefined, schemaVersion: 0 })
+  const old = JSON.stringify({
+    ...sample,
+    todos: undefined, // 旧版本没有待办（JSON 里整个字段不存在）
+    terms: undefined,
+    schemaVersion: 0,
+  })
   const registry: Record<number, Migration> = {
     0: (raw) => ({ ...(raw as object), schemaVersion: 1, terms: [] }),
     1: migrations[1],
+    2: migrations[2],
   }
   const st = mem({ [DATA_KEY]: old })
   const result = loadData(st, registry)
   expect(result.status).toBe('ok')
-  expect(result).toMatchObject({ data: { schemaVersion: 2, terms: [] } })
+  expect(result).toMatchObject({ data: { schemaVersion: 3, terms: [], todos: [] } })
   expect(st.getItem(backupKey(0))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(2)
+  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(3)
 })
 
 it('hydrates the store from storage on start', () => {
@@ -228,6 +234,8 @@ it('falls back to a storage that reports unavailable when localStorage is blocke
 it('upgrades stored version 1 data with the real migrations and keeps a v1 backup', () => {
   const v1 = {
     ...sample,
+    todos: undefined, // 旧版本没有待办（JSON 里整个字段不存在）
+
     schemaVersion: 1,
     lanes: sample.lanes.map(({ note: _note, links: _links, ...lane }) => lane),
   }
@@ -236,8 +244,24 @@ it('upgrades stored version 1 data with the real migrations and keeps a v1 backu
   const result = loadData(st)
   expect(result.status).toBe('ok')
   if (result.status !== 'ok') return
-  expect(result.data.schemaVersion).toBe(2)
+  expect(result.data.schemaVersion).toBe(3)
+  expect(result.data.todos).toEqual([])
   expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
   expect(st.getItem(backupKey(1))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(2)
+  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(3)
+})
+
+it('upgrades stored version 2 data to version 3 with no todos and keeps a v2 backup', () => {
+  const old = JSON.stringify({
+    ...sample,
+    todos: undefined, // 旧版本没有待办（JSON 里整个字段不存在）
+    schemaVersion: 2,
+  })
+  const st = mem({ [DATA_KEY]: old })
+  const result = loadData(st)
+  expect(result.status).toBe('ok')
+  if (result.status !== 'ok') return
+  expect(result.data).toEqual({ ...sample, todos: [] })
+  expect(st.getItem(backupKey(2))).toBe(old)
+  expect(JSON.parse(st.getItem(DATA_KEY)!)).toMatchObject({ schemaVersion: 3, todos: [] })
 })

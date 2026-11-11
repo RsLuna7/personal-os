@@ -34,7 +34,11 @@ it.each([
       phases: [{ ...sample.phases[0], end: sample.phases[0].start }],
     }),
   ],
-  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 3 })],
+  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 4 })],
+  [
+    'invalid-shape',
+    JSON.stringify({ ...sample, todos: [{ ...sample.todos[0], laneId: 'missing' }] }),
+  ],
   [
     'invalid-shape',
     JSON.stringify({
@@ -66,16 +70,40 @@ it('reminds after 30 days without an export', () => {
   expect(needsBackupReminder(null, '2026-12-01T00:00:00Z', now)).toBe(false)
 })
 
+it('round-trips todos', () => {
+  const result = parseImport(serialize(sample))
+  expect(sample.todos.length).toBeGreaterThan(0)
+  expect(result.ok && result.data.todos).toEqual(sample.todos)
+})
+
+it('upgrades a version 2 backup on import: no todos', () => {
+  const result = parseImport(
+    JSON.stringify({
+      ...sample,
+      todos: undefined, // 旧版本没有待办（JSON 里整个字段不存在）
+      schemaVersion: 2,
+    }),
+  )
+  expect(result.ok).toBe(true)
+  if (!result.ok) return
+  expect(result.data.schemaVersion).toBe(3)
+  expect(result.data.todos).toEqual([])
+  expect(result.data.phases).toEqual(sample.phases)
+})
+
 it('upgrades a version 1 backup on import', () => {
   const v1 = {
     ...sample,
+    todos: undefined, // 旧版本没有待办（JSON 里整个字段不存在）
+
     schemaVersion: 1,
     lanes: sample.lanes.map(({ note: _note, links: _links, ...lane }) => lane),
   }
   const result = parseImport(JSON.stringify(v1))
   expect(result.ok).toBe(true)
   if (!result.ok) return
-  expect(result.data.schemaVersion).toBe(2)
+  expect(result.data.schemaVersion).toBe(3)
+  expect(result.data.todos).toEqual([])
   expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
   expect(result.data.phases).toEqual(sample.phases)
 })

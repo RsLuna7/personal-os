@@ -177,6 +177,103 @@
   }
 }
 
+/* 日历：每天一张圆角卡片，底色看 data-tint，今天是虚线边框 */
+.day-cell {
+  background-color: var(--cell-bg);
+  /* 所有格子都有同宽的边框，今天只是换成虚线，内容不会位移 */
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+.day-cell:not([data-tint='none']) {
+  background-color: var(--lane-fill);
+}
+.day-cell[data-today='true'] {
+  border-style: dashed;
+  border-color: var(--today);
+}
+.day-cell[data-outside='true'] {
+  opacity: 0.55;
+}
+.day-cell[data-today='true'] .day-number {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 一天的条目装不下时在格子里滚动：不画滚动条，还有内容的那一侧边缘淡出 */
+.day-list {
+  scrollbar-width: none;
+  --fade-top: #000;
+  --fade-bottom: #000;
+  mask-image: linear-gradient(
+    to bottom,
+    var(--fade-top),
+    #000 16px,
+    #000 calc(100% - 16px),
+    var(--fade-bottom)
+  );
+}
+.day-list::-webkit-scrollbar {
+  display: none;
+}
+.day-list[data-more-above='true'] {
+  --fade-top: transparent;
+}
+.day-list[data-more-below='true'] {
+  --fade-bottom: transparent;
+}
+
+/* 待办：细竖色条加标题；完成后标题变淡加删除线、色条变灰 */
+.todo-item {
+  color: var(--text);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+.todo-item:focus-visible,
+.day-cell .milestone-dot:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+.todo-item[data-dragging='true'],
+.day-cell .milestone-dot[data-dragging='true'] {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+.todo-bar {
+  width: 3px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background-color: var(--lane-dot);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.todo-title {
+  text-decoration: line-through;
+  text-decoration-color: transparent;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+[data-done='true'].todo-item {
+  color: var(--text-muted);
+}
+[data-done='true'] .todo-bar {
+  background-color: var(--done-bar);
+}
+[data-done='true'] .todo-title {
+  text-decoration-color: currentColor;
+}
+/* 勾选控件：悬停或聚焦在这一行上才出现 */
+.todo-check {
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.todo-row:hover .todo-check,
+.todo-row:focus-within .todo-check,
+.todo-check:focus-visible {
+  opacity: 1;
+}
+.todo-check:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
 /* Deleted phases and milestones fade out before they are removed. */
 .phase-block[data-exiting='true'],
 .milestone-dot[data-exiting='true'] {
