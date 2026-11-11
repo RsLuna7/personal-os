@@ -2,15 +2,10 @@ import { useEffect } from 'react'
 import { useStore } from '@/data/store'
 import { showDeleteToast } from '@/features/editor/deleteToast'
 import { openEditor } from '@/features/editor/editorStore'
+import { isTyping, useUndoKeys } from '@/features/editor/useUndoKeys'
 import { addDays, toDay } from './days'
 import { WEEK } from './snap'
 import type { Viewport } from './useViewport'
-
-/** 正在输入文字时不响应任何快捷键。 */
-function isTyping(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false
-  return target.matches('input, textarea, select') || target.isContentEditable
-}
 
 /** 焦点在别的按钮、菜单或面板里时，不把按键当成对选中项的操作。 */
 function isBusyElsewhere(target: EventTarget | null): boolean {
@@ -63,6 +58,7 @@ export function useTimelineKeys(
   enabled: boolean = true,
 ): void {
   const { goToToday } = viewport
+  useUndoKeys(enabled)
 
   useEffect(() => {
     if (!enabled) return
@@ -71,17 +67,6 @@ export function useTimelineKeys(
       const store = useStore.getState()
       const mod = event.ctrlKey || event.metaKey
 
-      if (mod && event.key.toLowerCase() === 'z') {
-        event.preventDefault()
-        if (event.shiftKey) store.redo()
-        else store.undo()
-        return
-      }
-      if (mod && event.key.toLowerCase() === 'y') {
-        event.preventDefault()
-        store.redo()
-        return
-      }
       if (mod || event.altKey || isBusyElsewhere(event.target)) return
 
       switch (event.key) {
