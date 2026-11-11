@@ -25,6 +25,7 @@
   --bg-canvas: var(--sand-3);
   --bg-card: #fff;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.05), 0 6px 20px rgb(60 50 30 / 0.08);
+  --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.08), 0 10px 28px rgb(60 50 30 / 0.16);
   --danger: var(--tomato-11);
 
   --dur-fast: 150ms;

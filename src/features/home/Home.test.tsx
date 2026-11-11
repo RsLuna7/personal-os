@@ -5,6 +5,7 @@ import { createSampleData } from '@/data/sample'
 import { createEmptyData } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { resetEditor } from '@/features/editor/editorStore'
+import { laneHref } from '@/features/lane/select'
 import { resetViewport } from '@/features/timeline/useViewport'
 
 const s = () => useStore.getState()
@@ -95,4 +96,16 @@ it('has no upcoming milestone message when every milestone is in the past', () =
   s().hydrate({ ...data, milestones: [] })
   render(<App />)
   expect(screen.getByTestId('now-strip')).toHaveTextContent('暂无即将到来的节点')
+})
+
+it('turns each overview card into a link to its lane page', async () => {
+  const user = setup()
+  const card = screen.getByTestId('overview-sample-lane-course')
+  expect(card.tagName).toBe('A')
+  expect(card).toHaveAttribute('href', laneHref('sample-lane-course'))
+
+  await user.click(card)
+  expect(window.location.hash).toBe('#/modules/sample-lane-course')
+  expect(await screen.findByRole('heading', { level: 1, name: '示例课程' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '板块' })).toHaveAttribute('aria-current', 'page')
 })

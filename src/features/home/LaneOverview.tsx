@@ -1,3 +1,4 @@
+import { laneHref } from '@/features/lane/select'
 import { countdownText, formatDay } from '@/features/timeline/format'
 import { toDay } from '@/features/timeline/days'
 import type { LaneSummary } from './summary'
@@ -14,10 +15,11 @@ function LaneCard({ summary, today }: LaneCardProps) {
   const total = current ? toDay(current.end) - toDay(current.start) : 0
 
   return (
-    <article
+    <a
+      href={laneHref(lane.id)}
       data-lane-color={lane.color}
       data-testid={`overview-${lane.id}`}
-      className="flex flex-col overflow-hidden rounded-[16px] bg-(--bg-card) shadow-(--shadow-card)"
+      className="flex flex-col overflow-hidden rounded-[16px] bg-(--bg-card) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
     >
       <h3 className="flex items-center gap-2 bg-(--lane-fill) px-5 py-3 text-[14px] font-semibold text-(--lane-text)">
         <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-(--lane-dot)" />
@@ -81,7 +83,7 @@ function LaneCard({ summary, today }: LaneCardProps) {
           {!nextMilestone && !next && <div>后面还没有安排</div>}
         </dl>
       </div>
-    </article>
+    </a>
   )
 }
 
