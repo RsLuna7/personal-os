@@ -58,10 +58,14 @@ function deleteSelection(): void {
 }
 
 /** 时间线的键盘快捷键，见设计文档第 3 节的按键表。 */
-export function useTimelineKeys(viewport: Pick<Viewport, 'goToToday'>): void {
+export function useTimelineKeys(
+  viewport: Pick<Viewport, 'goToToday'>,
+  enabled: boolean = true,
+): void {
   const { goToToday } = viewport
 
   useEffect(() => {
+    if (!enabled) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTyping(event.target)) return
       const store = useStore.getState()
@@ -108,5 +112,5 @@ export function useTimelineKeys(viewport: Pick<Viewport, 'goToToday'>): void {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [goToToday])
+  }, [goToToday, enabled])
 }

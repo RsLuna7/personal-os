@@ -20,6 +20,8 @@ interface MilestoneDotProps {
   nextX: number | null
   /** Just deleted: drawn for the fade-out only, inert and hidden from assistive tech. */
   exiting?: boolean
+  /** 只看不改：不能聚焦或打开编辑面板，悬停提示仍然可用 */
+  readOnly?: boolean
 }
 
 export function MilestoneDot({
@@ -28,6 +30,7 @@ export function MilestoneDot({
   today,
   nextX,
   exiting = false,
+  readOnly = false,
 }: MilestoneDotProps) {
   const selected = useStore(
     (state) => state.selection?.kind === 'milestone' && state.selection.id === milestone.id,
@@ -49,11 +52,14 @@ export function MilestoneDot({
           data-anim
           data-exiting={String(exiting)}
           aria-hidden={exiting || undefined}
-          role={exiting ? undefined : 'button'}
-          tabIndex={exiting ? -1 : 0}
+          role={exiting ? undefined : readOnly ? 'img' : 'button'}
+          tabIndex={exiting ? -1 : readOnly ? undefined : 0}
           aria-label={`${milestone.name}，${date}，${countdown}`}
           data-selected={String(selected)}
-          className="milestone-dot absolute top-1.5 left-0 flex cursor-pointer items-center rounded-[6px] select-none"
+          className={
+            'milestone-dot absolute top-1.5 left-0 flex items-center rounded-[6px] select-none ' +
+            (readOnly ? 'cursor-default' : 'cursor-pointer')
+          }
           style={{
             transform: `translateX(${x}px)`,
             height: MILESTONE_BAND_HEIGHT,
@@ -61,12 +67,12 @@ export function MilestoneDot({
             gap: LABEL_GAP,
           }}
           onClick={() => {
-            if (exiting) return
+            if (exiting || readOnly) return
             select({ kind: 'milestone', id: milestone.id })
             openEditor('milestone', milestone.id)
           }}
           onFocus={() => {
-            if (!exiting) select({ kind: 'milestone', id: milestone.id })
+            if (!exiting && !readOnly) select({ kind: 'milestone', id: milestone.id })
           }}
           onDoubleClick={(event) => event.stopPropagation()}
         >

@@ -32,6 +32,8 @@ interface PhaseBlockProps {
   today: number
   /** Just deleted: drawn for the fade-out only, inert and hidden from assistive tech. */
   exiting?: boolean
+  /** 只看不改：不能拖动、聚焦或打开编辑面板，悬停提示仍然可用 */
+  readOnly?: boolean
 }
 
 function dragResult(
@@ -48,7 +50,14 @@ function dragResult(
     : resizePhase(startDay, endDay, 'end', endDay + delta)
 }
 
-export function PhaseBlock({ phase, scale, top, today, exiting = false }: PhaseBlockProps) {
+export function PhaseBlock({
+  phase,
+  scale,
+  top,
+  today,
+  exiting = false,
+  readOnly = false,
+}: PhaseBlockProps) {
   const selected = useStore(
     (state) => state.selection?.kind === 'phase' && state.selection.id === phase.id,
   )
@@ -149,15 +158,18 @@ export function PhaseBlock({ phase, scale, top, today, exiting = false }: PhaseB
             data-anim
             data-exiting={String(exiting)}
             aria-hidden={exiting || undefined}
-            role={exiting ? undefined : 'button'}
-            tabIndex={exiting ? -1 : 0}
+            role={exiting ? undefined : readOnly ? 'img' : 'button'}
+            tabIndex={exiting ? -1 : readOnly ? undefined : 0}
             aria-label={`${phase.name}，${range}，${duration}${phase.tentative ? '，待确认' : ''}`}
             data-past={String(endDay <= today)}
             data-tentative={String(phase.tentative)}
             data-selected={String(selected)}
             data-dragging={String(drag !== null)}
             data-settling={String(settling)}
-            className="phase-block absolute left-0 flex cursor-grab touch-none items-center rounded-[6px] border px-2 text-[14px] select-none"
+            className={
+              'phase-block absolute left-0 flex items-center rounded-[6px] border px-2 text-[14px] select-none ' +
+              (readOnly ? 'cursor-default' : 'cursor-grab touch-none')
+            }
             style={{
               transform: `translateX(${x}px)`,
               width: `${width}px`,
@@ -165,9 +177,9 @@ export function PhaseBlock({ phase, scale, top, today, exiting = false }: PhaseB
               height: ROW_HEIGHT,
             }}
             onFocus={() => {
-              if (!exiting) useStore.getState().select({ kind: 'phase', id: phase.id })
+              if (!exiting && !readOnly) useStore.getState().select({ kind: 'phase', id: phase.id })
             }}
-            onPointerDown={(event) => beginDrag(event, 'move')}
+            onPointerDown={readOnly ? undefined : (event) => beginDrag(event, 'move')}
             onDoubleClick={(event) => event.stopPropagation()}
           >
             {width >= MIN_LABEL_WIDTH && (
@@ -175,18 +187,22 @@ export function PhaseBlock({ phase, scale, top, today, exiting = false }: PhaseB
                 {phase.name}
               </span>
             )}
-            <span
-              data-testid={`phase-${phase.id}-handle-start`}
-              className="absolute inset-y-0 left-0 cursor-ew-resize"
-              style={{ width: HANDLE_WIDTH }}
-              onPointerDown={(event) => beginDrag(event, 'start')}
-            />
-            <span
-              data-testid={`phase-${phase.id}-handle-end`}
-              className="absolute inset-y-0 right-0 cursor-ew-resize"
-              style={{ width: HANDLE_WIDTH }}
-              onPointerDown={(event) => beginDrag(event, 'end')}
-            />
+            {!readOnly && (
+              <>
+                <span
+                  data-testid={`phase-${phase.id}-handle-start`}
+                  className="absolute inset-y-0 left-0 cursor-ew-resize"
+                  style={{ width: HANDLE_WIDTH }}
+                  onPointerDown={(event) => beginDrag(event, 'start')}
+                />
+                <span
+                  data-testid={`phase-${phase.id}-handle-end`}
+                  className="absolute inset-y-0 right-0 cursor-ew-resize"
+                  style={{ width: HANDLE_WIDTH }}
+                  onPointerDown={(event) => beginDrag(event, 'end')}
+                />
+              </>
+            )}
           </div>
         </TooltipTrigger>
         <TooltipContent>

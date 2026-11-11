@@ -20,9 +20,18 @@ interface LaneRowProps {
   milestones: Milestone[]
   scale: Scale
   today: number
+  /** 只看不改：板块名不能改、空白处双击不会新建阶段 */
+  readOnly?: boolean
 }
 
-export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps) {
+export function LaneRow({
+  lane,
+  phases,
+  milestones,
+  scale,
+  today,
+  readOnly = false,
+}: LaneRowProps) {
   // Deleted items stay in the layout for the length of the fade, so nothing jumps mid-transition.
   const exitingPhases = useExiting(phases)
   const exitingMilestones = useExiting(milestones)
@@ -59,12 +68,21 @@ export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps
         style={{ width: LABEL_COLUMN_WIDTH }}
       >
         <span className="size-2 shrink-0 rounded-full bg-(--lane-dot)" />
-        <LaneMenu laneId={lane.id} />
+        {readOnly ? (
+          <span
+            title={lane.name}
+            className="min-w-0 truncate text-[14px] font-medium text-(--text)"
+          >
+            {lane.name}
+          </span>
+        ) : (
+          <LaneMenu laneId={lane.id} />
+        )}
       </div>
       <div
         data-testid={`lane-${lane.id}-canvas`}
         className="relative min-w-0 flex-1 overflow-hidden"
-        onDoubleClick={createPhaseAt}
+        onDoubleClick={readOnly ? undefined : createPhaseAt}
       >
         {sortedMilestones.map((milestone, index) => {
           const next = sortedMilestones[index + 1]
@@ -75,6 +93,7 @@ export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps
               scale={scale}
               today={today}
               nextX={next ? dayToX(scale, toDay(next.date)) : null}
+              readOnly={readOnly}
             />
           )
         })}
@@ -96,6 +115,7 @@ export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps
             top={band + rowTop(rows.get(phase.id) ?? 0)}
             today={today}
             exiting
+            readOnly={readOnly}
           />
         ))}
         {phases.map((phase) => (
@@ -105,6 +125,7 @@ export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps
             scale={scale}
             top={band + rowTop(rows.get(phase.id) ?? 0)}
             today={today}
+            readOnly={readOnly}
           />
         ))}
       </div>

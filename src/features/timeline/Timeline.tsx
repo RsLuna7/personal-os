@@ -30,11 +30,18 @@ function groupByLane<T extends { laneId: string }>(items: T[]): Map<string, T[]>
   return groups
 }
 
-export function Timeline() {
+interface TimelineProps {
+  /** 只看不改：用在主页的卡片里，不能编辑、拖动，也没有键盘快捷键 */
+  readOnly?: boolean
+  /** 滚动容器的额外样式，卡片用它限制高度 */
+  className?: string
+}
+
+export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
   const data = useStore((state) => state.data)
   const editing = useEditorStore((state) => state.editing)
   const { scale, width, animating, containerRef, zoomAt, panBy, goToToday } = useViewport()
-  useTimelineKeys({ goToToday })
+  useTimelineKeys({ goToToday }, !readOnly)
   const today = useToday()
 
   const lanes = useMemo(() => [...data.lanes].sort((a, b) => a.order - b.order), [data.lanes])
@@ -93,7 +100,7 @@ export function Timeline() {
         ref={containerRef}
         data-testid="timeline"
         data-animate={String(animating)}
-        className="timeline relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+        className={`timeline relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto ${className}`}
       >
         {lanes.length === 0 ? (
           <EmptyState />
@@ -122,18 +129,21 @@ export function Timeline() {
                 milestones={milestonesByLane.get(lane.id) ?? NO_MILESTONES}
                 scale={scale}
                 today={today}
+                readOnly={readOnly}
               />
             ))}
-            <div className="relative flex h-14 items-center px-2">
-              <button
-                type="button"
-                className="flex items-center gap-1 rounded-[6px] px-2 py-1 text-[14px] text-(--text-muted) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-panel) hover:text-(--text)"
-                onClick={addLaneAndRename}
-              >
-                <PlusIcon className="size-4" aria-hidden />
-                添加板块
-              </button>
-            </div>
+            {!readOnly && (
+              <div className="relative flex h-14 items-center px-2">
+                <button
+                  type="button"
+                  className="flex items-center gap-1 rounded-[6px] px-2 py-1 text-[14px] text-(--text-muted) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-panel) hover:text-(--text)"
+                  onClick={addLaneAndRename}
+                >
+                  <PlusIcon className="size-4" aria-hidden />
+                  添加板块
+                </button>
+              </div>
+            )}
             <div
               aria-hidden
               className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
@@ -148,7 +158,7 @@ export function Timeline() {
             </div>
           </div>
         )}
-        {editing?.kind === 'phase' && (
+        {!readOnly && editing?.kind === 'phase' && (
           <PhaseEditor
             phaseId={editing.id}
             anchor={null}
@@ -156,7 +166,7 @@ export function Timeline() {
             onClose={closeEditor}
           />
         )}
-        {editing?.kind === 'milestone' && (
+        {!readOnly && editing?.kind === 'milestone' && (
           <MilestoneEditor
             milestoneId={editing.id}
             anchor={null}

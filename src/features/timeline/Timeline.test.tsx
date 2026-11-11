@@ -36,7 +36,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(2026, 10, 10, 12, 0))
   localStorage.clear()
-  window.location.hash = ''
+  window.location.hash = '#/timeline'
   resetViewport()
 })
 afterEach(() => vi.useRealTimers())

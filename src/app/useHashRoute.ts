@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 
-export const ROUTES = ['timeline', 'calendar', 'modules', 'today'] as const
+export const ROUTES = ['home', 'timeline', 'calendar', 'modules', 'today'] as const
 export type Route = (typeof ROUTES)[number]
 
 function parseHash(hash: string): Route {
   const name = hash.replace(/^#\/?/, '')
-  return (ROUTES as readonly string[]).includes(name) ? (name as Route) : 'timeline'
+  return (ROUTES as readonly string[]).includes(name) ? (name as Route) : 'home'
 }
 
 export function routeHref(route: Route): string {

@@ -1,0 +1,98 @@
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { App } from '@/app/App'
+import { createSampleData } from '@/data/sample'
+import { createEmptyData } from '@/data/schema'
+import { useStore } from '@/data/store'
+import { resetEditor } from '@/features/editor/editorStore'
+import { resetViewport } from '@/features/timeline/useViewport'
+
+const s = () => useStore.getState()
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 10, 10, 12, 0))
+  localStorage.clear()
+  window.location.hash = ''
+  resetViewport()
+  resetEditor()
+})
+afterEach(() => vi.useRealTimers())
+
+function setup() {
+  s().hydrate(createSampleData('2026-11-10'))
+  render(<App />)
+  return userEvent.setup()
+}
+
+it('shows today, the active count and the next milestone', () => {
+  setup()
+  const strip = screen.getByTestId('now-strip')
+  expect(strip).toHaveTextContent('11月10日 周二')
+  // 示例数据里两个板块有进行中的阶段（实习还没开始）
+  expect(within(strip).getByText('2')).toBeInTheDocument()
+  expect(strip).toHaveTextContent('模拟测试')
+  expect(strip).toHaveTextContent('示例考试 A')
+})
+
+it('shows one overview card per lane with the current phase and progress', () => {
+  setup()
+  const exam = screen.getByTestId('overview-sample-lane-exam')
+  expect(within(exam).getByText('强化阶段')).toBeInTheDocument()
+  expect(within(exam).getByRole('progressbar', { name: '强化阶段进度' })).toBeInTheDocument()
+  expect(within(exam).getByText(/下一阶段/)).toHaveTextContent('下一阶段')
+  expect(exam).toHaveTextContent('冲刺阶段')
+
+  const intern = screen.getByTestId('overview-sample-lane-intern')
+  expect(within(intern).getByText('暂无进行中阶段')).toBeInTheDocument()
+  expect(intern).toHaveTextContent('实习（时间待定）')
+  expect(within(intern).queryByRole('progressbar')).not.toBeInTheDocument()
+})
+
+it('embeds a read-only timeline in the card', () => {
+  setup()
+  expect(screen.getByTestId('timeline')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '添加板块' })).not.toBeInTheDocument()
+  expect(screen.queryByTestId('phase-sample-phase-1-handle-end')).not.toBeInTheDocument()
+  // 色块不再是可聚焦的按钮
+  expect(screen.queryByRole('button', { name: /^基础阶段/ })).not.toBeInTheDocument()
+  expect(screen.getByRole('img', { name: /^基础阶段/ })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: '添加' })).not.toBeInTheDocument()
+})
+
+it('does not open an editor or change data when a block is clicked in the card', async () => {
+  const user = setup()
+  const before = s().data
+  await user.click(screen.getByRole('img', { name: /^强化阶段/ }))
+  await user.click(screen.getByRole('img', { name: /^模拟测试/ }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(s().data).toBe(before)
+  expect(s().selection).toBeNull()
+})
+
+it('expands to the full editable timeline and back', async () => {
+  const user = setup()
+  await user.click(screen.getByRole('link', { name: '展开' }))
+  expect(window.location.hash).toBe('#/timeline')
+  // 展开后是完整的编辑视图，“全局”仍然高亮
+  expect(await screen.findByRole('button', { name: '添加板块' })).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: '全局' })).toHaveAttribute('aria-current', 'page')
+  expect(screen.queryByTestId('now-strip')).not.toBeInTheDocument()
+
+  await user.click(screen.getByRole('link', { name: '全局' }))
+  expect(await screen.findByTestId('now-strip')).toBeInTheDocument()
+})
+
+it('shows the empty state instead of the dashboard when there are no lanes', () => {
+  s().hydrate(createEmptyData())
+  render(<App />)
+  expect(screen.getByText('开始规划你的时间线')).toBeInTheDocument()
+  expect(screen.queryByTestId('now-strip')).not.toBeInTheDocument()
+})
+
+it('has no upcoming milestone message when every milestone is in the past', () => {
+  const data = createSampleData('2026-11-10')
+  s().hydrate({ ...data, milestones: [] })
+  render(<App />)
+  expect(screen.getByTestId('now-strip')).toHaveTextContent('暂无即将到来的节点')
+})

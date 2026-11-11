@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner'
 import type { Persistence } from '@/data/persistence'
 import { setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
 import { TermsDialog } from '@/features/editor/TermsDialog'
+import { Home } from '@/features/home/Home'
 import { Timeline } from '@/features/timeline/Timeline'
 import { DataErrorScreen } from './DataErrorScreen'
 import { PlaceholderPage } from './PlaceholderPage'
@@ -52,7 +53,7 @@ export function App({ persistence }: AppProps) {
       )}
       <TopBar route={route} onNavigate={setRoute} />
       <main className="flex min-h-0 flex-1 flex-col">
-        {route === 'timeline' ? <Timeline /> : <PlaceholderPage />}
+        {route === 'home' ? <Home /> : route === 'timeline' ? <Timeline /> : <PlaceholderPage />}
       </main>
       <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />
       <Toaster position="bottom-center" />
