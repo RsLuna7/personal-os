@@ -63,6 +63,7 @@
   .phase-block[data-past='true'] {
     background-color: var(--lane-fill-past);
     border-color: var(--lane-border-past);
+    color: var(--lane-text-past);
   }
   .phase-block[data-tentative='true'] {
     background-color: transparent;

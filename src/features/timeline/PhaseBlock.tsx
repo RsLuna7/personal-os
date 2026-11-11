@@ -12,6 +12,16 @@ import { movePhase, resizePhase, WEEK } from './snap'
 import { MIN_LABEL_WIDTH } from './useViewport'
 
 export const DRAG_THRESHOLD_PX = 4
+/** 名称被截断时至少要留出的宽度（约四个汉字）；再窄就不显示，免得只剩“期…” */
+const MIN_TRUNCATED_LABEL_PX = 72
+const LABEL_PADDING_PX = 18
+
+/** 粗略估算名称的显示宽度：汉字按 14 像素，其余按 8 像素。 */
+function estimateLabelWidth(name: string): number {
+  let total = 0
+  for (const char of name) total += (char.codePointAt(0) ?? 0) > 0x2e80 ? 14 : 8
+  return total
+}
 const HANDLE_WIDTH = 8
 const SETTLE_MS = 150
 
@@ -183,7 +193,8 @@ export function PhaseBlock({
             onPointerDown={readOnly ? undefined : (event) => beginDrag(event, 'move')}
             onDoubleClick={(event) => event.stopPropagation()}
           >
-            {width >= MIN_LABEL_WIDTH && (
+            {width - LABEL_PADDING_PX >=
+              Math.min(estimateLabelWidth(phase.name), MIN_TRUNCATED_LABEL_PX) && (
               <span className="truncate" title={phase.name} style={{ marginLeft: labelInset }}>
                 {phase.name}
               </span>

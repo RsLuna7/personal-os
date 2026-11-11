@@ -146,7 +146,8 @@ export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
             )}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 z-30 overflow-hidden"
+              // 低于标尺（z-20），今天线从标尺下面出来，不压住月份和学期文字
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 overflow-hidden"
               style={{ left: LABEL_COLUMN_WIDTH }}
             >
               <div

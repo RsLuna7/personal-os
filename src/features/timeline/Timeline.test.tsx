@@ -174,10 +174,25 @@ it('shows dates and length in the phase tooltip', async () => {
 
 it('truncates long names with an ellipsis', () => {
   const name = '一个非常非常非常非常非常非常长的阶段名称'
-  setup(withData({ phases: [{ ...phase, name }] }))
+  // 足够宽的阶段才会显示被截断的名称
+  setup(withData({ phases: [{ ...phase, name, end: '2027-06-07' }] }))
   const label = within(screen.getByTestId('phase-p1')).getByText(name)
   expect(label).toHaveClass('truncate')
   expect(label).toHaveAttribute('title', name)
+})
+
+it('hides the name of a block too narrow to read, but keeps it for assistive tech', () => {
+  const name = '期末复习'
+  // 3 周 × 2 像素 = 42 像素，放不下四个字，也不值得只显示“期…”
+  setup(withData({ phases: [{ ...phase, name, end: '2026-11-30' }] }))
+  const block = screen.getByTestId('phase-p1')
+  expect(within(block).queryByText(name)).not.toBeInTheDocument()
+  expect(block).toHaveAttribute('aria-label', expect.stringContaining(name))
+})
+
+it('shows a short name when it fits entirely', () => {
+  setup(withData({ phases: [phase] }))
+  expect(within(screen.getByTestId('phase-p1')).getByText('基础')).toBeInTheDocument()
 })
 
 it('shows term segments when terms exist and none otherwise', () => {
