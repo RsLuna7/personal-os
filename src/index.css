@@ -159,3 +159,15 @@
     translate: 0 4px;
   }
 }
+
+/* Deleted phases and milestones fade out before they are removed. */
+.phase-block[data-exiting='true'],
+.milestone-dot[data-exiting='true'] {
+  animation: item-out var(--dur-base) var(--ease-out) forwards;
+  pointer-events: none;
+}
+@keyframes item-out {
+  to {
+    opacity: 0;
+  }
+}

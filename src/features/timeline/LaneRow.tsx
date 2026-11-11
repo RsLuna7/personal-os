@@ -9,6 +9,7 @@ import { MilestoneDot } from './MilestoneDot'
 import { PhaseBlock } from './PhaseBlock'
 import { dayToX, xToDay, type Scale } from './scale'
 import { mondayOf, WEEK } from './snap'
+import { useExiting } from './useExiting'
 import { LABEL_COLUMN_WIDTH } from './useViewport'
 
 export const NEW_PHASE_WEEKS = 4
@@ -22,12 +23,15 @@ interface LaneRowProps {
 }
 
 export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps) {
-  const rows = useMemo(() => assignRows(phases), [phases])
+  // Deleted items stay in the layout for the length of the fade, so nothing jumps mid-transition.
+  const exitingPhases = useExiting(phases)
+  const exitingMilestones = useExiting(milestones)
+  const rows = useMemo(() => assignRows([...phases, ...exitingPhases]), [phases, exitingPhases])
   const sortedMilestones = useMemo(
     () => [...milestones].sort((a, b) => a.date.localeCompare(b.date)),
     [milestones],
   )
-  const band = milestones.length > 0 ? MILESTONE_BAND_HEIGHT : 0
+  const band = milestones.length + exitingMilestones.length > 0 ? MILESTONE_BAND_HEIGHT : 0
   const height = laneHeight(rowCount(rows)) + band
 
   const createPhaseAt = (event: MouseEvent<HTMLDivElement>) => {
@@ -74,6 +78,26 @@ export function LaneRow({ lane, phases, milestones, scale, today }: LaneRowProps
             />
           )
         })}
+        {exitingMilestones.map((milestone) => (
+          <MilestoneDot
+            key={milestone.id}
+            milestone={milestone}
+            scale={scale}
+            today={today}
+            nextX={null}
+            exiting
+          />
+        ))}
+        {exitingPhases.map((phase) => (
+          <PhaseBlock
+            key={phase.id}
+            phase={phase}
+            scale={scale}
+            top={band + rowTop(rows.get(phase.id) ?? 0)}
+            today={today}
+            exiting
+          />
+        ))}
         {phases.map((phase) => (
           <PhaseBlock
             key={phase.id}

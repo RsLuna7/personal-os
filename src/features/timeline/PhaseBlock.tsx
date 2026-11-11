@@ -30,6 +30,8 @@ interface PhaseBlockProps {
   scale: Scale
   top: number
   today: number
+  /** Just deleted: drawn for the fade-out only, inert and hidden from assistive tech. */
+  exiting?: boolean
 }
 
 function dragResult(
@@ -46,7 +48,7 @@ function dragResult(
     : resizePhase(startDay, endDay, 'end', endDay + delta)
 }
 
-export function PhaseBlock({ phase, scale, top, today }: PhaseBlockProps) {
+export function PhaseBlock({ phase, scale, top, today, exiting = false }: PhaseBlockProps) {
   const selected = useStore(
     (state) => state.selection?.kind === 'phase' && state.selection.id === phase.id,
   )
@@ -82,7 +84,7 @@ export function PhaseBlock({ phase, scale, top, today }: PhaseBlockProps) {
   const labelInset = Math.max(0, Math.min(-x, width - MIN_LABEL_WIDTH * 3))
 
   const beginDrag = (event: ReactPointerEvent<HTMLElement>, mode: DragMode) => {
-    if (event.button !== 0) return
+    if (exiting || event.button !== 0) return
     event.stopPropagation()
     const block = blockRef.current
     if (!block) return
@@ -139,14 +141,16 @@ export function PhaseBlock({ phase, scale, top, today }: PhaseBlockProps) {
 
   return (
     <>
-      <Tooltip open={drag ? false : undefined}>
+      <Tooltip open={drag || exiting ? false : undefined}>
         <TooltipTrigger asChild>
           <div
             ref={blockRef}
-            data-testid={`phase-${phase.id}`}
+            data-testid={exiting ? undefined : `phase-${phase.id}`}
             data-anim
-            role="button"
-            tabIndex={0}
+            data-exiting={String(exiting)}
+            aria-hidden={exiting || undefined}
+            role={exiting ? undefined : 'button'}
+            tabIndex={exiting ? -1 : 0}
             aria-label={`${phase.name}，${range}，${duration}${phase.tentative ? '，待确认' : ''}`}
             data-past={String(endDay <= today)}
             data-tentative={String(phase.tentative)}
@@ -160,7 +164,9 @@ export function PhaseBlock({ phase, scale, top, today }: PhaseBlockProps) {
               top: `${top}px`,
               height: ROW_HEIGHT,
             }}
-            onFocus={() => useStore.getState().select({ kind: 'phase', id: phase.id })}
+            onFocus={() => {
+              if (!exiting) useStore.getState().select({ kind: 'phase', id: phase.id })
+            }}
             onPointerDown={(event) => beginDrag(event, 'move')}
             onDoubleClick={(event) => event.stopPropagation()}
           >

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type PointerEvent as ReactPointerEvent } from 'react'
 import { PlusIcon } from 'lucide-react'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import type { Milestone, Phase } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { addLaneAndRename } from '@/features/editor/AddMenu'
 import { closeEditor, useEditorStore } from '@/features/editor/editorStore'
@@ -16,6 +17,18 @@ import { useToday } from './useToday'
 import { LABEL_COLUMN_WIDTH, useViewport } from './useViewport'
 
 const WHEEL_ZOOM_FACTOR = 1.1
+const NO_PHASES: Phase[] = []
+const NO_MILESTONES: Milestone[] = []
+
+function groupByLane<T extends { laneId: string }>(items: T[]): Map<string, T[]> {
+  const groups = new Map<string, T[]>()
+  for (const item of items) {
+    const group = groups.get(item.laneId)
+    if (group) group.push(item)
+    else groups.set(item.laneId, [item])
+  }
+  return groups
+}
 
 export function Timeline() {
   const data = useStore((state) => state.data)
@@ -25,6 +38,9 @@ export function Timeline() {
   const today = useToday()
 
   const lanes = useMemo(() => [...data.lanes].sort((a, b) => a.order - b.order), [data.lanes])
+  // Stable per-lane arrays: a lane only sees a new list when its own items change.
+  const phasesByLane = useMemo(() => groupByLane(data.phases), [data.phases])
+  const milestonesByLane = useMemo(() => groupByLane(data.milestones), [data.milestones])
   const gridTicks = useMemo(() => {
     const ticks = monthTicks(scale, width)
     return scale.pxPerDay >= MONTH_TICK_MIN_PX_PER_DAY
@@ -102,8 +118,8 @@ export function Timeline() {
               <LaneRow
                 key={lane.id}
                 lane={lane}
-                phases={data.phases.filter((phase) => phase.laneId === lane.id)}
-                milestones={data.milestones.filter((milestone) => milestone.laneId === lane.id)}
+                phases={phasesByLane.get(lane.id) ?? NO_PHASES}
+                milestones={milestonesByLane.get(lane.id) ?? NO_MILESTONES}
                 scale={scale}
                 today={today}
               />

@@ -18,9 +18,17 @@ interface MilestoneDotProps {
   today: number
   /** 同一泳道里下一个节点的 x，用来截断名称 */
   nextX: number | null
+  /** Just deleted: drawn for the fade-out only, inert and hidden from assistive tech. */
+  exiting?: boolean
 }
 
-export function MilestoneDot({ milestone, scale, today, nextX }: MilestoneDotProps) {
+export function MilestoneDot({
+  milestone,
+  scale,
+  today,
+  nextX,
+  exiting = false,
+}: MilestoneDotProps) {
   const selected = useStore(
     (state) => state.selection?.kind === 'milestone' && state.selection.id === milestone.id,
   )
@@ -34,13 +42,15 @@ export function MilestoneDot({ milestone, scale, today, nextX }: MilestoneDotPro
   const countdown = countdownText(day, today)
 
   return (
-    <Tooltip>
+    <Tooltip open={exiting ? false : undefined}>
       <TooltipTrigger asChild>
         <div
-          data-testid={`milestone-${milestone.id}`}
+          data-testid={exiting ? undefined : `milestone-${milestone.id}`}
           data-anim
-          role="button"
-          tabIndex={0}
+          data-exiting={String(exiting)}
+          aria-hidden={exiting || undefined}
+          role={exiting ? undefined : 'button'}
+          tabIndex={exiting ? -1 : 0}
           aria-label={`${milestone.name}，${date}，${countdown}`}
           data-selected={String(selected)}
           className="milestone-dot absolute top-1.5 left-0 flex cursor-pointer items-center rounded-[6px] select-none"
@@ -51,10 +61,13 @@ export function MilestoneDot({ milestone, scale, today, nextX }: MilestoneDotPro
             gap: LABEL_GAP,
           }}
           onClick={() => {
+            if (exiting) return
             select({ kind: 'milestone', id: milestone.id })
             openEditor('milestone', milestone.id)
           }}
-          onFocus={() => select({ kind: 'milestone', id: milestone.id })}
+          onFocus={() => {
+            if (!exiting) select({ kind: 'milestone', id: milestone.id })
+          }}
           onDoubleClick={(event) => event.stopPropagation()}
         >
           <span
