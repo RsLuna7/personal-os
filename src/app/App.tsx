@@ -4,6 +4,7 @@ import type { Persistence } from '@/data/persistence'
 import { setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
 import { TermsDialog } from '@/features/editor/TermsDialog'
 import { Home } from '@/features/home/Home'
+import { LanePage } from '@/features/lane/LanePage'
 import { Timeline } from '@/features/timeline/Timeline'
 import { DataErrorScreen } from './DataErrorScreen'
 import { PlaceholderPage } from './PlaceholderPage'
@@ -19,7 +20,7 @@ const noSubscription = () => () => {}
 const noSaveError = () => null
 
 export function App({ persistence }: AppProps) {
-  const [route, setRoute] = useHashRoute()
+  const [route, setRoute, param] = useHashRoute()
   const termsOpen = useEditorStore((state) => state.termsOpen)
   const [corruptRaw, setCorruptRaw] = useState<string | null>(() =>
     persistence?.status.status === 'corrupt' ? persistence.status.raw : null,
@@ -53,7 +54,15 @@ export function App({ persistence }: AppProps) {
       )}
       <TopBar route={route} onNavigate={setRoute} />
       <main className="flex min-h-0 flex-1 flex-col">
-        {route === 'home' ? <Home /> : route === 'timeline' ? <Timeline /> : <PlaceholderPage />}
+        {route === 'home' ? (
+          <Home />
+        ) : route === 'timeline' ? (
+          <Timeline />
+        ) : route === 'modules' ? (
+          <LanePage param={param} />
+        ) : (
+          <PlaceholderPage />
+        )}
       </main>
       <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />
       <Toaster position="bottom-center" />

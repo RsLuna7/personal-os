@@ -26,7 +26,7 @@ export const LANE_COLOR_NAMES: Record<LaneColor, string> = {
   bronze: '古铜',
 }
 
-function RenameInput({ laneId, name }: { laneId: string; name: string }) {
+function RenameInput({ laneId, name, large }: { laneId: string; name: string; large: boolean }) {
   const updateLane = useStore((state) => state.updateLane)
   const [draft, setDraft] = useDraft(name)
   const input = useRef<HTMLInputElement | null>(null)
@@ -45,7 +45,7 @@ function RenameInput({ laneId, name }: { laneId: string; name: string }) {
       aria-label="板块名称"
       value={draft}
       maxLength={NAME_MAX}
-      className="h-7 px-1 text-[14px]"
+      className={large ? 'h-10 px-2 font-serif text-[28px] font-bold' : 'h-7 px-1 text-[14px]'}
       onChange={(event) => setDraft(event.target.value)}
       onBlur={commit}
       onKeyDown={(event) => {
@@ -57,7 +57,14 @@ function RenameInput({ laneId, name }: { laneId: string; name: string }) {
 }
 
 /** 板块名：点击弹出菜单，可改名、换颜色、上移、下移、删除。 */
-export function LaneMenu({ laneId }: { laneId: string }) {
+export function LaneMenu({
+  laneId,
+  variant = 'compact',
+}: {
+  laneId: string
+  /** title：板块页的大标题；compact：时间线左侧的小字 */
+  variant?: 'compact' | 'title'
+}) {
   const lane = useStore((state) => state.data.lanes.find((item) => item.id === laneId))
   const laneCount = useStore((state) => state.data.lanes.length)
   const updateLane = useStore((state) => state.updateLane)
@@ -66,7 +73,7 @@ export function LaneMenu({ laneId }: { laneId: string }) {
   const renaming = useEditorStore((state) => state.renamingLaneId === laneId)
 
   if (!lane) return null
-  if (renaming) return <RenameInput laneId={lane.id} name={lane.name} />
+  if (renaming) return <RenameInput laneId={lane.id} name={lane.name} large={variant === 'title'} />
 
   return (
     <DropdownMenu>
@@ -74,7 +81,12 @@ export function LaneMenu({ laneId }: { laneId: string }) {
         <button
           type="button"
           title={lane.name}
-          className="-mx-1 min-w-0 truncate rounded-[6px] px-1 py-0.5 text-left text-[14px] font-medium text-(--text) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-panel) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
+          className={
+            (variant === 'title'
+              ? 'font-serif text-[28px] leading-tight font-bold'
+              : 'text-[14px] font-medium') +
+            ' -mx-1 min-w-0 truncate rounded-[6px] px-1 py-0.5 text-left text-(--text) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-panel) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)'
+          }
         >
           {lane.name}
         </button>

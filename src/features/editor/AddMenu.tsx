@@ -14,8 +14,10 @@ import { openEditor, startRenamingLane } from './editorStore'
 const NEW_PHASE_WEEKS = 4
 
 /** 新建一个板块并直接进入改名。 */
-export function addLaneAndRename(): void {
-  startRenamingLane(useStore.getState().addLane())
+export function addLaneAndRename(): string {
+  const id = useStore.getState().addLane()
+  startRenamingLane(id)
+  return id
 }
 
 function firstLaneId(): string | undefined {
@@ -23,9 +25,8 @@ function firstLaneId(): string | undefined {
   return [...lanes].sort((a, b) => a.order - b.order)[0]?.id
 }
 
-function addPhase(): void {
-  const laneId = firstLaneId()
-  if (!laneId) return
+/** 在指定板块里新建一个阶段（默认四周、从本周一起），并打开编辑面板。 */
+export function addPhaseToLane(laneId: string): void {
   const store = useStore.getState()
   const start = mondayOf(toDay(todayISO()))
   const id = store.addPhase({
@@ -37,13 +38,22 @@ function addPhase(): void {
   openEditor('phase', id, true)
 }
 
-function addMilestone(): void {
-  const laneId = firstLaneId()
-  if (!laneId) return
+/** 在指定板块里新建一个节点（默认今天），并打开编辑面板。 */
+export function addMilestoneToLane(laneId: string): void {
   const store = useStore.getState()
   const id = store.addMilestone({ laneId, date: todayISO() })
   store.select({ kind: 'milestone', id })
   openEditor('milestone', id, true)
+}
+
+function addPhase(): void {
+  const laneId = firstLaneId()
+  if (laneId) addPhaseToLane(laneId)
+}
+
+function addMilestone(): void {
+  const laneId = firstLaneId()
+  if (laneId) addMilestoneToLane(laneId)
 }
 
 export function AddMenu() {
