@@ -21,7 +21,7 @@ export type ISODate = string
 export const NAME_MAX = 40
 export const NOTE_MAX = 2000
 export const LINKS_MAX = 50
-const URL_MAX = 2048
+export const URL_MAX = 2048
 
 export interface Link {
   id: string

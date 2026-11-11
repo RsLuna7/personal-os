@@ -130,3 +130,114 @@ it('keeps the export time when undoing an earlier change', () => {
   s().undo()
   expect(s().data.lastExportAt).toBe('2026-11-10T00:00:00.000Z')
 })
+
+describe('lane notes and links', () => {
+  const lane = () => s().data.lanes[0]
+
+  it('creates new lanes with an empty note and no links', () => {
+    s().addLane()
+    expect(lane().note).toBe('')
+    expect(lane().links).toEqual([])
+  })
+
+  it('adds a link with a normalized url and returns its id', () => {
+    const laneId = s().addLane()
+    const id = s().addLink(laneId, { title: '  真题  ', url: 'example.com' })
+    expect(id).not.toBe('')
+    expect(lane().links).toEqual([{ id, title: '真题', url: 'https://example.com/' }])
+  })
+
+  it.each([
+    ['a javascript: url', { title: '坏', url: 'javascript:alert(1)' }],
+    ['a data: url', { title: '坏', url: 'data:text/html,hi' }],
+    ['an empty url', { title: '空', url: '  ' }],
+    ['an empty title', { title: '   ', url: 'https://a.com' }],
+    ['a 41 character title', { title: 'x'.repeat(41), url: 'https://a.com' }],
+  ])('refuses to add a link with %s', (_, input) => {
+    const laneId = s().addLane()
+    const before = s().data
+    expect(s().addLink(laneId, input)).toBe('')
+    expect(s().data).toBe(before)
+  })
+
+  it('refuses a link for a lane that does not exist', () => {
+    s().addLane()
+    const before = s().data
+    expect(s().addLink('missing', { title: 'x', url: 'https://a.com' })).toBe('')
+    expect(s().data).toBe(before)
+  })
+
+  it('refuses the 51st link', () => {
+    const laneId = s().addLane()
+    for (let i = 0; i < 50; i++) s().addLink(laneId, { title: `l${i}`, url: 'https://a.com' })
+    const before = s().data
+    expect(lane().links).toHaveLength(50)
+    expect(s().addLink(laneId, { title: '多了', url: 'https://a.com' })).toBe('')
+    expect(s().data).toBe(before)
+  })
+
+  it('updates a link and normalizes the new url', () => {
+    const laneId = s().addLane()
+    const id = s().addLink(laneId, { title: '旧', url: 'https://a.com' })
+    s().updateLink(laneId, id, { title: '新', url: 'b.com/x' })
+    expect(lane().links[0]).toEqual({ id, title: '新', url: 'https://b.com/x' })
+  })
+
+  it('ignores an update that would make the link invalid', () => {
+    const laneId = s().addLane()
+    const id = s().addLink(laneId, { title: '好', url: 'https://a.com' })
+    const before = s().data
+    s().updateLink(laneId, id, { url: 'javascript:alert(1)' })
+    s().updateLink(laneId, id, { title: '' })
+    s().updateLink(laneId, id, { title: 'x'.repeat(41) })
+    expect(s().data).toBe(before)
+  })
+
+  it('removes a link', () => {
+    const laneId = s().addLane()
+    const id = s().addLink(laneId, { title: '好', url: 'https://a.com' })
+    s().removeLink(laneId, id)
+    expect(lane().links).toEqual([])
+  })
+
+  it('changes the note, and ignores one longer than 2000 characters', () => {
+    const laneId = s().addLane()
+    s().updateLane(laneId, { note: '目标：上岸' })
+    expect(lane().note).toBe('目标：上岸')
+    const before = s().data
+    s().updateLane(laneId, { note: 'x'.repeat(2001), name: '不该生效' })
+    expect(s().data).toBe(before)
+    s().updateLane(laneId, { note: 'x'.repeat(2000) })
+    expect(lane().note).toHaveLength(2000)
+  })
+
+  it('records each change as one undo step and can redo it', () => {
+    const laneId = s().addLane()
+    const id = s().addLink(laneId, { title: '好', url: 'https://a.com' })
+    s().updateLink(laneId, id, { title: '改' })
+    s().updateLane(laneId, { note: '备注' })
+    s().removeLink(laneId, id)
+
+    s().undo()
+    expect(lane().links).toHaveLength(1)
+    s().undo()
+    expect(lane().note).toBe('')
+    s().undo()
+    expect(lane().links[0].title).toBe('好')
+    s().undo()
+    expect(lane().links).toEqual([])
+    s().redo()
+    expect(lane().links).toHaveLength(1)
+  })
+
+  it('takes a lane links and note with it when the lane is removed, and brings them back on undo', () => {
+    const laneId = s().addLane()
+    s().addLink(laneId, { title: '好', url: 'https://a.com' })
+    s().updateLane(laneId, { note: '备注' })
+    s().removeLane(laneId)
+    expect(s().data.lanes).toEqual([])
+    s().undo()
+    expect(lane().note).toBe('备注')
+    expect(lane().links).toHaveLength(1)
+  })
+})

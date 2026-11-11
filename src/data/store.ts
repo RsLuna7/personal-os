@@ -3,14 +3,20 @@ import {
   appDataSchema,
   createEmptyData,
   LANE_COLORS,
+  LINKS_MAX,
+  NAME_MAX,
+  NOTE_MAX,
+  URL_MAX,
   type AppData,
   type ISODate,
   type Lane,
   type LaneColor,
+  type Link,
   type Milestone,
   type Phase,
   type Term,
 } from './schema'
+import { normalizeLinkUrl } from './links'
 
 export const HISTORY_LIMIT = 100
 
@@ -23,9 +29,15 @@ interface StoreState {
   selection: Selection | null
 
   addLane(name?: string): string
-  updateLane(id: string, patch: Partial<Pick<Lane, 'name' | 'color'>>): void
+  /** 备注超过 2000 字时整个调用不生效。 */
+  updateLane(id: string, patch: Partial<Pick<Lane, 'name' | 'color' | 'note'>>): void
   moveLane(id: string, direction: -1 | 1): void
   removeLane(id: string): void
+  /** 返回新链接的 id；标题、网址不合法、板块不存在或已满 50 条时返回 ''，数据不变。 */
+  addLink(laneId: string, input: { title: string; url: string }): string
+  /** 修改后不合法就不生效。 */
+  updateLink(laneId: string, linkId: string, patch: Partial<Pick<Link, 'title' | 'url'>>): void
+  removeLink(laneId: string, linkId: string): void
   addPhase(input: { laneId: string; start: ISODate; end: ISODate; name?: string }): string
   updatePhase(id: string, patch: Partial<Omit<Phase, 'id'>>): void
   removePhase(id: string): void
@@ -46,6 +58,15 @@ interface StoreState {
 
 function newId(): string {
   return crypto.randomUUID()
+}
+
+/** 整理标题和网址；任何一项不合法返回 null。写进数据前必须过这一关，否则存下的数据下次读不出来。 */
+function cleanLink(title: string, url: string): Pick<Link, 'title' | 'url'> | null {
+  const cleanTitle = title.trim()
+  if (cleanTitle === '' || cleanTitle.length > NAME_MAX) return null
+  const cleanUrl = normalizeLinkUrl(url)
+  if (cleanUrl === null || cleanUrl.length > URL_MAX) return null
+  return { title: cleanTitle, url: cleanUrl }
 }
 
 function sortedLanes(lanes: Lane[]): Lane[] {
@@ -100,10 +121,55 @@ export const useStore = create<StoreState>()((set, get) => {
     },
 
     updateLane(id, patch) {
+      if (patch.note !== undefined && patch.note.length > NOTE_MAX) return
       const { data } = get()
       commit({
         ...data,
         lanes: data.lanes.map((lane) => (lane.id === id ? { ...lane, ...patch } : lane)),
+      })
+    },
+
+    addLink(laneId, input) {
+      const { data } = get()
+      const lane = data.lanes.find((item) => item.id === laneId)
+      const cleaned = cleanLink(input.title, input.url)
+      if (!lane || !cleaned || lane.links.length >= LINKS_MAX) return ''
+      const id = newId()
+      commit({
+        ...data,
+        lanes: data.lanes.map((item) =>
+          item.id === laneId ? { ...item, links: [...item.links, { id, ...cleaned }] } : item,
+        ),
+      })
+      return id
+    },
+
+    updateLink(laneId, linkId, patch) {
+      const { data } = get()
+      const link = data.lanes.find((item) => item.id === laneId)?.links.find((l) => l.id === linkId)
+      if (!link) return
+      const cleaned = cleanLink(patch.title ?? link.title, patch.url ?? link.url)
+      if (!cleaned) return
+      commit({
+        ...data,
+        lanes: data.lanes.map((item) =>
+          item.id === laneId
+            ? {
+                ...item,
+                links: item.links.map((l) => (l.id === linkId ? { ...l, ...cleaned } : l)),
+              }
+            : item,
+        ),
+      })
+    },
+
+    removeLink(laneId, linkId) {
+      const { data } = get()
+      commit({
+        ...data,
+        lanes: data.lanes.map((item) =>
+          item.id === laneId ? { ...item, links: item.links.filter((l) => l.id !== linkId) } : item,
+        ),
       })
     },
 
