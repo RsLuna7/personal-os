@@ -7,6 +7,7 @@ import { useUndoKeys } from '@/features/editor/useUndoKeys'
 import { summarizeLane } from '@/features/home/summary'
 import { EmptyState } from '@/features/timeline/EmptyState'
 import { useToday } from '@/features/timeline/useToday'
+import { ItemsCard } from './ItemsCard'
 import { LaneHeader } from './LaneHeader'
 import { LaneSidebar } from './LaneSidebar'
 import { LinksCard } from './LinksCard'
@@ -46,6 +47,7 @@ export function LanePage({ param }: LanePageProps) {
             <LaneHeader summary={summary} today={today} />
             <NoteCard lane={lane} />
             <LinksCard lane={lane} />
+            <ItemsCard lane={lane} today={today} />
           </div>
         </div>
       </div>
