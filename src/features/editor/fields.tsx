@@ -128,6 +128,21 @@ export function LaneSelect({ value, lanes, onChange }: LaneSelectProps) {
   )
 }
 
+/**
+ * 面板贴着的元素：给了 anchor 就用它；否则按 selector 去找，并且每次渲染后检查，
+ * 记住的元素如果已经不在文档里（色块被重新挂载），就重新找。
+ */
+export function useAnchorElement(anchor: HTMLElement | null, selector: string): HTMLElement | null {
+  const [found, setFound] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    if (anchor || found?.isConnected) return
+    // The anchor element only exists after its page has committed, so it has to be looked up here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFound(document.querySelector<HTMLElement>(selector))
+  })
+  return anchor ?? found
+}
+
 interface EditorPopoverProps {
   label: string
   /** 面板贴着的元素；为空时按 selector 去找（新建的色块此时刚挂上） */
@@ -146,13 +161,7 @@ export function EditorPopover({
   onClose,
   children,
 }: EditorPopoverProps) {
-  const [found, setFound] = useState<HTMLElement | null>(null)
-  useLayoutEffect(() => {
-    // The anchor element only exists after the timeline has committed, so it has to be looked up here.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!anchor) setFound(document.querySelector<HTMLElement>(anchorSelector))
-  }, [anchor, anchorSelector])
-  const element = anchor ?? found
+  const element = useAnchorElement(anchor, anchorSelector)
   if (!element) return null
 
   return (
