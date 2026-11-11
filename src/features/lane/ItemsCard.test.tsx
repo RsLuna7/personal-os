@@ -174,3 +174,31 @@ it('shows an empty state without a fold button for a lane with nothing', () => {
   expect(card().getByText('这个板块还没有阶段和节点')).toBeInTheDocument()
   expect(card().queryByRole('button', { name: /已结束/ })).not.toBeInTheDocument()
 })
+
+it('keeps the same row element when an edit moves it between the ended and current groups', async () => {
+  const user = setup()
+  await user.click(card().getByRole('button', { name: '已结束 2 项' }))
+  const before = card().getByTestId('milestone-mc')
+  act(() => s().updateMilestone('mc', { date: '2026-11-05' }))
+  const after = card().getByTestId('milestone-mc')
+  // 编辑面板贴着这个元素，换了元素面板就找不到位置
+  expect(after).toBe(before)
+  expect(after.isConnected).toBe(true)
+})
+
+it('closes the editor when the edited item is moved to another lane', () => {
+  setup()
+  act(() => openEditor('milestone', 'mc'))
+  expect(useEditorStore.getState().editing).not.toBeNull()
+  act(() => s().updateMilestone('mc', { laneId: 'lA' }))
+  expect(useEditorStore.getState().editing).toBeNull()
+})
+
+it('lets the fold be collapsed again after an ended row was clicked', async () => {
+  const user = setup()
+  act(() => s().select({ kind: 'phase', id: 'pe' }))
+  expect(card().getByText('旧阶段')).toBeInTheDocument()
+  await user.click(card().getByRole('button', { name: '已结束 2 项' }))
+  expect(card().queryByText('旧阶段')).not.toBeInTheDocument()
+  expect(s().selection).toBeNull()
+})

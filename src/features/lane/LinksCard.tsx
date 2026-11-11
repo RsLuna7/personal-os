@@ -3,7 +3,7 @@ import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LINKS_MAX, NAME_MAX, type Lane, type Link } from '@/data/schema'
+import { LINKS_MAX, NAME_MAX, URL_MAX, type Lane, type Link } from '@/data/schema'
 import { normalizeLinkUrl } from '@/data/links'
 import { useStore } from '@/data/store'
 import { showDeleteToast } from '@/features/editor/deleteToast'
@@ -11,6 +11,7 @@ import { ErrorText } from '@/features/editor/fields'
 
 const ERROR_TITLE = '请填写标题'
 const ERROR_URL = '请输入以 http 或 https 开头的网址'
+const ERROR_URL_LONG = `网址太长（最多 ${URL_MAX} 字）`
 
 function hostOf(url: string): string {
   try {
@@ -33,15 +34,16 @@ function LinkForm({ initial, onSubmit, onCancel }: LinkFormProps) {
   const [title, setTitle] = useState(initial.title)
   const [url, setUrl] = useState(initial.url)
   const [titleError, setTitleError] = useState(false)
-  const [urlError, setUrlError] = useState(false)
+  const [urlError, setUrlError] = useState<string | null>(null)
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     const cleanTitle = title.trim()
     const cleanUrl = normalizeLinkUrl(url)
     setTitleError(cleanTitle === '')
-    setUrlError(cleanUrl === null)
-    if (cleanTitle === '' || cleanUrl === null) return
+    const tooLong = cleanUrl !== null && cleanUrl.length > URL_MAX
+    setUrlError(cleanUrl === null ? ERROR_URL : tooLong ? ERROR_URL_LONG : null)
+    if (cleanTitle === '' || cleanUrl === null || tooLong) return
     onSubmit({ title: cleanTitle, url: cleanUrl })
   }
 
@@ -77,11 +79,11 @@ function LinkForm({ initial, onSubmit, onCancel }: LinkFormProps) {
           id={urlId}
           value={url}
           inputMode="url"
-          aria-invalid={urlError}
+          aria-invalid={urlError !== null}
           placeholder="https://"
           onChange={(event) => setUrl(event.target.value)}
         />
-        {urlError && <ErrorText>{ERROR_URL}</ErrorText>}
+        {urlError && <ErrorText>{urlError}</ErrorText>}
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>

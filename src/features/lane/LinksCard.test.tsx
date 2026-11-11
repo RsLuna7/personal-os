@@ -1,7 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Toaster } from '@/components/ui/sonner'
-import { createEmptyData, LINKS_MAX, NAME_MAX, type AppData } from '@/data/schema'
+import { createEmptyData, LINKS_MAX, NAME_MAX, URL_MAX, type AppData } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { LinksCard } from './LinksCard'
 
@@ -190,4 +190,18 @@ it('does not carry an open form over to another lane', async () => {
   )
   expect(screen.queryByRole('textbox', { name: '标题' })).not.toBeInTheDocument()
   expect(within(document.body).getByText('还没有资料链接')).toBeInTheDocument()
+})
+
+it('refuses an over-long address with a message and keeps what was typed', async () => {
+  const { user } = setup()
+  const before = s().data
+  const long = 'https://example.com/' + 'a'.repeat(URL_MAX)
+  await openAdd(user)
+  await user.type(titleBox(), '太长')
+  fireEvent.change(urlBox(), { target: { value: long } })
+  await user.click(screen.getByRole('button', { name: '保存' }))
+  expect(screen.getByText(`网址太长（最多 ${URL_MAX} 字）`)).toBeInTheDocument()
+  expect(s().data).toBe(before)
+  expect(titleBox()).toHaveValue('太长')
+  expect(urlBox()).toHaveValue(long)
 })

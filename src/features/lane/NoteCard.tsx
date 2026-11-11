@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { NOTE_MAX, type Lane } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { useDraft } from '@/features/editor/fields'
@@ -14,6 +14,26 @@ export function NoteCard({ lane }: { lane: Lane }) {
     if (draft === lane.note || over > 0) return
     updateLane(lane.id, { note: draft })
   }
+
+  // 没有失焦就离开（刷新、关页、后退、被卸载）时，把写了一半的草稿存下来
+  const latest = useRef({ laneId: lane.id, draft })
+  useEffect(() => {
+    latest.current = { laneId: lane.id, draft }
+  })
+  useEffect(() => {
+    const flush = () => {
+      const { laneId, draft: text } = latest.current
+      const current = useStore.getState().data.lanes.find((item) => item.id === laneId)
+      if (!current || current.note === text || text.length > NOTE_MAX) return
+      useStore.getState().updateLane(laneId, { note: text })
+    }
+    // 捕获阶段：赶在存储层处理 pagehide 之前写进 store
+    window.addEventListener('pagehide', flush, true)
+    return () => {
+      window.removeEventListener('pagehide', flush, true)
+      flush()
+    }
+  }, [])
 
   return (
     <section

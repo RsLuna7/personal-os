@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useStore } from '@/data/store'
 import { closeEditor, useEditorStore } from '@/features/editor/editorStore'
 import { MilestoneEditor } from '@/features/editor/MilestoneEditor'
@@ -34,6 +34,16 @@ export function LanePage({ param }: LanePageProps) {
     () => (lane ? summarizeLane(lane, data.phases, data.milestones, today) : null),
     [lane, data.phases, data.milestones, today],
   )
+
+  // 在编辑面板里把阶段或节点换到别的板块后，它不在这一页了，面板没有东西可贴
+  const editedLaneId = useMemo(() => {
+    if (!editing) return null
+    const list = editing.kind === 'phase' ? data.phases : data.milestones
+    return list.find((item) => item.id === editing.id)?.laneId ?? null
+  }, [editing, data.phases, data.milestones])
+  useEffect(() => {
+    if (editedLaneId !== null && editedLaneId !== lane?.id) closeEditor()
+  }, [editedLaneId, lane?.id])
 
   if (!lane || !summary) return <EmptyState />
 

@@ -92,3 +92,38 @@ it('saves once the note is shortened back to the limit', async () => {
   await user.tab()
   expect(note()).toBe('a'.repeat(NOTE_MAX))
 })
+
+it('saves a pending draft when the page is hidden or closed without a blur', () => {
+  setup()
+  type('刷新前写的')
+  expect(note()).toBe('旧备注')
+  act(() => {
+    window.dispatchEvent(new Event('pagehide'))
+  })
+  expect(note()).toBe('刷新前写的')
+})
+
+it('saves a pending draft when the card goes away without a blur', () => {
+  s().hydrate(data)
+  const { unmount } = render(<Connected />)
+  type('切走前写的')
+  unmount()
+  expect(note()).toBe('切走前写的')
+})
+
+it('does not write anything when the card goes away because its lane was deleted', () => {
+  s().hydrate(data)
+  function Gone() {
+    const lane = useStore((state) => state.data.lanes[0])
+    return lane ? <NoteCard lane={lane} /> : null
+  }
+  render(<Gone />)
+  type('没人要了')
+  let writes = 0
+  const stop = useStore.subscribe(() => writes++)
+  act(() => s().removeLane('l1'))
+  stop()
+  // 只有删除板块这一次写入，卸载时的保存不能再写一次
+  expect(writes).toBe(1)
+  expect(s().data.lanes).toEqual([])
+})

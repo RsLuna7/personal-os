@@ -62,6 +62,7 @@ function ItemRow({ item, today, selected }: ItemRowProps) {
 
 /** 板块的阶段和节点按时间混排；已结束的折叠起来。 */
 export function ItemsCard({ lane, today }: { lane: Lane; today: number }) {
+  const select = useStore((state) => state.select)
   const phases = useStore((state) => state.data.phases)
   const milestones = useStore((state) => state.data.milestones)
   const selection = useStore((state) => state.selection)
@@ -110,7 +111,11 @@ export function ItemsCard({ lane, today }: { lane: Lane; today: number }) {
             <button
               type="button"
               aria-expanded={expanded}
-              onClick={() => setShowEnded((value) => !value)}
+              onClick={() => {
+                // 因为选中而自动展开时，收起要同时放掉选中，否则按钮像坏了
+                if (expanded && selection && ended.some(isSelected)) select(null)
+                setShowEnded(!expanded)
+              }}
               className="mb-1 flex items-center gap-1 rounded-[6px] px-2 py-1 text-[12px] text-(--text-muted) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-subtle) hover:text-(--text) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
             >
               <ChevronRightIcon
@@ -121,11 +126,8 @@ export function ItemsCard({ lane, today }: { lane: Lane; today: number }) {
             </button>
           )}
           <ul className="flex flex-col gap-0.5">
-            {expanded &&
-              ended.map((item) => (
-                <ItemRow key={item.id} item={item} today={today} selected={isSelected(item)} />
-              ))}
-            {current.map((item) => (
+            {/* 一个列表：编辑时日期跨过今天，行只是换位置，不会重新挂载 */}
+            {(expanded ? [...ended, ...current] : current).map((item) => (
               <ItemRow key={item.id} item={item} today={today} selected={isSelected(item)} />
             ))}
           </ul>
