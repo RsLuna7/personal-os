@@ -127,3 +127,13 @@ it('does not write anything when the card goes away because its lane was deleted
   expect(writes).toBe(1)
   expect(s().data.lanes).toEqual([])
 })
+
+it('starts as a compact box and expands once it is clicked into', async () => {
+  const user = setup()
+  expect(box()).toHaveAttribute('rows', '2')
+  await user.click(box())
+  expect(box()).toHaveAttribute('rows', '6')
+  // 离开后不收回去：收回会让下面的按钮上移，点击会落空
+  await user.tab()
+  expect(box()).toHaveAttribute('rows', '6')
+})

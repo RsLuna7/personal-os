@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { NOTE_MAX, type Lane } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { useDraft } from '@/features/editor/fields'
@@ -8,6 +8,8 @@ export function NoteCard({ lane }: { lane: Lane }) {
   const updateLane = useStore((state) => state.updateLane)
   const [draft, setDraft] = useDraft(lane.note)
   const titleId = useId()
+  // 平时收成两行，点进去才展开；展开后不再收回，免得下面的按钮在点击中途上移
+  const [expanded, setExpanded] = useState(false)
   const over = draft.length - NOTE_MAX
 
   const save = () => {
@@ -47,10 +49,11 @@ export function NoteCard({ lane }: { lane: Lane }) {
         aria-label="板块备注"
         value={draft}
         placeholder="写点什么：目标、注意事项……"
-        rows={5}
+        rows={expanded ? 6 : 2}
+        onFocus={() => setExpanded(true)}
         onChange={(event) => setDraft(event.target.value)}
         onBlur={save}
-        className="w-full resize-y rounded-[8px] border border-(--border) bg-(--bg-page) px-3 py-2 text-[14px] leading-relaxed text-(--text) placeholder:text-(--text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
+        className="w-full resize-none rounded-[8px] border border-(--border) bg-(--bg-page) px-3 py-2 text-[14px] leading-relaxed text-(--text) placeholder:text-(--text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
       />
       <div className="mt-1 flex justify-between gap-2 text-[12px]">
         {over > 0 ? (
