@@ -1,4 +1,4 @@
-import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
+import type { KeyboardEvent, PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import type { Lane } from '@/data/schema'
 import type { Selection } from '@/data/store'
 import type { CalendarData, WeekLayout } from './layout'
@@ -19,6 +19,9 @@ interface MonthGridProps {
   preview: Preview | null
   onCreateStart: (event: ReactPointerEvent<HTMLElement>, day: number) => void
   onMoveStart: (event: ReactPointerEvent<HTMLElement>, target: MoveTarget) => void
+  tabDay: number
+  onDayFocus: (day: number) => void
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
 }
 
 /** 月网格：每个周行 7 格，项目叠在格子上面。 */
@@ -35,11 +38,15 @@ export function MonthGrid({
   preview,
   onCreateStart,
   onMoveStart,
+  tabDay,
+  onDayFocus,
+  onKeyDown,
 }: MonthGridProps) {
   const laneColors = new Map(lanes.map((lane) => [lane.id, lane.color]))
   return (
     <div
       ref={gridRef}
+      onKeyDown={onKeyDown}
       data-testid="month-grid"
       className="flex min-h-full flex-col border-t border-l border-(--border) select-none"
     >
@@ -58,6 +65,8 @@ export function MonthGrid({
           preview={preview}
           onCreateStart={onCreateStart}
           onMoveStart={onMoveStart}
+          tabDay={tabDay}
+          onDayFocus={onDayFocus}
         />
       ))}
     </div>

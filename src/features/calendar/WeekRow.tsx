@@ -1,6 +1,6 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { useStore, type Selection } from '@/data/store'
-import { openEditor, setTermsOpen } from '@/features/editor/editorStore'
+import { setTermsOpen } from '@/features/editor/editorStore'
 import { fromDay, toDay } from '@/features/timeline/days'
 import { formatDayWithYear, formatDuration, formatRangeWithYear } from '@/features/timeline/format'
 import { DayOverflow } from './DayOverflow'
@@ -43,6 +43,9 @@ interface WeekRowProps {
   preview: Preview | null
   onCreateStart: (event: ReactPointerEvent<HTMLElement>, day: number) => void
   onMoveStart: (event: ReactPointerEvent<HTMLElement>, target: MoveTarget) => void
+  /** 当前能 Tab 进去的那一天（roving tabindex） */
+  tabDay: number
+  onDayFocus: (day: number) => void
 }
 
 function span(startCol: number, endCol: number): CSSProperties {
@@ -50,11 +53,6 @@ function span(startCol: number, endCol: number): CSSProperties {
     left: `calc(${startCol} / 7 * 100% + ${BAR_INSET_PX}px)`,
     width: `calc(${endCol - startCol + 1} / 7 * 100% - ${BAR_INSET_PX * 2}px)`,
   }
-}
-
-function openItem(kind: 'phase' | 'milestone', id: string): void {
-  useStore.getState().select({ kind, id })
-  openEditor(kind, id)
 }
 
 function dayLabel(day: number): string {
@@ -75,6 +73,8 @@ export function WeekRow({
   preview,
   onCreateStart,
   onMoveStart,
+  tabDay,
+  onDayFocus,
 }: WeekRowProps) {
   const top = (slot: number) =>
     (termBand ? TERM_BAND_HEIGHT : 0) + DAY_NUMBER_HEIGHT + slot * SLOT_HEIGHT
@@ -101,8 +101,12 @@ export function WeekRow({
                   ? 'true'
                   : undefined
               }
+              data-day={day}
+              tabIndex={day === tabDay ? 0 : -1}
+              aria-label={formatDayWithYear(day)}
+              onFocus={() => onDayFocus(day)}
               onPointerDown={(event) => onCreateStart(event, day)}
-              className="relative border-r border-(--border) bg-(--bg-page) px-1.5 pb-1 last:border-r-0 data-[outside=true]:bg-(--bg-canvas) data-[preview=true]:bg-(--sand-5) data-[outside=true]:text-(--text-muted)"
+              className="relative border-r border-(--border) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--text) bg-(--bg-page) px-1.5 pb-1 last:border-r-0 data-[outside=true]:bg-(--bg-canvas) data-[preview=true]:bg-(--sand-5) data-[outside=true]:text-(--text-muted)"
               style={{ paddingTop: termBand ? TERM_BAND_HEIGHT + 2 : 2 }}
             >
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[13px] [[data-today=true]>&]:bg-(--text) [[data-today=true]>&]:text-(--bg-page)">
@@ -211,6 +215,8 @@ function PhaseBar({ bar, top, today, color, selected, dragging, onMoveStart }: P
       data-segment={bar.labelled ? undefined : phase.id}
       role="button"
       tabIndex={0}
+      data-item="phase"
+      data-item-id={phase.id}
       aria-label={label}
       data-lane-color={color}
       data-past={String(end <= today)}
@@ -220,11 +226,8 @@ function PhaseBar({ bar, top, today, color, selected, dragging, onMoveStart }: P
       data-dragging={String(dragging)}
       className={`phase-block pointer-events-auto absolute flex cursor-grab touch-none items-center border px-1.5 text-[13px] select-none ${shape}`}
       style={{ ...span(bar.startCol, bar.endCol), top, height: ITEM_HEIGHT }}
+      onFocus={() => useStore.getState().select({ kind: 'phase', id: phase.id })}
       onPointerDown={(event) => onMoveStart(event, { kind: 'phase', id: phase.id, mode: 'move' })}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' && event.target === event.currentTarget)
-          openItem('phase', phase.id)
-      }}
     >
       {bar.startsHere && (
         <span
@@ -275,16 +278,16 @@ function MilestoneChip({ dot, top, color, selected, dragging, onMoveStart }: Mil
       data-testid={`milestone-${milestone.id}`}
       role="button"
       tabIndex={0}
+      data-item="milestone"
+      data-item-id={milestone.id}
       aria-label={`${milestone.name}，${formatDayWithYear(toDay(milestone.date))}`}
       data-lane-color={color}
       data-selected={String(selected)}
       data-dragging={String(dragging)}
       className="milestone-dot pointer-events-auto absolute flex cursor-grab touch-none items-center gap-1 rounded-[6px] px-1 select-none"
       style={{ ...span(dot.col, dot.col), top, height: ITEM_HEIGHT }}
+      onFocus={() => useStore.getState().select({ kind: 'milestone', id: milestone.id })}
       onPointerDown={(event) => onMoveStart(event, { kind: 'milestone', id: milestone.id })}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') openItem('milestone', milestone.id)
-      }}
     >
       <span className="size-2 shrink-0 rounded-full bg-(--lane-dot)" />
       <span className="truncate text-[12px] text-(--text)" title={milestone.name}>

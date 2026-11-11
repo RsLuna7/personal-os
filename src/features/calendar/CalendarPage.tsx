@@ -12,6 +12,7 @@ import { layoutMonth, type CalendarData, type WeekLayout } from './layout'
 import { setLastLaneId } from './lastLane'
 import { MonthGrid } from './MonthGrid'
 import { useCalendarDrag, type Preview } from './useCalendarDrag'
+import { useCalendarKeys } from './useCalendarKeys'
 import { monthParam, monthTitle, monthWeeks, parseMonthParam, shiftMonth } from './month'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -90,6 +91,7 @@ export function CalendarPage({ param }: CalendarPageProps) {
   const weeks = monthWeeks(month)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const { preview, beginCreate, beginMove } = useCalendarDrag({ gridRef, weeks })
+  const { tabDay, onDayFocus, onKeyDown } = useCalendarKeys({ month, today })
   const calendarData = withPreview(
     {
       lanes: data.lanes,
@@ -180,6 +182,9 @@ export function CalendarPage({ param }: CalendarPageProps) {
           preview={preview}
           onCreateStart={beginCreate}
           onMoveStart={beginMove}
+          tabDay={tabDay}
+          onDayFocus={onDayFocus}
+          onKeyDown={onKeyDown}
         />
       </div>
       {editing?.kind === 'phase' && (
