@@ -4,8 +4,12 @@
 @import './styles/tokens.css';
 
 @theme inline {
+  /* 数字和英文用 Inter，中文用思源黑体；字体没加载好时先用系统字体 */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+    'Inter Variable', 'Noto Sans SC Variable', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    'Microsoft YaHei', 'Segoe UI', sans-serif;
+  /* 标题和大数字用思源宋体，更有分量 */
+  --font-serif: 'Noto Serif SC Variable', 'Songti SC', 'SimSun', serif;
   --font-heading: var(--font-sans);
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -63,6 +67,18 @@
   .phase-block[data-tentative='true'] {
     background-color: transparent;
     border-style: dashed;
+  }
+  /* 正在进行的阶段用实心色，一眼看出现在在哪 */
+  .phase-block[data-current='true'] {
+    background-color: var(--lane-solid);
+    border-color: var(--lane-solid);
+    color: var(--lane-solid-text);
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  }
+  /* 泳道隔行铺一层浅底，代替横线 */
+  .lane-row:nth-child(even) {
+    background-color: color-mix(in srgb, var(--sand-3) 55%, transparent);
   }
   .phase-block[data-selected='true'],
   .milestone-dot[data-selected='true'],

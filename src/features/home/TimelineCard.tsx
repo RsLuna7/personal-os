@@ -8,10 +8,13 @@ export function TimelineCard() {
   return (
     <section
       aria-labelledby="timeline-card-title"
-      className="overflow-hidden rounded-[12px] border border-(--border) bg-(--bg-page)"
+      className="overflow-hidden rounded-[16px] bg-(--bg-card) shadow-(--shadow-card)"
     >
-      <header className="flex items-center gap-2 border-b border-(--border) px-4 py-2.5">
-        <h2 id="timeline-card-title" className="mr-auto text-[14px] font-medium text-(--text)">
+      <header className="flex items-center gap-2 border-b border-(--border) px-5 py-3">
+        <h2
+          id="timeline-card-title"
+          className="mr-auto font-serif text-[18px] font-bold text-(--text)"
+        >
           时间线
         </h2>
         <ZoomControls />

@@ -17,62 +17,70 @@ function LaneCard({ summary, today }: LaneCardProps) {
     <article
       data-lane-color={lane.color}
       data-testid={`overview-${lane.id}`}
-      className="flex flex-col gap-3 rounded-[12px] border border-(--border) bg-(--bg-page) p-4"
+      className="flex flex-col overflow-hidden rounded-[16px] bg-(--bg-card) shadow-(--shadow-card)"
     >
-      <h3 className="flex items-center gap-2 text-[14px] font-medium text-(--text)">
-        <span aria-hidden className="size-2 shrink-0 rounded-full bg-(--lane-dot)" />
+      <h3 className="flex items-center gap-2 bg-(--lane-fill) px-5 py-3 text-[14px] font-semibold text-(--lane-text)">
+        <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-(--lane-dot)" />
         <span className="truncate" title={lane.name}>
           {lane.name}
         </span>
       </h3>
 
-      {current ? (
-        <div>
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[16px] font-medium text-(--text)" title={current.name}>
-              {current.name}
-            </span>
-            {current.tentative && (
-              <span className="shrink-0 text-[12px] text-(--text-muted)">待确认</span>
-            )}
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        {current ? (
+          <div>
+            <div className="flex items-baseline justify-between gap-2">
+              <span
+                className="truncate font-serif text-[22px] leading-tight font-bold text-(--text)"
+                title={current.name}
+              >
+                {current.name}
+              </span>
+              {current.tentative && (
+                <span className="shrink-0 text-[12px] text-(--text-muted)">待确认</span>
+              )}
+            </div>
+            <div
+              role="progressbar"
+              aria-label={`${current.name}进度`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={percent}
+              className="mt-3 h-2.5 overflow-hidden rounded-full bg-(--lane-fill)"
+            >
+              <div
+                className="h-full rounded-full bg-(--lane-solid)"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <div className="mt-2 text-[12px] text-(--text-muted)">
+              第 {elapsed} 天 / 共 {total} 天 · 还剩 {daysLeft} 天
+            </div>
           </div>
-          <div
-            role="progressbar"
-            aria-label={`${current.name}进度`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={percent}
-            className="mt-2 h-1.5 overflow-hidden rounded-full bg-(--lane-fill)"
-          >
-            <div className="h-full rounded-full bg-(--lane-dot)" style={{ width: `${percent}%` }} />
-          </div>
-          <div className="mt-1.5 text-[12px] text-(--text-muted)">
-            第 {elapsed} 天 / 共 {total} 天 · 还剩 {daysLeft} 天
-          </div>
-        </div>
-      ) : (
-        <div className="text-[14px] text-(--text-muted)">暂无进行中阶段</div>
-      )}
+        ) : (
+          <div className="text-[16px] text-(--text-muted)">暂无进行中阶段</div>
+        )}
 
-      <dl className="mt-auto flex flex-col gap-1 text-[12px] text-(--text-muted)">
-        {nextMilestone && (
-          <div className="flex gap-2">
-            <dt className="shrink-0">下一个节点</dt>
-            <dd className="min-w-0 truncate text-(--text)">
-              {nextMilestone.name} · {countdownText(toDay(nextMilestone.date), today)}
-            </dd>
-          </div>
-        )}
-        {next && (
-          <div className="flex gap-2">
-            <dt className="shrink-0">下一阶段</dt>
-            <dd className="min-w-0 truncate text-(--text)">
-              {next.name} · {formatDay(toDay(next.start))}开始
-            </dd>
-          </div>
-        )}
-        {!nextMilestone && !next && <div>后面还没有安排</div>}
-      </dl>
+        <dl className="mt-auto flex flex-col gap-1.5 border-t border-(--border) pt-3 text-[12px] text-(--text-muted)">
+          {nextMilestone && (
+            <div className="flex gap-2">
+              <dt className="shrink-0">下一个节点</dt>
+              <dd className="min-w-0 truncate text-(--text)">
+                {nextMilestone.name} · {countdownText(toDay(nextMilestone.date), today)}
+              </dd>
+            </div>
+          )}
+          {next && (
+            <div className="flex gap-2">
+              <dt className="shrink-0">下一阶段</dt>
+              <dd className="min-w-0 truncate text-(--text)">
+                {next.name} · {formatDay(toDay(next.start))}开始
+              </dd>
+            </div>
+          )}
+          {!nextMilestone && !next && <div>后面还没有安排</div>}
+        </dl>
+      </div>
     </article>
   )
 }
@@ -86,7 +94,7 @@ interface LaneOverviewProps {
 export function LaneOverview({ summaries, today }: LaneOverviewProps) {
   return (
     <section aria-labelledby="lane-overview-title">
-      <h2 id="lane-overview-title" className="mb-3 text-[14px] font-medium text-(--text)">
+      <h2 id="lane-overview-title" className="mb-3 font-serif text-[18px] font-bold text-(--text)">
         板块概览
       </h2>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">

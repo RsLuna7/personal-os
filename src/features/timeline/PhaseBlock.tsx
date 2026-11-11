@@ -162,6 +162,7 @@ export function PhaseBlock({
             tabIndex={exiting ? -1 : readOnly ? undefined : 0}
             aria-label={`${phase.name}，${range}，${duration}${phase.tentative ? '，待确认' : ''}`}
             data-past={String(endDay <= today)}
+            data-current={String(!phase.tentative && startDay <= today && today < endDay)}
             data-tentative={String(phase.tentative)}
             data-selected={String(selected)}
             data-dragging={String(drag !== null)}

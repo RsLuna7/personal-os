@@ -17,7 +17,7 @@ export function Home() {
   if (data.lanes.length === 0) return <EmptyState />
 
   return (
-    <div data-testid="home" className="min-h-0 flex-1 overflow-y-auto">
+    <div data-testid="home" className="min-h-0 flex-1 overflow-y-auto bg-(--bg-canvas)">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-6">
         <NowStrip
           today={today}

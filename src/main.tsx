@@ -1,5 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource-variable/inter'
+import '@fontsource-variable/noto-sans-sc'
+import '@fontsource-variable/noto-serif-sc'
 import './index.css'
 import { App } from './app/App'
 import { getStorage, startPersistence } from './data/persistence'

@@ -60,11 +60,11 @@ export function LaneRow({
     <div
       data-testid={`lane-${lane.id}`}
       data-lane-color={lane.color}
-      className="relative flex border-b border-(--border)"
+      className="lane-row relative flex"
       style={{ height: `${height}px` }}
     >
       <div
-        className="flex shrink-0 items-center gap-2 border-r border-(--border) bg-(--bg-page) px-3"
+        className="flex shrink-0 items-center gap-2 border-r border-(--border) px-3"
         style={{ width: LABEL_COLUMN_WIDTH }}
       >
         <span className="size-2 shrink-0 rounded-full bg-(--lane-dot)" />
