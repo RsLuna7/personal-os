@@ -207,3 +207,77 @@ describe('pickLaneId', () => {
     expect(pickLaneId(lanes)).toBe('l1')
   })
 })
+
+describe('overflow list', () => {
+  const crowded = (milestones: AppData['milestones'] = []): AppData => ({
+    ...createEmptyData(),
+    lanes: data.lanes,
+    phases: ['a', 'b', 'c', 'd'].map((id, index) => ({
+      id,
+      laneId: index < 2 ? 'l1' : 'l2',
+      name: `阶段${id}`,
+      start: '2026-11-09',
+      end: '2026-11-12',
+      tentative: false,
+      note: '',
+    })),
+    milestones,
+  })
+
+  it('shows +N for a crowded day and lists every item of that day in lane order', async () => {
+    const user = setup('#/calendar', crowded())
+    const cell = screen.getByTestId('day-2026-11-09')
+    await user.click(within(cell).getByRole('button', { name: '+2 项' }))
+    const list = await screen.findByRole('dialog', { name: '11月9日的项目' })
+    const names = within(list)
+      .getAllByRole('button')
+      .map((button) => button.textContent)
+    expect(names).toEqual(['阶段a', '阶段b', '阶段c', '阶段d'])
+  })
+
+  it('puts milestones after the phases of their lane', async () => {
+    const user = setup(
+      '#/calendar',
+      crowded([{ id: 'mm', laneId: 'l1', name: '节点mm', date: '2026-11-09', note: '' }]),
+    )
+    const cell = screen.getByTestId('day-2026-11-09')
+    await user.click(within(cell).getByRole('button', { name: /^\+\d 项$/ }))
+    const list = await screen.findByRole('dialog', { name: '11月9日的项目' })
+    expect(
+      within(list)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['阶段a', '阶段b', '节点mm', '阶段c', '阶段d'])
+  })
+
+  it('opens the editor for an item that is hidden on the grid', async () => {
+    const user = setup('#/calendar', crowded())
+    expect(screen.queryByTestId('phase-d')).not.toBeInTheDocument()
+    await user.click(
+      within(screen.getByTestId('day-2026-11-09')).getByRole('button', { name: '+2 项' }),
+    )
+    const list = await screen.findByRole('dialog', { name: '11月9日的项目' })
+    await user.click(within(list).getByRole('button', { name: '阶段d' }))
+    expect(screen.queryByRole('dialog', { name: '11月9日的项目' })).not.toBeInTheDocument()
+    expect(s().selection).toEqual({ kind: 'phase', id: 'd' })
+    expect(await screen.findByRole('dialog', { name: '编辑阶段' })).toBeInTheDocument()
+  })
+
+  it('closes with Escape and changes nothing', async () => {
+    const user = setup('#/calendar', crowded())
+    const before = s().data
+    await user.click(
+      within(screen.getByTestId('day-2026-11-09')).getByRole('button', { name: '+2 项' }),
+    )
+    await screen.findByRole('dialog', { name: '11月9日的项目' })
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: '11月9日的项目' })).not.toBeInTheDocument()
+    expect(s().selection).toBeNull()
+    expect(s().data).toBe(before)
+  })
+
+  it('has no +N button on a day with room', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: /^\+\d+ 项$/ })).not.toBeInTheDocument()
+  })
+})

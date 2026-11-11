@@ -3,7 +3,15 @@ import { useStore, type Selection } from '@/data/store'
 import { openEditor, setTermsOpen } from '@/features/editor/editorStore'
 import { fromDay, toDay } from '@/features/timeline/days'
 import { formatDayWithYear, formatDuration, formatRangeWithYear } from '@/features/timeline/format'
-import { SLOTS, type BarSegment, type DotItem, type TermSegment, type WeekLayout } from './layout'
+import { DayOverflow } from './DayOverflow'
+import {
+  SLOTS,
+  type BarSegment,
+  type CalendarData,
+  type DotItem,
+  type TermSegment,
+  type WeekLayout,
+} from './layout'
 import { monthParam, type MonthRef } from './month'
 
 /** 学期带的高度，整个网格里有学期时每个周行都留出来。 */
@@ -27,6 +35,9 @@ interface WeekRowProps {
   termBand: boolean
   laneColors: ReadonlyMap<string, string>
   selection: Selection | null
+  data: CalendarData
+  /** 正在编辑的项目这个月没画出来（被“+N 项”收起）时，面板贴在这一天的格子上 */
+  anchorPlaceholder: { testId: string; day: number } | null
 }
 
 function span(startCol: number, endCol: number): CSSProperties {
@@ -54,6 +65,8 @@ export function WeekRow({
   termBand,
   laneColors,
   selection,
+  data,
+  anchorPlaceholder,
 }: WeekRowProps) {
   const top = (slot: number) =>
     (termBand ? TERM_BAND_HEIGHT : 0) + DAY_NUMBER_HEIGHT + slot * SLOT_HEIGHT
@@ -66,20 +79,41 @@ export function WeekRow({
       style={{ minHeight: WEEK_ROW_MIN_HEIGHT }}
     >
       <div className="absolute inset-0 grid grid-cols-7">
-        {layout.days.map((day) => {
+        {layout.days.map((day, col) => {
           const iso = fromDay(day)
+          const overflow = layout.overflow.find((cell) => cell.col === col)
           return (
             <div
               key={day}
               data-testid={`day-${iso}`}
               data-today={String(day === today)}
               data-outside={String(!iso.startsWith(monthPrefix))}
-              className="border-r border-(--border) bg-(--bg-page) px-1.5 pb-1 last:border-r-0 data-[outside=true]:bg-(--bg-canvas) data-[outside=true]:text-(--text-muted)"
+              className="relative border-r border-(--border) bg-(--bg-page) px-1.5 pb-1 last:border-r-0 data-[outside=true]:bg-(--bg-canvas) data-[outside=true]:text-(--text-muted)"
               style={{ paddingTop: termBand ? TERM_BAND_HEIGHT + 2 : 2 }}
             >
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[13px] [[data-today=true]>&]:bg-(--text) [[data-today=true]>&]:text-(--bg-page)">
                 {dayLabel(day)}
               </span>
+              {overflow && (
+                <div
+                  className="absolute"
+                  style={{
+                    left: BAR_INSET_PX,
+                    right: BAR_INSET_PX,
+                    top: top(SLOTS - 1),
+                    height: ITEM_HEIGHT,
+                  }}
+                >
+                  <DayOverflow day={day} count={overflow.count} data={data} />
+                </div>
+              )}
+              {anchorPlaceholder?.day === day && (
+                <span
+                  aria-hidden
+                  data-testid={anchorPlaceholder.testId}
+                  className="pointer-events-none absolute inset-x-0 top-0 h-6"
+                />
+              )}
             </div>
           )
         })}
