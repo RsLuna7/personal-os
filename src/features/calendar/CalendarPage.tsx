@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useStore } from '@/data/store'
 import { closeEditor, useEditorStore } from '@/features/editor/editorStore'
 import { MilestoneEditor } from '@/features/editor/MilestoneEditor'
@@ -11,6 +11,7 @@ import { toDay } from '@/features/timeline/days'
 import { layoutMonth, type CalendarData, type WeekLayout } from './layout'
 import { setLastLaneId } from './lastLane'
 import { MonthGrid } from './MonthGrid'
+import { useCalendarDrag } from './useCalendarDrag'
 import { monthParam, monthTitle, monthWeeks, parseMonthParam, shiftMonth } from './month'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -69,8 +70,11 @@ export function CalendarPage({ param }: CalendarPageProps) {
     milestones: data.milestones,
     terms: data.terms,
   }
-  const layouts = layoutMonth(monthWeeks(month), calendarData)
+  const weeks = monthWeeks(month)
+  const layouts = layoutMonth(weeks, calendarData)
   const anchorPlaceholder = hiddenAnchor(editing, calendarData, layouts)
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const { preview, beginCreate } = useCalendarDrag({ gridRef, weeks })
 
   // 最近编辑的阶段或节点在哪个板块，新建时就默认放那里
   const editedLaneId = useMemo(() => {
@@ -146,6 +150,9 @@ export function CalendarPage({ param }: CalendarPageProps) {
           selection={selection}
           data={calendarData}
           anchorPlaceholder={anchorPlaceholder}
+          gridRef={gridRef}
+          preview={preview}
+          onCreateStart={beginCreate}
         />
       </div>
       {editing?.kind === 'phase' && (

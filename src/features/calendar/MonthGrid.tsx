@@ -1,7 +1,9 @@
+import type { PointerEvent as ReactPointerEvent, RefObject } from 'react'
 import type { Lane } from '@/data/schema'
 import type { Selection } from '@/data/store'
 import type { CalendarData, WeekLayout } from './layout'
 import type { MonthRef } from './month'
+import type { Preview } from './useCalendarDrag'
 import { WeekRow } from './WeekRow'
 
 interface MonthGridProps {
@@ -13,6 +15,9 @@ interface MonthGridProps {
   selection: Selection | null
   data: CalendarData
   anchorPlaceholder: { testId: string; day: number } | null
+  gridRef: RefObject<HTMLDivElement | null>
+  preview: Preview | null
+  onCreateStart: (event: ReactPointerEvent<HTMLElement>, day: number) => void
 }
 
 /** 月网格：每个周行 7 格，项目叠在格子上面。 */
@@ -25,12 +30,16 @@ export function MonthGrid({
   selection,
   data,
   anchorPlaceholder,
+  gridRef,
+  preview,
+  onCreateStart,
 }: MonthGridProps) {
   const laneColors = new Map(lanes.map((lane) => [lane.id, lane.color]))
   return (
     <div
+      ref={gridRef}
       data-testid="month-grid"
-      className="flex min-h-full flex-col border-t border-l border-(--border)"
+      className="flex min-h-full flex-col border-t border-l border-(--border) select-none"
     >
       {layouts.map((layout, index) => (
         <WeekRow
@@ -44,6 +53,8 @@ export function MonthGrid({
           selection={selection}
           data={data}
           anchorPlaceholder={anchorPlaceholder}
+          preview={preview}
+          onCreateStart={onCreateStart}
         />
       ))}
     </div>

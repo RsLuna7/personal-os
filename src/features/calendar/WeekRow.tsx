@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
 import { useStore, type Selection } from '@/data/store'
 import { openEditor, setTermsOpen } from '@/features/editor/editorStore'
 import { fromDay, toDay } from '@/features/timeline/days'
@@ -13,6 +13,7 @@ import {
   type WeekLayout,
 } from './layout'
 import { monthParam, type MonthRef } from './month'
+import type { Preview } from './useCalendarDrag'
 
 /** 学期带的高度，整个网格里有学期时每个周行都留出来。 */
 export const TERM_BAND_HEIGHT = 16
@@ -38,6 +39,8 @@ interface WeekRowProps {
   data: CalendarData
   /** 正在编辑的项目这个月没画出来（被“+N 项”收起）时，面板贴在这一天的格子上 */
   anchorPlaceholder: { testId: string; day: number } | null
+  preview: Preview | null
+  onCreateStart: (event: ReactPointerEvent<HTMLElement>, day: number) => void
 }
 
 function span(startCol: number, endCol: number): CSSProperties {
@@ -67,6 +70,8 @@ export function WeekRow({
   selection,
   data,
   anchorPlaceholder,
+  preview,
+  onCreateStart,
 }: WeekRowProps) {
   const top = (slot: number) =>
     (termBand ? TERM_BAND_HEIGHT : 0) + DAY_NUMBER_HEIGHT + slot * SLOT_HEIGHT
@@ -88,7 +93,13 @@ export function WeekRow({
               data-testid={`day-${iso}`}
               data-today={String(day === today)}
               data-outside={String(!iso.startsWith(monthPrefix))}
-              className="relative border-r border-(--border) bg-(--bg-page) px-1.5 pb-1 last:border-r-0 data-[outside=true]:bg-(--bg-canvas) data-[outside=true]:text-(--text-muted)"
+              data-preview={
+                preview?.kind === 'create' && day >= preview.start && day < preview.end
+                  ? 'true'
+                  : undefined
+              }
+              onPointerDown={(event) => onCreateStart(event, day)}
+              className="relative border-r border-(--border) bg-(--bg-page) px-1.5 pb-1 last:border-r-0 data-[outside=true]:bg-(--bg-canvas) data-[preview=true]:bg-(--sand-5) data-[outside=true]:text-(--text-muted)"
               style={{ paddingTop: termBand ? TERM_BAND_HEIGHT + 2 : 2 }}
             >
               <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[13px] [[data-today=true]>&]:bg-(--text) [[data-today=true]>&]:text-(--bg-page)">
@@ -97,6 +108,8 @@ export function WeekRow({
               {overflow && (
                 <div
                   className="absolute"
+                  // 弹出层在 React 树里也算在日期格里面，按下的事件不能冒泡成“新建”
+                  onPointerDown={(event) => event.stopPropagation()}
                   style={{
                     left: BAR_INSET_PX,
                     right: BAR_INSET_PX,
