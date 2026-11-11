@@ -13,7 +13,7 @@ import {
   type WeekLayout,
 } from './layout'
 import { monthParam, type MonthRef } from './month'
-import type { Preview } from './useCalendarDrag'
+import type { MoveTarget, Preview } from './useCalendarDrag'
 
 /** 学期带的高度，整个网格里有学期时每个周行都留出来。 */
 export const TERM_BAND_HEIGHT = 16
@@ -23,6 +23,7 @@ export const DAY_NUMBER_HEIGHT = 24
 export const SLOT_HEIGHT = 22
 const ITEM_HEIGHT = SLOT_HEIGHT - 2
 const BAR_INSET_PX = 2
+const HANDLE_WIDTH = 8
 
 /** 一个周行至少这么高：学期带、日期数字和三个槽，再留一点底边。 */
 export const WEEK_ROW_MIN_HEIGHT = TERM_BAND_HEIGHT + DAY_NUMBER_HEIGHT + SLOTS * SLOT_HEIGHT + 6
@@ -41,6 +42,7 @@ interface WeekRowProps {
   anchorPlaceholder: { testId: string; day: number } | null
   preview: Preview | null
   onCreateStart: (event: ReactPointerEvent<HTMLElement>, day: number) => void
+  onMoveStart: (event: ReactPointerEvent<HTMLElement>, target: MoveTarget) => void
 }
 
 function span(startCol: number, endCol: number): CSSProperties {
@@ -72,6 +74,7 @@ export function WeekRow({
   anchorPlaceholder,
   preview,
   onCreateStart,
+  onMoveStart,
 }: WeekRowProps) {
   const top = (slot: number) =>
     (termBand ? TERM_BAND_HEIGHT : 0) + DAY_NUMBER_HEIGHT + slot * SLOT_HEIGHT
@@ -136,14 +139,17 @@ export function WeekRow({
         {layout.terms.map((segment) => (
           <TermBand key={segment.term.id} segment={segment} weekIndex={weekIndex} />
         ))}
-        {layout.bars.map((bar) => (
+        {layout.bars.map((bar, index) => (
           <PhaseBar
-            key={`${bar.phase.id}-${bar.startCol}`}
+            // 拖动时色条的列会变，key 不能跟着列走，否则每动一格都重新挂载
+            key={`${bar.phase.id}-${layout.bars.slice(0, index).filter((other) => other.phase.id === bar.phase.id).length}`}
             bar={bar}
             top={top(bar.slot)}
             today={today}
             color={colorOf(bar.phase.laneId)}
             selected={selection?.kind === 'phase' && selection.id === bar.phase.id}
+            dragging={preview?.kind === 'phase' && preview.id === bar.phase.id}
+            onMoveStart={onMoveStart}
           />
         ))}
         {layout.dots.map((dot) => (
@@ -153,6 +159,8 @@ export function WeekRow({
             top={top(dot.slot)}
             color={colorOf(dot.milestone.laneId)}
             selected={selection?.kind === 'milestone' && selection.id === dot.milestone.id}
+            dragging={preview?.kind === 'milestone' && preview.id === dot.milestone.id}
+            onMoveStart={onMoveStart}
           />
         ))}
       </div>
@@ -184,9 +192,11 @@ interface PhaseBarProps {
   today: number
   color: string
   selected: boolean
+  dragging: boolean
+  onMoveStart: WeekRowProps['onMoveStart']
 }
 
-function PhaseBar({ bar, top, today, color, selected }: PhaseBarProps) {
+function PhaseBar({ bar, top, today, color, selected, dragging, onMoveStart }: PhaseBarProps) {
   const { phase } = bar
   const start = toDay(phase.start)
   const end = toDay(phase.end)
@@ -207,14 +217,43 @@ function PhaseBar({ bar, top, today, color, selected }: PhaseBarProps) {
       data-current={String(!phase.tentative && start <= today && today < end)}
       data-tentative={String(phase.tentative)}
       data-selected={String(selected)}
-      className={`phase-block pointer-events-auto absolute flex cursor-pointer items-center border px-1.5 text-[13px] select-none ${shape}`}
+      data-dragging={String(dragging)}
+      className={`phase-block pointer-events-auto absolute flex cursor-grab touch-none items-center border px-1.5 text-[13px] select-none ${shape}`}
       style={{ ...span(bar.startCol, bar.endCol), top, height: ITEM_HEIGHT }}
-      onClick={() => openItem('phase', phase.id)}
+      onPointerDown={(event) => onMoveStart(event, { kind: 'phase', id: phase.id, mode: 'move' })}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' && event.target === event.currentTarget)
+          openItem('phase', phase.id)
+      }}
     >
+      {bar.startsHere && (
+        <span
+          data-handle="start"
+          data-testid={`phase-${phase.id}-handle-start`}
+          className="absolute inset-y-0 left-0 cursor-ew-resize"
+          style={{ width: HANDLE_WIDTH }}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            onMoveStart(event, { kind: 'phase', id: phase.id, mode: 'start' })
+          }}
+        />
+      )}
       {bar.labelled && (
         <span className="truncate" title={phase.name}>
           {phase.name}
         </span>
+      )}
+      {bar.endsHere && (
+        <span
+          data-handle="end"
+          data-testid={`phase-${phase.id}-handle-end`}
+          className="absolute inset-y-0 right-0 cursor-ew-resize"
+          style={{ width: HANDLE_WIDTH }}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            onMoveStart(event, { kind: 'phase', id: phase.id, mode: 'end' })
+          }}
+        />
       )}
     </div>
   )
@@ -225,9 +264,11 @@ interface MilestoneChipProps {
   top: number
   color: string
   selected: boolean
+  dragging: boolean
+  onMoveStart: WeekRowProps['onMoveStart']
 }
 
-function MilestoneChip({ dot, top, color, selected }: MilestoneChipProps) {
+function MilestoneChip({ dot, top, color, selected, dragging, onMoveStart }: MilestoneChipProps) {
   const { milestone } = dot
   return (
     <div
@@ -237,9 +278,13 @@ function MilestoneChip({ dot, top, color, selected }: MilestoneChipProps) {
       aria-label={`${milestone.name}，${formatDayWithYear(toDay(milestone.date))}`}
       data-lane-color={color}
       data-selected={String(selected)}
-      className="milestone-dot pointer-events-auto absolute flex cursor-pointer items-center gap-1 rounded-[6px] px-1 select-none"
+      data-dragging={String(dragging)}
+      className="milestone-dot pointer-events-auto absolute flex cursor-grab touch-none items-center gap-1 rounded-[6px] px-1 select-none"
       style={{ ...span(dot.col, dot.col), top, height: ITEM_HEIGHT }}
-      onClick={() => openItem('milestone', milestone.id)}
+      onPointerDown={(event) => onMoveStart(event, { kind: 'milestone', id: milestone.id })}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') openItem('milestone', milestone.id)
+      }}
     >
       <span className="size-2 shrink-0 rounded-full bg-(--lane-dot)" />
       <span className="truncate text-[12px] text-(--text)" title={milestone.name}>

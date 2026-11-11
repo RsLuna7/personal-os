@@ -3,7 +3,7 @@ import type { Lane } from '@/data/schema'
 import type { Selection } from '@/data/store'
 import type { CalendarData, WeekLayout } from './layout'
 import type { MonthRef } from './month'
-import type { Preview } from './useCalendarDrag'
+import type { MoveTarget, Preview } from './useCalendarDrag'
 import { WeekRow } from './WeekRow'
 
 interface MonthGridProps {
@@ -18,6 +18,7 @@ interface MonthGridProps {
   gridRef: RefObject<HTMLDivElement | null>
   preview: Preview | null
   onCreateStart: (event: ReactPointerEvent<HTMLElement>, day: number) => void
+  onMoveStart: (event: ReactPointerEvent<HTMLElement>, target: MoveTarget) => void
 }
 
 /** 月网格：每个周行 7 格，项目叠在格子上面。 */
@@ -33,6 +34,7 @@ export function MonthGrid({
   gridRef,
   preview,
   onCreateStart,
+  onMoveStart,
 }: MonthGridProps) {
   const laneColors = new Map(lanes.map((lane) => [lane.id, lane.color]))
   return (
@@ -55,6 +57,7 @@ export function MonthGrid({
           anchorPlaceholder={anchorPlaceholder}
           preview={preview}
           onCreateStart={onCreateStart}
+          onMoveStart={onMoveStart}
         />
       ))}
     </div>

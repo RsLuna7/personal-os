@@ -7,11 +7,11 @@ import { useUndoKeys } from '@/features/editor/useUndoKeys'
 import { routeHref } from '@/app/useHashRoute'
 import { EmptyState } from '@/features/timeline/EmptyState'
 import { useToday } from '@/features/timeline/useToday'
-import { toDay } from '@/features/timeline/days'
+import { fromDay, toDay } from '@/features/timeline/days'
 import { layoutMonth, type CalendarData, type WeekLayout } from './layout'
 import { setLastLaneId } from './lastLane'
 import { MonthGrid } from './MonthGrid'
-import { useCalendarDrag } from './useCalendarDrag'
+import { useCalendarDrag, type Preview } from './useCalendarDrag'
 import { monthParam, monthTitle, monthWeeks, parseMonthParam, shiftMonth } from './month'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
@@ -49,6 +49,29 @@ function hiddenAnchor(
   return day >= firstDay && day <= lastDay ? { testId: `milestone-${milestone.id}`, day } : null
 }
 
+/** 拖动中把被拖的那一项换成预览的日期，预览和最终结果用同一套排版。 */
+function withPreview(data: CalendarData, preview: Preview | null): CalendarData {
+  if (preview?.kind === 'phase') {
+    return {
+      ...data,
+      phases: data.phases.map((phase) =>
+        phase.id === preview.id
+          ? { ...phase, start: fromDay(preview.start), end: fromDay(preview.end) }
+          : phase,
+      ),
+    }
+  }
+  if (preview?.kind === 'milestone') {
+    return {
+      ...data,
+      milestones: data.milestones.map((milestone) =>
+        milestone.id === preview.id ? { ...milestone, date: fromDay(preview.day) } : milestone,
+      ),
+    }
+  }
+  return data
+}
+
 interface CalendarPageProps {
   /** 网址里的月份（2026-11）；缺省或不合法时用今天所在的月 */
   param: string | null
@@ -64,17 +87,20 @@ export function CalendarPage({ param }: CalendarPageProps) {
 
   const month = parseMonthParam(param, today)
   // 数据量很小，不手动缓存；React Compiler 会按输入缓存
-  const calendarData: CalendarData = {
-    lanes: data.lanes,
-    phases: data.phases,
-    milestones: data.milestones,
-    terms: data.terms,
-  }
   const weeks = monthWeeks(month)
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const { preview, beginCreate, beginMove } = useCalendarDrag({ gridRef, weeks })
+  const calendarData = withPreview(
+    {
+      lanes: data.lanes,
+      phases: data.phases,
+      milestones: data.milestones,
+      terms: data.terms,
+    },
+    preview,
+  )
   const layouts = layoutMonth(weeks, calendarData)
   const anchorPlaceholder = hiddenAnchor(editing, calendarData, layouts)
-  const gridRef = useRef<HTMLDivElement | null>(null)
-  const { preview, beginCreate } = useCalendarDrag({ gridRef, weeks })
 
   // 最近编辑的阶段或节点在哪个板块，新建时就默认放那里
   const editedLaneId = useMemo(() => {
@@ -153,6 +179,7 @@ export function CalendarPage({ param }: CalendarPageProps) {
           gridRef={gridRef}
           preview={preview}
           onCreateStart={beginCreate}
+          onMoveStart={beginMove}
         />
       </div>
       {editing?.kind === 'phase' && (
