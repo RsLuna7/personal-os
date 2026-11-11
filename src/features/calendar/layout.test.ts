@@ -1,5 +1,6 @@
 import type { Lane, Milestone, Phase, Term } from '@/data/schema'
-import { layoutMonth, type CalendarData } from './layout'
+import { toDay } from '@/features/timeline/days'
+import { dayItems, layoutMonth, type CalendarData } from './layout'
 import { monthWeeks } from './month'
 
 // 2026 年 11 月：第 1 周行是 10 月 26 日到 11 月 1 日，第 2 周行从 11 月 2 日起
@@ -157,5 +158,135 @@ describe('layoutMonth terms', () => {
     expect(layout[0]!.terms[0]).toMatchObject({ startCol: 0, endCol: 6, labelled: true })
     expect(layout[1]!.terms[0]).toMatchObject({ startCol: 0, endCol: 0, labelled: false })
     expect(layout[2]!.terms).toEqual([])
+  })
+})
+
+const milestone = (id: string, laneId: string, date: string): Milestone => ({
+  id,
+  laneId,
+  name: id,
+  date,
+  note: '',
+})
+
+describe('layoutMonth milestones and overflow', () => {
+  it('puts a milestone in the first free slot of its day', () => {
+    const layout = layoutMonth(
+      WEEKS,
+      data([phase('a', 'l1', '2026-11-03', '2026-11-04')], {}, [
+        milestone('m1', 'l1', '2026-11-02'),
+        milestone('m2', 'l1', '2026-11-03'),
+      ]),
+    )
+    const dots = layout[1]!.dots
+    expect(dots.find((dot) => dot.milestone.id === 'm1')).toMatchObject({ col: 0, slot: 0 })
+    expect(dots.find((dot) => dot.milestone.id === 'm2')).toMatchObject({ col: 1, slot: 1 })
+    expect(layout[1]!.overflow).toEqual([])
+  })
+
+  it('replaces the third slot with +N when four phases share a day', () => {
+    const layout = layoutMonth(
+      WEEKS,
+      data([
+        phase('p1', 'l1', '2026-11-09', '2026-11-12'),
+        phase('p2', 'l1', '2026-11-09', '2026-11-12'),
+        phase('p3', 'l2', '2026-11-09', '2026-11-12'),
+        phase('p4', 'l2', '2026-11-09', '2026-11-12'),
+      ]),
+    )
+    const row = layout[2]!
+    expect(row.bars.map((bar) => bar.phase.id)).toEqual(['p1', 'p2'])
+    expect(row.bars.map((bar) => bar.slot)).toEqual([0, 1])
+    expect(row.overflow).toEqual([
+      { col: 0, count: 2 },
+      { col: 1, count: 2 },
+      { col: 2, count: 2 },
+    ])
+  })
+
+  it('cuts the third-slot bar around an overflow day and labels the first drawn piece', () => {
+    const layout = layoutMonth(
+      WEEKS,
+      data(
+        [
+          phase('p1', 'l1', '2026-11-09', '2026-11-14'),
+          phase('p2', 'l1', '2026-11-09', '2026-11-14'),
+          phase('p3', 'l2', '2026-11-09', '2026-11-14'),
+        ],
+        {},
+        [milestone('m', 'l2', '2026-11-11')],
+      ),
+    )
+    const row = layout[2]!
+    expect(row.overflow).toEqual([{ col: 2, count: 2 }])
+    const pieces = row.bars.filter((bar) => bar.phase.id === 'p3')
+    expect(pieces.map((bar) => [bar.startCol, bar.endCol, bar.slot])).toEqual([
+      [0, 1, 2],
+      [3, 4, 2],
+    ])
+    expect(pieces.map((bar) => bar.labelled)).toEqual([true, false])
+    expect(pieces.map((bar) => [bar.startsHere, bar.endsHere])).toEqual([
+      [true, false],
+      [false, true],
+    ])
+    expect(row.dots).toEqual([])
+  })
+
+  it('moves the label to the next drawn piece when the first one is fully hidden', () => {
+    const layout = layoutMonth(
+      WEEKS,
+      data([
+        phase('p1', 'l1', '2026-11-09', '2026-11-11'),
+        phase('p2', 'l1', '2026-11-09', '2026-11-11'),
+        phase('p3', 'l1', '2026-11-09', '2026-11-11'),
+        phase('p4', 'l1', '2026-11-09', '2026-11-11'),
+        phase('p5', 'l2', '2026-11-09', '2026-11-23'),
+      ]),
+    )
+    const pieces = layout.flatMap((row) => row.bars).filter((bar) => bar.phase.id === 'p5')
+    expect(pieces).toHaveLength(1)
+    expect(pieces[0]).toMatchObject({ startCol: 0, endCol: 6, slot: 0, labelled: true })
+  })
+
+  it('keeps a third item and makes no overflow when a day has only three', () => {
+    const layout = layoutMonth(
+      WEEKS,
+      data(
+        [
+          phase('p1', 'l1', '2026-11-09', '2026-11-10'),
+          phase('p2', 'l1', '2026-11-09', '2026-11-10'),
+        ],
+        {},
+        [milestone('m', 'l2', '2026-11-09')],
+      ),
+    )
+    const row = layout[2]!
+    expect(row.overflow).toEqual([])
+    expect(row.dots).toEqual([expect.objectContaining({ col: 0, slot: 2 })])
+  })
+})
+
+describe('dayItems', () => {
+  it('lists phases and milestones of a day by lane, phases first', () => {
+    const items = dayItems(
+      toDay('2026-11-10'),
+      data(
+        [
+          phase('b-late', 'l2', '2026-11-10', '2026-11-12'),
+          phase('a2', 'l1', '2026-11-10', '2026-11-11'),
+          phase('a1', 'l1', '2026-11-08', '2026-11-11'),
+          phase('ended', 'l1', '2026-11-05', '2026-11-10'),
+        ],
+        {},
+        [
+          milestone('mb', 'l2', '2026-11-10'),
+          milestone('ma', 'l1', '2026-11-10'),
+          milestone('other-day', 'l1', '2026-11-11'),
+        ],
+      ),
+    )
+    expect(
+      items.map((item) => (item.kind === 'phase' ? item.phase.id : item.milestone.id)),
+    ).toEqual(['a1', 'a2', 'ma', 'b-late', 'mb'])
   })
 })

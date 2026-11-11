@@ -34,12 +34,29 @@ export interface TermSegment {
   labelled: boolean
 }
 
+export interface DotItem {
+  milestone: Milestone
+  col: number
+  slot: number
+}
+
+export interface OverflowCell {
+  col: number
+  /** 这一天槽号 2 及以后的项数 */
+  count: number
+}
+
 export interface WeekLayout {
   /** 这一周的 7 个整日数 */
   days: number[]
   terms: TermSegment[]
   bars: BarSegment[]
+  /** 只含画得出来的节点 */
+  dots: DotItem[]
+  overflow: OverflowCell[]
 }
+
+export type DayItem = { kind: 'phase'; phase: Phase } | { kind: 'milestone'; milestone: Milestone }
 
 const UNKNOWN_LANE_ORDER = Number.MAX_SAFE_INTEGER
 
@@ -95,6 +112,13 @@ export function layoutMonth(weeks: number[][], data: CalendarData): WeekLayout[]
     (a, b) => compareText(a.start, b.start) || compareText(a.id, b.id),
   )
 
+  const milestones = [...data.milestones].sort(
+    (a, b) =>
+      orderOf(a.laneId) - orderOf(b.laneId) ||
+      compareText(a.date, b.date) ||
+      compareText(a.id, b.id),
+  )
+
   const labelledPhases = new Set<string>()
   const labelledTerms = new Set<string>()
 
@@ -115,24 +139,109 @@ export function layoutMonth(weeks: number[][], data: CalendarData): WeekLayout[]
       labelledTerms.add(term.id)
     }
 
-    const bars: BarSegment[] = []
+    const placedBars: BarSegment[] = []
     for (const phase of phases) {
       const start = toDay(phase.start)
       const end = toDay(phase.end)
       const clip = clipToWeek(start, end, weekStart)
       if (!clip) continue
-      bars.push({
+      placedBars.push({
         phase,
         startCol: clip.startCol,
         endCol: clip.endCol,
         slot: firstFreeSlot(occupied, clip.startCol, clip.endCol),
-        labelled: !labelledPhases.has(phase.id),
+        labelled: false,
         startsHere: clip.clippedStart === start,
         endsHere: clip.clippedEnd === end,
       })
-      labelledPhases.add(phase.id)
     }
 
-    return { days, terms: termSegments, bars }
+    const placedDots: DotItem[] = []
+    for (const milestone of milestones) {
+      const col = toDay(milestone.date) - weekStart
+      if (col < 0 || col >= DAYS_PER_WEEK) continue
+      placedDots.push({ milestone, col, slot: firstFreeSlot(occupied, col, col) })
+    }
+
+    // 某一天有项目落在槽 >= SLOTS：这一天的最后一个槽改成“+N 项”
+    const overflow: OverflowCell[] = []
+    const overflowCols = new Set<number>()
+    for (let col = 0; col < DAYS_PER_WEEK; col++) {
+      const slots = [
+        ...placedBars.filter((bar) => bar.startCol <= col && col <= bar.endCol).map((b) => b.slot),
+        ...placedDots.filter((dot) => dot.col === col).map((d) => d.slot),
+      ]
+      if (!slots.some((slot) => slot >= SLOTS)) continue
+      overflowCols.add(col)
+      overflow.push({ col, count: slots.filter((slot) => slot >= SLOTS - 1).length })
+    }
+
+    const bars: BarSegment[] = []
+    for (const bar of placedBars) {
+      if (bar.slot >= SLOTS) continue
+      // 最后一个槽的色条在“+N 项”的那些天不画，剩下的连续几天各成一段
+      let runStart: number | null = null
+      for (let col = bar.startCol; col <= bar.endCol + 1; col++) {
+        const hidden = col > bar.endCol || (bar.slot === SLOTS - 1 && overflowCols.has(col))
+        if (!hidden) {
+          runStart ??= col
+          continue
+        }
+        if (runStart === null) continue
+        const runEnd = col - 1
+        bars.push({
+          ...bar,
+          startCol: runStart,
+          endCol: runEnd,
+          labelled: !labelledPhases.has(bar.phase.id),
+          startsHere: bar.startsHere && runStart === bar.startCol,
+          endsHere: bar.endsHere && runEnd === bar.endCol,
+        })
+        labelledPhases.add(bar.phase.id)
+        runStart = null
+      }
+    }
+
+    const dots = placedDots.filter(
+      (dot) => dot.slot < SLOTS - 1 || (dot.slot === SLOTS - 1 && !overflowCols.has(dot.col)),
+    )
+
+    return { days, terms: termSegments, bars, dots, overflow }
   })
+}
+
+/** 这一天的全部阶段（start <= day < end）和节点：按板块顺序，同板块阶段在前、节点在后。 */
+export function dayItems(day: number, data: CalendarData): DayItem[] {
+  const laneOrder = new Map(data.lanes.map((lane) => [lane.id, lane.order]))
+  const orderOf = (laneId: string) => laneOrder.get(laneId) ?? UNKNOWN_LANE_ORDER
+
+  const items: { item: DayItem; lane: number; kind: number; key: string; id: string }[] = []
+  for (const phase of data.phases) {
+    if (toDay(phase.start) <= day && day < toDay(phase.end)) {
+      items.push({
+        item: { kind: 'phase', phase },
+        lane: orderOf(phase.laneId),
+        kind: 0,
+        key: phase.start,
+        id: phase.id,
+      })
+    }
+  }
+  for (const milestone of data.milestones) {
+    if (toDay(milestone.date) === day) {
+      items.push({
+        item: { kind: 'milestone', milestone },
+        lane: orderOf(milestone.laneId),
+        kind: 1,
+        key: '',
+        id: milestone.id,
+      })
+    }
+  }
+  return items
+    .sort(
+      (a, b) =>
+        a.lane - b.lane || a.kind - b.kind || compareText(a.key, b.key) || compareText(a.id, b.id),
+    )
+    .map((entry) => entry.item)
 }
