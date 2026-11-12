@@ -3,6 +3,22 @@
 @import 'shadcn/tailwind.css';
 @import './styles/tokens.css';
 
+/* 顶栏品牌字标“Kairos OS”专用：两个字体都裁到只剩这几个字母（OFL 许可，见 assets/fonts） */
+@font-face {
+  font-family: 'Playball Kairos';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/playball-kairos.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond OS';
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/cormorant-garamond-600-italic-os.woff2') format('woff2');
+}
+
 @theme inline {
   /* 数字和英文用 Inter，中文用思源黑体；字体没加载好时先用系统字体 */
   --font-sans:
