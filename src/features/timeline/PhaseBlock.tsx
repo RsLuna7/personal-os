@@ -16,6 +16,8 @@ export const DRAG_THRESHOLD_PX = 4
 /** 名称被截断时至少要留出的宽度（约四个汉字）；再窄就不显示，免得只剩“期…” */
 const MIN_TRUNCATED_LABEL_PX = 72
 const LABEL_PADDING_PX = 18
+/** 写在色块外面的名称和色块之间的间距 */
+const OUTSIDE_LABEL_GAP = 6
 
 /** 粗略估算名称的显示宽度：汉字按 14 像素，其余按 8 像素。 */
 function estimateLabelWidth(name: string): number {
@@ -45,6 +47,8 @@ interface PhaseBlockProps {
   exiting?: boolean
   /** 只看不改：不能拖动、聚焦或打开编辑面板，悬停提示仍然可用 */
   readOnly?: boolean
+  /** 同一行里下一个阶段的左端（像素）；色块里放不下名称时，名称写在右侧，最多写到这里 */
+  nextX?: number | null
 }
 
 function dragResult(
@@ -68,6 +72,7 @@ export function PhaseBlock({
   today,
   exiting = false,
   readOnly = false,
+  nextX = null,
 }: PhaseBlockProps) {
   const selected = useStore(
     (state) => state.selection?.kind === 'phase' && state.selection.id === phase.id,
@@ -159,6 +164,12 @@ export function PhaseBlock({
     window.addEventListener('keydown', onKey)
   }
 
+  const labelWidth = Math.min(estimateLabelWidth(phase.name), MIN_TRUNCATED_LABEL_PX)
+  const labelInside = width - LABEL_PADDING_PX >= labelWidth
+  /** 色块右侧到同一行下一个阶段之间的空白；放得下名称才写在外面，否则只靠悬停提示 */
+  const outsideRoom = (nextX ?? Infinity) - (x + width) - OUTSIDE_LABEL_GAP * 2
+  const labelOutside = !labelInside && !exiting && outsideRoom >= labelWidth
+
   return (
     <>
       <Tooltip open={drag || exiting ? false : undefined}>
@@ -195,8 +206,7 @@ export function PhaseBlock({
             onPointerDown={readOnly ? undefined : (event) => beginDrag(event, 'move')}
             onDoubleClick={(event) => event.stopPropagation()}
           >
-            {width - LABEL_PADDING_PX >=
-              Math.min(estimateLabelWidth(phase.name), MIN_TRUNCATED_LABEL_PX) && (
+            {labelInside && (
               <span className="flex min-w-0 items-center gap-1" style={{ marginLeft: labelInset }}>
                 {phase.done && <Check aria-hidden className="size-3.5 shrink-0" />}
                 <span className="truncate" title={phase.name}>
@@ -232,6 +242,24 @@ export function PhaseBlock({
           </div>
         </TooltipContent>
       </Tooltip>
+      {labelOutside && (
+        <span
+          aria-hidden
+          data-anim
+          data-testid={`phase-${phase.id}-outside-label`}
+          data-done={String(phase.done)}
+          className="phase-label-outside pointer-events-none absolute left-0 flex items-center gap-1 text-[13px] whitespace-nowrap"
+          style={{
+            transform: `translateX(${x + width + OUTSIDE_LABEL_GAP}px)`,
+            top: `${top}px`,
+            height: ROW_HEIGHT,
+            maxWidth: Number.isFinite(outsideRoom) ? outsideRoom : undefined,
+          }}
+        >
+          {phase.done && <Check aria-hidden className="size-3.5 shrink-0" />}
+          <span className="truncate">{phase.name}</span>
+        </span>
+      )}
       {drag &&
         createPortal(
           <div

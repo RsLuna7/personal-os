@@ -55,6 +55,13 @@ it('moves a phase by whole weeks on drag and records one undo step', () => {
   expect(s().past.length).toBe(n + 1)
 })
 
+it('keeps a mid-week start on the same weekday when dragged', () => {
+  // 编辑面板里可以设成周三开始；拖动按整周挪，不会被吸到周一
+  act(() => s().updatePhase('p1', { start: '2026-11-11', end: '2026-12-09' }))
+  drag(screen.getByTestId('phase-p1'), 100, 118)
+  expect(phaseDates()).toEqual(['2026-11-18', '2026-12-16'])
+})
+
 it('shows live dates while dragging and removes the hint on release', () => {
   const el = screen.getByTestId('phase-p1')
   drag(el, 100, 118, false)

@@ -6,7 +6,9 @@ import { useStore } from '@/data/store'
 import { toDay, todayISO } from './days'
 import {
   panBy as panScale,
+  presetDays,
   presetScale,
+  TODAY_POSITION,
   zoomAt as zoomScale,
   type Scale,
   type ZoomPreset,
@@ -14,8 +16,8 @@ import {
 
 export const LABEL_COLUMN_WIDTH = 112
 export const MIN_LABEL_WIDTH = 24
-/** 今天在画布上的位置：左起四分之一 */
-const TODAY_POSITION = 0.25
+/** 宽度变化超过 1% 就按档位重新适配；再小的变化是像素抖动，不值得重算 */
+const REFIT_THRESHOLD = 0.01
 const DEFAULT_WIDTH = 1168
 const ANIMATE_MS = 250
 
@@ -28,6 +30,8 @@ interface ViewportState {
   ready: boolean
   /** 切换档位、回到今天时短暂为 true，让色块平滑过渡 */
   animating: boolean
+  /** 上次按档位适配时的画布宽度；宽度一变就重新适配，让“一年”始终是一年 */
+  fitWidth: number
 }
 
 const initialState: ViewportState = {
@@ -36,6 +40,7 @@ const initialState: ViewportState = {
   preset: 'year',
   ready: false,
   animating: false,
+  fitWidth: DEFAULT_WIDTH,
 }
 
 export const useViewportStore = create<ViewportState>()(() => initialState)
@@ -79,12 +84,10 @@ function init(): void {
   let scale: Scale
   if (prefs.zoomPreset === 'custom') {
     scale = withTodayAtQuarter(prefs.pxPerDay ?? initialState.scale.pxPerDay, width)
-  } else if (prefs.zoomPreset === 'all' && range) {
-    scale = presetScale('all', width, today(), range)
   } else {
-    scale = withTodayAtQuarter(presetScale(prefs.zoomPreset, width, today(), range).pxPerDay, width)
+    scale = presetScale(prefs.zoomPreset, width, today(), range)
   }
-  useViewportStore.setState({ scale, preset: prefs.zoomPreset, ready: true })
+  useViewportStore.setState({ scale, preset: prefs.zoomPreset, ready: true, fitWidth: width })
 }
 
 function setPreset(preset: ZoomPreset): void {
@@ -93,6 +96,7 @@ function setPreset(preset: ZoomPreset): void {
   useViewportStore.setState({
     scale: presetScale(preset, width, today(), dataRange(useStore.getState().data)),
     preset,
+    fitWidth: width,
   })
   remember({ zoomPreset: preset, pxPerDay: null })
 }
@@ -101,6 +105,27 @@ function zoomAt(factor: number, anchorX: number): void {
   const scale = zoomScale(useViewportStore.getState().scale, factor, anchorX)
   useViewportStore.setState({ scale, preset: 'custom' })
   remember({ zoomPreset: 'custom', pxPerDay: scale.pxPerDay })
+}
+
+/**
+ * 画布宽度变了（拖窗口、开关侧栏，或在主页卡片和完整时间线之间切换）时，按当前档位重新适配，
+ * 保持“近三个月”“一年”名副其实。主页卡片最宽只到 1280 像素的版心，比宽屏上的完整时间线窄很多，
+ * 所以两边各按自己的宽度适配，共用同一个“今天在左起四分之一”的位置。
+ * “近三个月”“一年”保持左起四分之一处的日期不动，只改缩放；“全部”重新铺满数据。
+ */
+export function refit(width: number): void {
+  const { preset, scale, width: oldWidth } = useViewportStore.getState()
+  if (preset === 'custom') return
+  const days = presetDays(preset)
+  let next: Scale
+  if (days === null) {
+    next = presetScale(preset, width, today(), dataRange(useStore.getState().data))
+  } else {
+    const anchorDay = scale.originDay + (oldWidth * TODAY_POSITION) / scale.pxPerDay
+    const pxPerDay = presetScale(preset, width, anchorDay, null).pxPerDay
+    next = { originDay: anchorDay - (width * TODAY_POSITION) / pxPerDay, pxPerDay }
+  }
+  useViewportStore.setState({ scale: next, fitWidth: width })
 }
 
 function panBy(dx: number): void {
@@ -135,9 +160,11 @@ export function useViewport(): Viewport {
     if (!element) return
     const measure = () => {
       const measured = element.clientWidth - LABEL_COLUMN_WIDTH
-      if (measured > 0 && measured !== useViewportStore.getState().width) {
-        useViewportStore.setState({ width: measured })
-      }
+      const state = useViewportStore.getState()
+      if (measured <= 0 || measured === state.width) return
+      const drift = Math.abs(measured - state.fitWidth) / state.fitWidth
+      if (state.ready && drift > REFIT_THRESHOLD) refit(measured)
+      useViewportStore.setState({ width: measured })
     }
     measure()
     if (!useViewportStore.getState().ready) init()

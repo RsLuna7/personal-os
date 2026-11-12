@@ -98,6 +98,14 @@
   .milestone-dot[data-done='true'] {
     opacity: 0.55;
   }
+  /* 色块太窄时名称写在右侧：用板块的文字色，看得出属于哪个色块 */
+  .phase-label-outside {
+    color: var(--lane-text);
+    font-weight: 500;
+  }
+  .phase-label-outside[data-done='true'] {
+    color: var(--text-muted);
+  }
   /* 泳道隔行铺一层浅底，代替横线 */
   .lane-row:nth-child(even) {
     background-color: color-mix(in srgb, var(--sand-3) 55%, transparent);
@@ -382,6 +390,9 @@
 :root[data-timeline-enter='true'] .timeline .lane-row .phase-block {
   animation: bar-reveal 460ms cubic-bezier(0.2, 0.8, 0.2, 1)
     calc(480ms + min(var(--lane-i, 0), 8) * 70ms) backwards;
+}
+:root[data-timeline-enter='true'] .timeline .lane-row .phase-label-outside {
+  animation: item-in 300ms ease-out calc(760ms + min(var(--lane-i, 0), 8) * 70ms) backwards;
 }
 :root[data-timeline-enter='true'] .timeline .lane-row .milestone-dot {
   animation: item-in 300ms ease-out calc(620ms + min(var(--lane-i, 0), 8) * 70ms) backwards;
