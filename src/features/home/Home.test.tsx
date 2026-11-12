@@ -191,6 +191,22 @@ describe('lanes with nothing planned and parallel phases', () => {
     expect(within(screen.getByTestId('now-strip')).getByText('2')).toBeInTheDocument()
   })
 
+  it('leaves lanes with nothing planned out of the home timeline, but not the full one', async () => {
+    s().hydrate(data())
+    render(<App />)
+    const card = screen.getByTestId('timeline')
+    expect(within(card).getByTestId('lane-busy')).toBeInTheDocument()
+    expect(within(card).queryByTestId('lane-idle-a')).not.toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('link', { name: '展开' }))
+    expect(await screen.findByTestId('lane-idle-a')).toBeInTheDocument()
+  })
+
+  it('says so in the home timeline when no lane has anything planned', () => {
+    s().hydrate({ ...data(), phases: [] })
+    render(<App />)
+    expect(screen.getByTestId('no-planned-lanes')).toBeInTheDocument()
+  })
+
   it('has no idle row when every lane has something planned', () => {
     setup()
     expect(screen.queryByTestId('idle-lanes')).not.toBeInTheDocument()

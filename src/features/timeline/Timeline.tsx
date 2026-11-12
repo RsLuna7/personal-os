@@ -35,16 +35,22 @@ interface TimelineProps {
   readOnly?: boolean
   /** 滚动容器的额外样式，卡片用它限制高度 */
   className?: string
+  /** 只画这些板块的泳道；不传就全部画。主页卡片用它藏起后面什么都没安排的板块 */
+  laneIds?: ReadonlySet<string>
 }
 
-export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
+export function Timeline({ readOnly = false, className = '', laneIds }: TimelineProps) {
   const data = useStore((state) => state.data)
   const editing = useEditorStore((state) => state.editing)
   const { scale, width, animating, containerRef, zoomAt, panBy, goToToday } = useViewport()
   useTimelineKeys({ goToToday }, !readOnly)
   const today = useToday()
 
-  const lanes = useMemo(() => [...data.lanes].sort((a, b) => a.order - b.order), [data.lanes])
+  const allLanes = useMemo(() => [...data.lanes].sort((a, b) => a.order - b.order), [data.lanes])
+  const lanes = useMemo(
+    () => (laneIds ? allLanes.filter((lane) => laneIds.has(lane.id)) : allLanes),
+    [allLanes, laneIds],
+  )
   // Stable per-lane arrays: a lane only sees a new list when its own items change.
   const phasesByLane = useMemo(() => groupByLane(data.phases), [data.phases])
   const milestonesByLane = useMemo(() => groupByLane(data.milestones), [data.milestones])
@@ -107,7 +113,7 @@ export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
         data-animate={String(animating)}
         className={`timeline relative min-h-0 flex-1 overflow-x-hidden overflow-y-auto ${className}`}
       >
-        {lanes.length === 0 ? (
+        {allLanes.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="relative min-h-full" onPointerDown={beginPan}>
@@ -148,6 +154,16 @@ export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
                 readOnly={readOnly}
               />
             ))}
+            {lanes.length === 0 && (
+              // 有板块，但都被藏起来了（主页卡片里，后面都还没有安排）
+              <div
+                data-testid="no-planned-lanes"
+                className="relative flex h-14 items-center text-[13px] text-(--text-muted)"
+                style={{ paddingLeft: LABEL_COLUMN_WIDTH + 16 }}
+              >
+                各板块后面都还没有安排，点“展开”去添加阶段
+              </div>
+            )}
             {!readOnly && (
               <div className="relative flex h-14 items-center px-2">
                 <button
