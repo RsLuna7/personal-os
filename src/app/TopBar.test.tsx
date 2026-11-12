@@ -13,10 +13,10 @@ it('shows four nav items with timeline active by default', () => {
     expect(screen.getByRole('link', { name })).toBeInTheDocument()
 })
 
-it('shows a placeholder for unbuilt views', async () => {
+it('opens the today page', async () => {
   render(<App />)
   await userEvent.click(screen.getByRole('link', { name: '今日' }))
-  expect(screen.getByText('待开发')).toBeInTheDocument()
+  expect(screen.getByTestId('today-page')).toBeInTheDocument()
   expect(window.location.hash).toBe('#/today')
 })
 

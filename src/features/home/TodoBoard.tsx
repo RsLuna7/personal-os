@@ -58,7 +58,7 @@ interface TodoBoardProps {
  * 主页的待办：过期没做完的和今天的，最多 5 条，可以直接勾掉。
  * - 过期的可以一键全部移到今天（Todoist 的做法），算一步撤销；
  * - 勾掉的先在原位停留一会儿再收进最下面一行“已完成 N”，不占 5 条的名额（滴答清单、Things 的做法）。
- * 安排、补充、改日期去日历（以后是“今日”页）。什么都没有时整块不显示。
+ * 安排、补充、改日期去今日页。什么都没有时整块不显示。
  */
 export function TodoBoard({ todos, lanes, today }: TodoBoardProps) {
   // 刚勾掉、还在原位停留的待办
@@ -81,10 +81,10 @@ export function TodoBoard({ todos, lanes, today }: TodoBoardProps) {
     <section aria-labelledby="todo-board-title" data-testid="todo-board">
       <SectionHeader id="todo-board-title" title="待办">
         <a
-          href="#/calendar"
+          href="#/today"
           className="text-[13px] text-(--text-muted) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:text-(--text)"
         >
-          {shown.hidden > 0 ? `还有 ${shown.hidden} 项 · ` : ''}去日历 →
+          {shown.hidden > 0 ? `还有 ${shown.hidden} 项 · ` : ''}去今日 →
         </a>
       </SectionHeader>
       <div className="rounded-[16px] bg-(--bg-card) px-5 py-3 shadow-(--shadow-card)">

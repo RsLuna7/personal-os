@@ -232,7 +232,7 @@ describe('to-do board', () => {
     expect(screen.queryByTestId('todo-board')).not.toBeInTheDocument()
   })
 
-  it('links to the calendar and says how many are not shown', () => {
+  it('links to the today page and says how many are not shown', () => {
     const data = createSampleData('2026-11-10')
     const extra = Array.from({ length: 6 }, (_, i) => ({
       id: `x${i}`,
@@ -246,9 +246,9 @@ describe('to-do board', () => {
     render(<App />)
     const board = screen.getByTestId('todo-board')
     expect(within(board).getAllByRole('checkbox')).toHaveLength(5)
-    expect(within(board).getByRole('link', { name: /还有 \d+ 项 · 去日历/ })).toHaveAttribute(
+    expect(within(board).getByRole('link', { name: /还有 \d+ 项 · 去今日/ })).toHaveAttribute(
       'href',
-      '#/calendar',
+      '#/today',
     )
   })
 
