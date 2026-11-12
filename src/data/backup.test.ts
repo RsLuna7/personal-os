@@ -134,7 +134,7 @@ it('round-trips done phases and milestones', () => {
 })
 
 it('imports a version 4 file with no habits', () => {
-  const { habits: _habits, ...v4 } = { ...sample, schemaVersion: 4 }
-  const result = parseImport(JSON.stringify(v4))
+  // JSON.stringify 会丢掉值为 undefined 的字段：等于一份没有 habits 的第 4 版文件
+  const result = parseImport(JSON.stringify({ ...sample, schemaVersion: 4, habits: undefined }))
   expect(result).toEqual({ ok: true, data: { ...sample, habits: [] } })
 })

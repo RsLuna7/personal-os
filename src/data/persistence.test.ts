@@ -288,8 +288,7 @@ it('upgrades stored version 3 data to the current version with done false and ke
 })
 
 it('upgrades stored version 4 data with an empty habit list and keeps a v4 backup', () => {
-  const { habits: _habits, ...rest } = sample
-  const old = JSON.stringify({ ...rest, schemaVersion: 4 })
+  const old = JSON.stringify({ ...sample, schemaVersion: 4, habits: undefined })
   const st = mem({ [DATA_KEY]: old })
   const result = loadData(st)
   expect(result.status).toBe('ok')
