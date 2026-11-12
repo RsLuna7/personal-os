@@ -17,6 +17,7 @@ const data: AppData = {
       start: '2026-11-09',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
     {
@@ -26,10 +27,11 @@ const data: AppData = {
       start: '2026-12-07',
       end: '2026-12-14',
       tentative: true,
+      done: false,
       note: '第一行\n第二行',
     },
   ],
-  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-31', note: '' }],
+  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-31', done: false, note: '' }],
   todos: [
     {
       id: 't1',

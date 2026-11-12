@@ -74,7 +74,9 @@ it('exports the current data and records the export time', async () => {
 it('exports an .ics calendar without touching the backup time', async () => {
   const user = setup({
     ...mine,
-    milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+    milestones: [
+      { id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', done: false, note: '' },
+    ],
   })
   await openMenu(user)
   await user.click(await screen.findByRole('menuitem', { name: '导出日历 (.ics)' }))
