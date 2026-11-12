@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { runViewTransition, transitionBetween } from './viewTransition'
 
-export const ROUTES = ['home', 'timeline', 'calendar', 'modules', 'today'] as const
+export const ROUTES = ['home', 'timeline', 'calendar', 'modules', 'today', 'review'] as const
 export type Route = (typeof ROUTES)[number]
 
 interface ParsedHash {

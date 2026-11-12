@@ -6,6 +6,7 @@ import { TemplateDialog } from '@/features/editor/TemplateDialog'
 import { TermsDialog } from '@/features/editor/TermsDialog'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { Home } from '@/features/home/Home'
+import { ReviewPage } from '@/features/review/ReviewPage'
 import { LanePage } from '@/features/lane/LanePage'
 import { Timeline } from '@/features/timeline/Timeline'
 import { DataErrorScreen } from './DataErrorScreen'
@@ -66,6 +67,8 @@ export function App({ persistence }: AppProps) {
           <CalendarPage param={param} />
         ) : route === 'modules' ? (
           <LanePage param={param} />
+        ) : route === 'review' ? (
+          <ReviewPage />
         ) : (
           <PlaceholderPage />
         )}
