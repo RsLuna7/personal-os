@@ -171,7 +171,9 @@ it('shows dates and length in the phase tooltip', async () => {
   setup(withData({ phases: [phase] }))
   await userEvent.hover(screen.getByTestId('phase-p1'))
   const tip = await screen.findByRole('tooltip')
-  expect(tip).toHaveTextContent('2026年11月9日 – 12月6日')
+  expect(tip).toHaveTextContent('11月9日')
+  expect(tip).toHaveTextContent('12月6日')
+  expect(tip).toHaveTextContent('2026')
   expect(tip).toHaveTextContent('共 4 周')
 })
 

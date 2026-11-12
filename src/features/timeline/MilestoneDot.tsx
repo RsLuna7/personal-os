@@ -5,6 +5,7 @@ import { useStore } from '@/data/store'
 import { openEditor } from '@/features/editor/editorStore'
 import { toDay } from './days'
 import { countdownText, formatDayWithYear } from './format'
+import { MilestoneTip } from './ItemTips'
 import { MILESTONE_BAND_HEIGHT } from './layout'
 import { dayToX, type Scale } from './scale'
 import { MIN_LABEL_WIDTH } from './useViewport'
@@ -37,6 +38,7 @@ export function MilestoneDot({
     (state) => state.selection?.kind === 'milestone' && state.selection.id === milestone.id,
   )
   const select = useStore((state) => state.select)
+  const lane = useStore((state) => state.data.lanes.find((item) => item.id === milestone.laneId))
 
   const day = toDay(milestone.date)
   const x = dayToX(scale, day)
@@ -97,11 +99,8 @@ export function MilestoneDot({
           )}
         </div>
       </TooltipTrigger>
-      <TooltipContent>
-        <div className="font-medium">{milestone.name}</div>
-        <div>{date}</div>
-        <div>{countdown}</div>
-        {milestone.done && <div>已完成</div>}
+      <TooltipContent data-lane-color={lane?.color}>
+        <MilestoneTip milestone={milestone} today={today} />
       </TooltipContent>
     </Tooltip>
   )
