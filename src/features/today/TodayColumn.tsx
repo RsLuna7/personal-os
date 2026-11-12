@@ -1,5 +1,5 @@
 import { useMemo, useState, type PointerEvent } from 'react'
-import { ArrowRightIcon, ChevronDownIcon, InboxIcon, Trash2Icon } from 'lucide-react'
+import { ChevronDownIcon, InboxIcon, SunriseIcon, Trash2Icon } from 'lucide-react'
 import { NAME_MAX, type ISODate, type Lane, type Todo } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { showDeleteToast } from '@/features/editor/deleteToast'
@@ -44,7 +44,7 @@ export function TodayColumn({
       <>
         <RowAction
           label={`推到明天「${todo.title}」`}
-          icon={ArrowRightIcon}
+          icon={SunriseIcon}
           onClick={() => store.updateTodo(todo.id, { date: fromDay(today + 1) })}
         />
         <RowAction
