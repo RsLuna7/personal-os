@@ -55,9 +55,10 @@ export function LanePage({ param }: LanePageProps) {
           {/* 换板块时整块重新挂载，输入框里的草稿不会带到另一个板块 */}
           <div key={lane.id} className="flex flex-col gap-6">
             <LaneHeader summary={summary} today={today} />
+            {/* 先看要做的事（阶段与节点），再看参考资料（备注、链接） */}
+            <ItemsCard lane={lane} today={today} />
             <NoteCard lane={lane} />
             <LinksCard lane={lane} />
-            <ItemsCard lane={lane} today={today} />
           </div>
         </div>
       </div>

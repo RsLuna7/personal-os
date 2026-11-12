@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createEmptyData, NOTE_MAX, type AppData } from '@/data/schema'
 import { useStore } from '@/data/store'
-import { NoteCard } from './NoteCard'
+import { NOTE_WARN_AT, NoteCard } from './NoteCard'
 
 const s = () => useStore.getState()
 const note = () => s().data.lanes[0]!.note
@@ -29,10 +29,16 @@ function setup() {
 const box = () => screen.getByRole('textbox', { name: '板块备注' })
 const type = (value: string) => fireEvent.change(box(), { target: { value } })
 
-it('shows the saved note and the character count', () => {
+it('shows the saved note without a character count far from the limit', () => {
   setup()
   expect(box()).toHaveValue('旧备注')
-  expect(screen.getByText(`3 / ${NOTE_MAX}`)).toBeInTheDocument()
+  expect(screen.queryByText(`3 / ${NOTE_MAX}`)).not.toBeInTheDocument()
+})
+
+it('shows the character count once the note nears the limit', () => {
+  setup()
+  type('字'.repeat(NOTE_WARN_AT))
+  expect(screen.getByText(`${NOTE_WARN_AT} / ${NOTE_MAX}`)).toBeInTheDocument()
 })
 
 it('shows a hint when the note is empty', () => {
@@ -41,11 +47,10 @@ it('shows a hint when the note is empty', () => {
   expect(box()).toHaveAttribute('placeholder', '写点什么：目标、注意事项……')
 })
 
-it('saves on blur and counts the characters as you type', async () => {
+it('saves on blur', async () => {
   const user = setup()
   await user.clear(box())
   await user.type(box(), '新备注内容')
-  expect(screen.getByText(`5 / ${NOTE_MAX}`)).toBeInTheDocument()
   expect(note()).toBe('旧备注')
   await user.tab()
   expect(note()).toBe('新备注内容')
@@ -128,12 +133,11 @@ it('does not write anything when the card goes away because its lane was deleted
   expect(s().data.lanes).toEqual([])
 })
 
-it('starts as a compact box and expands once it is clicked into', async () => {
-  const user = setup()
+it('grows with the note, from two lines up to twelve', () => {
+  setup()
   expect(box()).toHaveAttribute('rows', '2')
-  await user.click(box())
-  expect(box()).toHaveAttribute('rows', '6')
-  // 离开后不收回去：收回会让下面的按钮上移，点击会落空
-  await user.tab()
-  expect(box()).toHaveAttribute('rows', '6')
+  type('一\n二\n三')
+  expect(box()).toHaveAttribute('rows', '3')
+  type(Array.from({ length: 20 }, (_, i) => `第${i}行`).join('\n'))
+  expect(box()).toHaveAttribute('rows', '12')
 })

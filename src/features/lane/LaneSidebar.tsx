@@ -3,7 +3,9 @@ import { PlusIcon } from 'lucide-react'
 import type { Lane } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { addLaneAndRename } from '@/features/editor/AddMenu'
-import { summarizeLane } from '@/features/home/summary'
+import { isIdle, summarizeLane, type LaneSummary } from '@/features/home/summary'
+import { toDay } from '@/features/timeline/days'
+import { countdownText, formatDay } from '@/features/timeline/format'
 import { laneHref } from './select'
 
 interface LaneSidebarProps {
@@ -13,9 +15,20 @@ interface LaneSidebarProps {
   today: number
 }
 
-/** 左侧板块列表：每行是指向该板块网址的链接。 */
+/** 名字下面的一行：在做什么；没在做就写接下来是什么；什么都没安排就写“暂无安排”。 */
+function subtitle({ current, next, nextMilestone }: LaneSummary, today: number): string {
+  if (current) return current.name
+  if (next) return `下一阶段：${next.name} · ${formatDay(toDay(next.start))}`
+  if (nextMilestone) {
+    return `下一个节点：${nextMilestone.name} · ${countdownText(toDay(nextMilestone.date), today)}`
+  }
+  return '暂无安排'
+}
+
+/** 左侧板块列表：每行是指向该板块网址的链接。什么都没安排的板块变淡（和主页概览一样）。 */
 export function LaneSidebar({ lanes, selectedId, today }: LaneSidebarProps) {
   const phases = useStore((state) => state.data.phases)
+  const milestones = useStore((state) => state.data.milestones)
   const list = useRef<HTMLElement | null>(null)
 
   const moveFocus = (event: KeyboardEvent) => {
@@ -36,7 +49,8 @@ export function LaneSidebar({ lanes, selectedId, today }: LaneSidebarProps) {
     <aside className="flex w-60 shrink-0 flex-col gap-2 overflow-y-auto border-r border-(--border) bg-(--bg-page) p-3">
       <nav aria-label="板块列表" ref={list} onKeyDown={moveFocus} className="flex flex-col gap-1">
         {lanes.map((lane) => {
-          const current = summarizeLane(lane, phases, [], today).current
+          const summary = summarizeLane(lane, phases, milestones, today)
+          const idle = isIdle(summary)
           const selected = lane.id === selectedId
           return (
             <a
@@ -44,16 +58,21 @@ export function LaneSidebar({ lanes, selectedId, today }: LaneSidebarProps) {
               href={laneHref(lane.id)}
               data-lane-color={lane.color}
               aria-current={selected ? 'page' : undefined}
+              data-idle={String(idle)}
               className={
                 'flex flex-col gap-0.5 rounded-[10px] px-3 py-2 transition-colors duration-(--dur-fast) ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text) ' +
                 (selected ? 'bg-(--lane-fill)' : 'hover:bg-(--bg-subtle)')
               }
             >
               <span className="flex items-center gap-2">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-(--lane-dot)" />
+                <span
+                  aria-hidden
+                  className={`size-2.5 shrink-0 rounded-full bg-(--lane-dot) ${idle ? 'opacity-40' : ''}`}
+                />
                 <span
                   className={
-                    'min-w-0 truncate text-[14px] text-(--text) ' +
+                    'min-w-0 truncate text-[14px] ' +
+                    (idle ? 'text-(--text-muted) ' : 'text-(--text) ') +
                     (selected ? 'font-bold' : 'font-medium')
                   }
                 >
@@ -61,7 +80,7 @@ export function LaneSidebar({ lanes, selectedId, today }: LaneSidebarProps) {
                 </span>
               </span>
               <span className="truncate pl-[18px] text-[12px] text-(--text-muted)">
-                {current ? current.name : '暂无进行中阶段'}
+                {subtitle(summary, today)}
               </span>
             </a>
           )

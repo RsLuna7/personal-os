@@ -78,17 +78,77 @@ it('shows the empty state when there are no lanes', () => {
   expect(screen.getByText('开始规划你的时间线')).toBeInTheDocument()
 })
 
-it('lists each lane with its current phase or a placeholder', () => {
+it('lists each lane with its current phase, and mutes lanes with nothing planned', () => {
   setup()
   expect(row('考研')).toHaveTextContent('强化')
-  expect(row('实习')).toHaveTextContent('暂无进行中阶段')
+  expect(row('考研')).toHaveAttribute('data-idle', 'false')
+  expect(row('实习')).toHaveTextContent('暂无安排')
+  expect(row('实习')).toHaveAttribute('data-idle', 'true')
 })
 
-it('summarises the selected lane under the title', () => {
+it('shows what comes next for a lane with nothing in progress', () => {
+  setup('#/modules', {
+    ...data,
+    phases: [
+      ...data.phases,
+      {
+        id: 'p2',
+        laneId: 'l2',
+        name: '春招',
+        start: '2027-02-22',
+        end: '2027-04-05',
+        tentative: false,
+        done: false,
+        note: '',
+      },
+    ],
+  })
+  expect(row('实习')).toHaveTextContent('下一阶段：春招 · 2月22日')
+  expect(row('实习')).toHaveAttribute('data-idle', 'false')
+})
+
+it('summarises the selected lane in three cells under the title', () => {
   setup()
   const header = title().closest('header')!
-  expect(header).toHaveTextContent('强化')
-  expect(header).toHaveTextContent('初试')
+  const current = within(header).getByTestId('lane-stat-current')
+  expect(current).toHaveTextContent('当前阶段')
+  expect(current).toHaveTextContent('强化')
+  expect(within(current).getByRole('progressbar', { name: '强化进度' })).toHaveAttribute(
+    'aria-valuenow',
+    '23',
+  )
+  expect(current).toHaveTextContent('第 9 天 / 共 35 天 · 还剩 27 天')
+  const milestone = within(header).getByTestId('lane-stat-milestone')
+  expect(milestone).toHaveTextContent(/39\s*天后/)
+  expect(milestone).toHaveTextContent('初试 · 12月19日')
+  expect(milestone).toHaveAttribute('data-soon', 'false')
+  // 没有下一阶段时这一格不显示
+  expect(within(header).queryByTestId('lane-stat-next')).not.toBeInTheDocument()
+})
+
+it('highlights a milestone that is three days away or less', () => {
+  setup('#/modules', {
+    ...data,
+    milestones: [
+      { id: 'm2', laneId: 'l1', name: '现场确认', date: '2026-11-13', done: false, note: '' },
+    ],
+  })
+  const milestone = within(title().closest('header')!).getByTestId('lane-stat-milestone')
+  expect(milestone).toHaveTextContent(/3\s*天后/)
+  expect(milestone).toHaveAttribute('data-soon', 'true')
+})
+
+it('says so when a lane has nothing in progress', () => {
+  setup('#/modules/l2')
+  expect(within(title().closest('header')!).getByTestId('lane-stat-current')).toHaveTextContent(
+    '暂无进行中阶段',
+  )
+})
+
+it('puts phases and milestones right under the header', () => {
+  setup()
+  const headings = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+  expect(headings).toEqual(['阶段与节点', '备注', '资料链接'])
 })
 
 it('changes the address when another lane is picked', async () => {

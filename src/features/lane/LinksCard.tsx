@@ -162,7 +162,7 @@ export function LinksCard({ lane }: { lane: Lane }) {
                 />
               </li>
             ) : (
-              <li key={link.id} className="flex items-center gap-1">
+              <li key={link.id} className="group flex items-center gap-1">
                 <a
                   href={link.url}
                   target="_blank"
@@ -176,22 +176,25 @@ export function LinksCard({ lane }: { lane: Lane }) {
                     {hostOf(link.url)}
                   </span>
                 </a>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`修改「${link.title}」`}
-                  onClick={() => setMode({ kind: 'edit', id: link.id })}
-                >
-                  <PencilIcon aria-hidden />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`删除「${link.title}」`}
-                  onClick={() => remove(link)}
-                >
-                  <Trash2Icon aria-hidden />
-                </Button>
+                {/* 修改、删除平时收起，悬停或键盘聚焦到这一行才出现；触屏没有悬停，一直显示 */}
+                <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--dur-fast) group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`修改「${link.title}」`}
+                    onClick={() => setMode({ kind: 'edit', id: link.id })}
+                  >
+                    <PencilIcon aria-hidden />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`删除「${link.title}」`}
+                    onClick={() => remove(link)}
+                  >
+                    <Trash2Icon aria-hidden />
+                  </Button>
+                </span>
               </li>
             ),
           )}
