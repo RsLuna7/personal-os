@@ -21,3 +21,12 @@ it('resizes the end and enforces one week minimum', () => {
   expect(resizePhase(4, 32, 'end', 5)).toEqual({ start: 4, end: 11 })
   expect(resizePhase(4, 32, 'start', 31)).toEqual({ start: 25, end: 32 })
 })
+it('keeps the weekday of a phase that does not start on a Monday', () => {
+  // day 6 is a Wednesday
+  expect(movePhase(6, 34, 9)).toEqual({ start: 13, end: 41 })
+  expect(movePhase(6, 34, -10)).toEqual({ start: -1, end: 27 })
+})
+it('resizes a non-Monday phase by whole weeks', () => {
+  expect(resizePhase(6, 34, 'end', 44)).toEqual({ start: 6, end: 41 })
+  expect(resizePhase(6, 34, 'start', 15)).toEqual({ start: 13, end: 34 })
+})

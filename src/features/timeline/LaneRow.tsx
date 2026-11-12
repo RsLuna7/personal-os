@@ -43,6 +43,23 @@ export function LaneRow({
     () => [...milestones].sort((a, b) => a.date.localeCompare(b.date)),
     [milestones],
   )
+  // 每个阶段在同一行里下一个阶段的左端：名称写在色块外面时不能压到它
+  const nextStartX = useMemo(() => {
+    const byRow = new Map<number, Phase[]>()
+    for (const phase of phases) {
+      const row = rows.get(phase.id) ?? 0
+      byRow.set(row, [...(byRow.get(row) ?? []), phase])
+    }
+    const result = new Map<string, number>()
+    for (const list of byRow.values()) {
+      list.sort((a, b) => a.start.localeCompare(b.start))
+      list.forEach((phase, index) => {
+        const next = list[index + 1]
+        if (next) result.set(phase.id, dayToX(scale, toDay(next.start)))
+      })
+    }
+    return result
+  }, [phases, rows, scale])
   const band = milestones.length + exitingMilestones.length > 0 ? MILESTONE_BAND_HEIGHT : 0
   const height = laneHeight(rowCount(rows)) + band
 
@@ -128,6 +145,7 @@ export function LaneRow({
             scale={scale}
             top={band + rowTop(rows.get(phase.id) ?? 0)}
             today={today}
+            nextX={nextStartX.get(phase.id) ?? null}
             readOnly={readOnly}
           />
         ))}

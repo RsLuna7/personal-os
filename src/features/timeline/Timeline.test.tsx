@@ -6,7 +6,7 @@ import { createEmptyData, type AppData, type Lane } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { toDay } from './days'
 import { dayToX, type Scale } from './scale'
-import { resetViewport, useViewportStore } from './useViewport'
+import { refit, resetViewport, useViewportStore } from './useViewport'
 
 const SCALE: Scale = { originDay: toDay('2026-11-02'), pxPerDay: 2 }
 
@@ -238,10 +238,9 @@ it('switches zoom presets and remembers the choice', async () => {
   await userEvent.click(screen.getByRole('button', { name: '近三个月' }))
   expect(screen.getByRole('button', { name: '近三个月' })).toHaveAttribute('aria-pressed', 'true')
   expect(JSON.parse(localStorage.getItem(UI_KEY)!).zoomPreset).toBe('quarter')
-  expect(useViewportStore.getState().scale).toEqual({
-    originDay: toDay('2026-11-10') - 14,
-    pxPerDay: 1000 / 92,
-  })
+  expect(useViewportStore.getState().scale.pxPerDay).toBe(1000 / 92)
+  // 和“回到今天”一样，今天在左起四分之一处
+  expect(screen.getByTestId('today-line').style.transform).toBe('translateX(250px)')
 })
 
 it('puts today a quarter of the way across on 回到今天', async () => {
@@ -267,4 +266,113 @@ it('moves the today line after midnight', () => {
     vi.advanceTimersByTime(60_000)
   })
   expect(screen.getByTestId('today-line').style.transform).toBe(x('2026-11-11'))
+})
+
+describe('weeks', () => {
+  const term = { id: 't1', name: '秋季学期', start: '2026-09-07', end: '2027-01-18' }
+
+  it('labels weeks by term week inside a term and by date outside', () => {
+    setup(withData({ phases: [phase], terms: [term] }), {
+      originDay: toDay('2027-01-04'),
+      pxPerDay: 10,
+    })
+    expect(screen.getByTestId(`week-tick-${toDay('2027-01-11')}`)).toHaveTextContent('第19周')
+    expect(screen.getByTestId(`week-tick-${toDay('2027-01-18')}`)).toHaveTextContent('18')
+  })
+
+  it('hides week labels when a week is too narrow, but keeps week lines down to about 17px', () => {
+    setup(withData({ phases: [phase] }), { originDay: toDay('2026-11-02'), pxPerDay: 3 })
+    expect(screen.queryByTestId(/^week-tick-/)).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('week-line').length).toBeGreaterThan(0)
+  })
+
+  it('drops week lines when zoomed out to a whole year or more', () => {
+    setup(withData({ phases: [phase] }), { originDay: toDay('2026-11-02'), pxPerDay: 2 })
+    expect(screen.queryByTestId('week-line')).not.toBeInTheDocument()
+  })
+})
+
+describe('names of short phases', () => {
+  const short = { ...phase, id: 'p2', name: '模拟测试', start: '2026-11-09', end: '2026-11-16' }
+
+  it('writes the name beside a block too narrow to hold it', () => {
+    setup(withData({ phases: [short] }), { originDay: toDay('2026-11-02'), pxPerDay: 3 })
+    expect(screen.getByTestId('phase-p2-outside-label')).toHaveTextContent('模拟测试')
+  })
+
+  it('leaves the name out when the next phase in the row is too close', () => {
+    const next = { ...phase, id: 'p3', name: '下一段', start: '2026-11-16', end: '2026-12-14' }
+    setup(withData({ phases: [short, next] }), { originDay: toDay('2026-11-02'), pxPerDay: 3 })
+    expect(screen.queryByTestId('phase-p2-outside-label')).not.toBeInTheDocument()
+  })
+
+  it('keeps the name inside when the block is wide enough', () => {
+    setup(withData({ phases: [phase] }), { originDay: toDay('2026-11-02'), pxPerDay: 3 })
+    expect(screen.queryByTestId('phase-p1-outside-label')).not.toBeInTheDocument()
+  })
+})
+
+it('refits a year preset to a new width so it still shows a year', () => {
+  setup(withData({ phases: [phase] }))
+  act(() => useViewportStore.setState({ preset: 'year', fitWidth: 1000 }))
+  act(() => refit(600))
+  expect(useViewportStore.getState().scale.pxPerDay).toBeCloseTo(600 / 365)
+  expect(useViewportStore.getState().fitWidth).toBe(600)
+})
+
+it('leaves a custom zoom alone when the width changes', () => {
+  setup(withData({ phases: [phase] }))
+  act(() => useViewportStore.setState({ preset: 'custom' }))
+  const before = useViewportStore.getState().scale
+  act(() => refit(600))
+  expect(useViewportStore.getState().scale).toBe(before)
+})
+
+it('refits a preset when the timeline mounts at a different width', () => {
+  // 主页卡片和完整时间线宽度不同：挂载时量到的新宽度要按档位重新适配，仍然是一年
+  useStore.getState().hydrate(withData({ phases: [phase] }))
+  useViewportStore.setState({
+    ready: true,
+    preset: 'year',
+    fitWidth: 1000,
+    width: 1000,
+    scale: { originDay: toDay('2026-11-10') - 250 / (1000 / 365), pxPerDay: 1000 / 365 },
+  })
+  const spy = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    return this.dataset.testid === 'timeline' ? 712 : 0
+  })
+  try {
+    render(<App />)
+    const { scale, width } = useViewportStore.getState()
+    expect(width).toBe(600)
+    expect(scale.pxPerDay).toBeCloseTo(600 / 365)
+    // 今天仍在左起四分之一处
+    expect(dayToX(scale, toDay('2026-11-10'))).toBeCloseTo(150)
+  } finally {
+    spy.mockRestore()
+  }
+})
+
+describe('left edge of the ruler', () => {
+  it('shows one year label when the new year has just scrolled off the left', () => {
+    setup(withData({ phases: [phase] }), { originDay: toDay('2027-01-04'), pxPerDay: 9 })
+    expect(screen.getByTestId('leading-year')).toHaveTextContent('2027')
+    expect(screen.queryByTestId('year-tick-2027')).not.toBeInTheDocument()
+    expect(screen.getByTestId('leading-month')).toHaveTextContent('1月')
+    expect(screen.queryByTestId('month-tick-2027-01')).not.toBeInTheDocument()
+  })
+
+  it('lets a new year sitting at the left edge take the place of the leading label', () => {
+    setup(withData({ phases: [phase] }), { originDay: toDay('2026-12-30'), pxPerDay: 9 })
+    expect(screen.queryByTestId('leading-year')).not.toBeInTheDocument()
+    expect(screen.getByTestId('year-tick-2027')).toBeInTheDocument()
+  })
+
+  it('keeps a leading week label at the left edge', () => {
+    setup(withData({ phases: [phase] }), { originDay: toDay('2026-11-03'), pxPerDay: 10 })
+    expect(screen.getByTestId('leading-week')).toHaveTextContent('2')
+    expect(screen.queryByTestId(`week-tick-${toDay('2026-11-02')}`)).not.toBeInTheDocument()
+  })
 })

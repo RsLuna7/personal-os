@@ -10,8 +10,8 @@ import { PhaseEditor } from '@/features/editor/PhaseEditor'
 import { EmptyState } from './EmptyState'
 import { LaneRow } from './LaneRow'
 import { Ruler } from './Ruler'
-import { dayToX, MONTH_TICK_MIN_PX_PER_DAY } from './scale'
-import { monthTicks } from './ticks'
+import { dayToX, MONTH_TICK_MIN_PX_PER_DAY, WEEK_LINE_MIN_PX_PER_DAY } from './scale'
+import { monthTicks, weekTicks } from './ticks'
 import { useTimelineKeys } from './useTimelineKeys'
 import { useToday } from './useToday'
 import { LABEL_COLUMN_WIDTH, useViewport } from './useViewport'
@@ -54,6 +54,11 @@ export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
       ? ticks
       : ticks.filter((tick) => tick.month === 0)
   }, [scale, width])
+  // 以周为单位规划：放大到一周约 17 像素以上时，每周一画一条比月线更淡的竖线
+  const weekLines = useMemo(
+    () => (scale.pxPerDay >= WEEK_LINE_MIN_PX_PER_DAY ? weekTicks(scale, width) : []),
+    [scale, width],
+  )
 
   // Ctrl+滚轮缩放、横向滚轮平移；竖向滚轮留给浏览器滚动泳道
   useEffect(() => {
@@ -112,11 +117,21 @@ export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
               className="pointer-events-none absolute inset-y-0 right-0 overflow-hidden"
               style={{ left: LABEL_COLUMN_WIDTH }}
             >
+              {weekLines.map((tick) => (
+                <div
+                  key={`w${tick.day}`}
+                  data-anim
+                  data-testid="week-line"
+                  className="absolute inset-y-0 left-0 w-px bg-(--bg-panel) opacity-60"
+                  style={{ transform: `translateX(${dayToX(scale, tick.day)}px)` }}
+                />
+              ))}
               {gridTicks.map((tick) => (
                 <div
                   key={`${tick.year}-${tick.month}`}
                   data-anim
-                  className="absolute inset-y-0 left-0 w-px bg-(--bg-panel)"
+                  // 月线比周线深一档，放大后仍分得出月份边界
+                  className="absolute inset-y-0 left-0 w-px bg-(--sand-5)"
                   style={{ transform: `translateX(${dayToX(scale, tick.day)}px)` }}
                 />
               ))}
