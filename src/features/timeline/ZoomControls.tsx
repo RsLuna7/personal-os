@@ -1,3 +1,4 @@
+import { LocateFixedIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { ZoomPreset } from './scale'
 import { useViewport } from './useViewport'
@@ -39,8 +40,10 @@ export function ZoomControls() {
           )
         })}
       </div>
-      <Button variant="outline" size="sm" onClick={goToToday}>
-        回到今天
+      <Button variant="outline" size="sm" onClick={goToToday} title="回到今天">
+        <LocateFixedIcon className="size-3.5" aria-hidden />
+        {/* 1024 以下顶栏放不下，只留图标；文字仍给读屏软件 */}
+        <span className="max-lg:sr-only">回到今天</span>
       </Button>
     </>
   )

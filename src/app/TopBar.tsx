@@ -56,7 +56,7 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
           )
         })}
       </nav>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5 lg:gap-2">
         {route === 'timeline' && (
           <>
             <ZoomControls />
