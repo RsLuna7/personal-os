@@ -1,4 +1,6 @@
 import type { MouseEvent } from 'react'
+import { Minimize2Icon } from 'lucide-react'
+import { buttonVariants } from '@/components/ui/button'
 import { AddMenu } from '@/features/editor/AddMenu'
 import { ZoomControls } from '@/features/timeline/ZoomControls'
 import { MoreMenu } from './MoreMenu'
@@ -44,7 +46,7 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
               aria-current={active ? 'page' : undefined}
               onClick={(event) => handleClick(event, item.route)}
               className={
-                'rounded-[6px] px-3 py-1 text-[14px] transition-colors duration-(--dur-fast) ease-(--ease-out) ' +
+                'rounded-[6px] px-2 py-1 text-[14px] lg:px-3 transition-colors duration-(--dur-fast) ease-(--ease-out) ' +
                 (active
                   ? 'bg-(--bg-panel) font-medium text-(--text)'
                   : 'text-(--text-muted) hover:bg-(--bg-subtle) hover:text-(--text)')
@@ -60,6 +62,17 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
           <>
             <ZoomControls />
             <AddMenu />
+            {/* 和主页卡片上的“展开”对称：回到主页，时间线缩回卡片 */}
+            <a
+              href={routeHref('home')}
+              title="收起，回到主页"
+              onClick={(event) => handleClick(event, 'home')}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            >
+              <Minimize2Icon className="size-3.5" aria-hidden />
+              {/* 1024 以下顶栏放不下，只留图标；文字仍给读屏软件 */}
+              <span className="max-lg:sr-only">收起</span>
+            </a>
           </>
         )}
         <MoreMenu />
