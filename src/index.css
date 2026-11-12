@@ -301,3 +301,99 @@
     opacity: 0;
   }
 }
+
+/*
+ * 主页时间线卡片 ↔ 完整时间线的过渡（View Transitions，见 app/viewTransition.ts）。
+ * 1. 卡片和完整时间线带同一个 view-transition-name，浏览器把它从卡片的位置和大小平滑放大到整页，收起时反过来。
+ * 2. 只在展开时：放大落定后，今天线从上往下画出来，各泳道的色块再按顺序从左往右展开。
+ * 不支持的浏览器、或开了“减少动态效果”时，viewTransition.ts 直接切换，这些规则都不会生效。
+ */
+.vt-timeline {
+  view-transition-name: timeline-surface;
+}
+::view-transition-group(timeline-surface) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 外框：白底加卡片阴影，裁掉框外的内容；快照不拉伸，保持原大小贴左上角，由外框放大露出更多 */
+::view-transition-group(timeline-surface) {
+  overflow: clip;
+  border-radius: 16px;
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+::view-transition-old(timeline-surface),
+::view-transition-new(timeline-surface) {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: 260ms;
+}
+:root[data-vt='expand']::view-transition-image-pair(timeline-surface) {
+  animation: vt-corner-out 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+:root[data-vt='collapse']::view-transition-image-pair(timeline-surface) {
+  animation: vt-corner-in 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes vt-corner-out {
+  from {
+    border-radius: 16px;
+  }
+  to {
+    border-radius: 0;
+  }
+}
+@keyframes vt-corner-in {
+  from {
+    border-radius: 0;
+  }
+  to {
+    border-radius: 16px;
+  }
+}
+/* 页面其余部分（摘要、板块概览）淡出淡入 */
+::view-transition-old(root) {
+  animation: vt-fade-out 200ms ease-out both;
+}
+::view-transition-new(root) {
+  animation: vt-fade-in 260ms ease-out 120ms both;
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 展开后：今天线落笔，色块按泳道依次展开（最多错开 8 条，之后的一起出现） */
+:root[data-timeline-enter='true'] .timeline [data-testid='today-line'] {
+  animation: today-draw 460ms cubic-bezier(0.2, 0.8, 0.2, 1) 360ms backwards;
+}
+:root[data-timeline-enter='true'] .timeline .lane-row .phase-block {
+  animation: bar-reveal 460ms cubic-bezier(0.2, 0.8, 0.2, 1)
+    calc(480ms + min(var(--lane-i, 0), 8) * 70ms) backwards;
+}
+:root[data-timeline-enter='true'] .timeline .lane-row .milestone-dot {
+  animation: item-in 300ms ease-out calc(620ms + min(var(--lane-i, 0), 8) * 70ms) backwards;
+}
+@keyframes today-draw {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+@keyframes bar-reveal {
+  from {
+    clip-path: inset(0 100% 0 0 round 6px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 6px);
+  }
+}
