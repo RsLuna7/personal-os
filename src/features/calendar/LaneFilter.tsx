@@ -28,26 +28,29 @@ export function LaneFilter({ lanes, hasNeutral, active, onToggle, onClear }: Lan
   if (items.length === 0) return null
   const filtering = active.size > 0
   return (
-    <div
-      role="group"
-      aria-label="按板块筛选"
-      data-testid="lane-filter"
-      className="lane-filter ml-auto flex min-w-0 items-center gap-1 overflow-x-auto pl-6"
-    >
-      {items.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          aria-pressed={active.has(item.key)}
-          data-lane-color={item.color}
-          data-dim={String(filtering && !active.has(item.key))}
-          className="lane-chip"
-          onClick={() => onToggle(item.key)}
-        >
-          <span aria-hidden className="lane-chip-dot" />
-          {item.name}
-        </button>
-      ))}
+    <div className="ml-auto flex min-w-0 items-center pl-6">
+      <div
+        role="group"
+        aria-label="按板块筛选"
+        data-testid="lane-filter"
+        className="lane-filter flex min-w-0 items-center gap-1 overflow-x-auto"
+      >
+        {items.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            aria-pressed={active.has(item.key)}
+            data-lane-color={item.color}
+            data-dim={String(filtering && !active.has(item.key))}
+            className="lane-chip"
+            onClick={() => onToggle(item.key)}
+          >
+            <span aria-hidden className="lane-chip-dot" />
+            {item.name}
+          </button>
+        ))}
+      </div>
+      {/* 放在滚动区外面：图例再长，“显示全部”也始终看得到 */}
       {filtering && (
         <button type="button" className="lane-chip lane-chip-clear" onClick={onClear}>
           显示全部

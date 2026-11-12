@@ -212,6 +212,8 @@
  * 不在本月的格子去掉卡片，只剩淡淡的数字。虚线在这个产品里留给“待确认”，今天不再用。
  */
 .day-cell {
+  /* 窄屏下按格子自己的宽度调整右上角的按钮，见下面的 @container */
+  container-type: inline-size;
   background-color: var(--bg-card);
   /* 所有格子都有同宽的边框，今天只是换颜色，内容不会位移 */
   border: 1.5px solid transparent;
@@ -378,6 +380,18 @@
   transition:
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
+}
+/* 格子窄到放不下日期、“+N”和“＋”三样时，只留日期和“+N”（双击空白处仍然能新建） */
+@container (max-width: 90px) {
+  .day-more {
+    right: 4px;
+    min-width: 20px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+  .day-add {
+    display: none;
+  }
 }
 .day-more:hover,
 .day-more:focus-visible {

@@ -497,3 +497,24 @@ describe('a crowded day', () => {
     expect(within(dialog).getByLabelText('标题')).toHaveValue('丁')
   })
 })
+
+describe('the day view and changing month', () => {
+  it('does not pop back up when you come back to the month it was opened in', async () => {
+    const todos = ['甲', '乙', '丙', '丁'].map((title, index) =>
+      makeTodo(`x${index}`, { title, date: '2026-11-09' }),
+    )
+    const user = setup('#/calendar', { ...data, todos })
+    await user.click(screen.getByTestId('more-2026-11-09'))
+    expect(screen.getByTestId('day-focus')).toBeInTheDocument()
+    act(() => {
+      window.location.hash = '#/calendar/2026-12'
+    })
+    await waitFor(() => expect(heading()).toHaveTextContent('2026年12月'))
+    expect(screen.queryByTestId('day-focus')).not.toBeInTheDocument()
+    act(() => {
+      window.location.hash = '#/calendar/2026-11'
+    })
+    await waitFor(() => expect(heading()).toHaveTextContent('2026年11月'))
+    expect(screen.queryByTestId('day-focus')).not.toBeInTheDocument()
+  })
+})

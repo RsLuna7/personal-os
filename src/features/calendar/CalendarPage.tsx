@@ -97,10 +97,17 @@ export function CalendarPage({ param }: CalendarPageProps) {
   const gridRef = useRef<HTMLDivElement | null>(null)
   const { preview, beginMove } = useCalendarDrag({ gridRef, weeks })
   const { tabDay, onDayFocus, onKeyDown, movedId } = useCalendarKeys({ month, today })
-  // 放大视图开着的那一天；换到别的月、那一天不在网格里，就等于关了
-  const [focusedDay, setFocusedDay] = useState<number | null>(null)
+  // 放大视图开着的那一天，连同它所在的月一起记：换到别的月就等于关了，
+  // 而且翻回来也不会自己再弹出来
+  const monthKey = monthParam(month)
+  const [focused, setFocused] = useState<{ day: number; month: string } | null>(null)
+  if (focused !== null && focused.month !== monthKey) setFocused(null)
   const openDay =
-    focusedDay !== null && weeks.some((week) => week.includes(focusedDay)) ? focusedDay : null
+    focused !== null &&
+    focused.month === monthKey &&
+    weeks.some((week) => week.includes(focused.day))
+      ? focused.day
+      : null
   const calendarData = withPreview(
     { lanes: data.lanes, milestones: data.milestones, todos: data.todos },
     preview,
@@ -119,27 +126,31 @@ export function CalendarPage({ param }: CalendarPageProps) {
 
   /** 那一格放大成卡片：格子和卡片共用 view-transition-name，浏览器把它从格子的位置放大到页面中央。 */
   const dayElement = (day: number) => document.querySelector<HTMLElement>(`[data-day="${day}"]`)
+  const viewSeq = useRef(0)
   const openDayFocus = (day: number) => {
+    viewSeq.current += 1
     const cell = dayElement(day)
     if (cell) cell.style.viewTransitionName = 'day-surface'
     runViewTransition('day-open', () => {
       if (cell) cell.style.viewTransitionName = ''
-      setFocusedDay(day)
+      setFocused({ day, month: monthKey })
     })
   }
   const closeDayFocus = () => {
     if (openDay === null) return
     const day = openDay
+    const seq = ++viewSeq.current
     const cell = dayElement(day)
     runViewTransition(
       'day-close',
       () => {
         if (cell) cell.style.viewTransitionName = 'day-surface'
-        setFocusedDay(null)
+        setFocused(null)
       },
       () => {
         if (cell) cell.style.viewTransitionName = ''
-        // 焦点回到打开它的“+N”
+        // 焦点回到打开它的“+N”；过渡播放期间又打开了别的放大视图就不去抢
+        if (seq !== viewSeq.current) return
         const iso = fromDay(day)
         ;(
           document.querySelector<HTMLElement>(`[data-testid="more-${iso}"]`) ?? dayElement(day)
@@ -190,7 +201,7 @@ export function CalendarPage({ param }: CalendarPageProps) {
     <div className="flex min-h-0 flex-1 flex-col bg-(--bg-canvas)">
       <div className="flex shrink-0 items-center gap-2 px-6 pt-5 pb-4">
         {/* 年份小字在前、月份大字在后；连起来读还是“2026年11月” */}
-        <h1 className="mr-3 flex min-w-[9ch] items-baseline gap-1.5 text-(--text)">
+        <h1 className="mr-3 flex min-w-[9ch] shrink-0 items-baseline gap-1.5 whitespace-nowrap text-(--text)">
           <span className="text-[14px] text-(--text-muted)">{month.year}年</span>
           <span className="font-serif text-[30px] leading-none font-bold">{month.month}月</span>
         </h1>
@@ -222,7 +233,7 @@ export function CalendarPage({ param }: CalendarPageProps) {
         )}
         <a
           href={routeHref('calendar')}
-          className="ml-1 inline-flex h-9 items-center rounded-full bg-(--bg-card) px-4 text-[14px] text-(--text) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover)"
+          className="ml-1 inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-(--bg-card) px-4 text-[14px] text-(--text) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover)"
         >
           今天
         </a>
