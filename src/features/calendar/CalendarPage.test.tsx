@@ -379,43 +379,119 @@ describe('a crowded day', () => {
 
   const titles = (iso: string) =>
     within(cell(iso))
+      .queryAllByTestId(/^(todo|milestone)-/)
+      .map((item) => item.textContent)
+  const focusTitles = () =>
+    within(screen.getByTestId('day-focus-list'))
       .getAllByTestId(/^(todo|milestone)-/)
       .map((item) => item.textContent)
+  const moreButton = () => screen.getByTestId('more-2026-11-09')
 
-  it('keeps every entry in the cell, in order, with no “还有 N 项” button', () => {
+  it('shows the first three entries and a “+N” for the rest', () => {
     setup('#/calendar', crowded())
-    expect(titles('2026-11-09')).toEqual(['甲', '乙', '丙', '丁'])
-    expect(screen.queryByRole('button', { name: /^还有/ })).not.toBeInTheDocument()
+    expect(titles('2026-11-09')).toEqual(['甲', '乙', '丙'])
+    expect(moreButton()).toHaveTextContent('+1')
+    expect(moreButton()).toHaveAccessibleName(expect.stringContaining('全部 4 项'))
   })
 
-  it('puts the entries in a list that scrolls inside the cell', () => {
-    setup('#/calendar', crowded())
-    const list = within(cell('2026-11-09')).getByTestId('entries-2026-11-09')
-    expect(list).toHaveClass('overflow-y-auto')
-    expect(within(list).getAllByTestId(/^todo-/)).toHaveLength(4)
+  it('has no “+N” and no scrolling list when everything fits', () => {
+    setup('#/calendar', { ...crowded(), todos: crowded().todos.slice(0, 3) })
+    expect(titles('2026-11-09')).toEqual(['甲', '乙', '丙'])
+    expect(screen.queryByTestId('more-2026-11-09')).not.toBeInTheDocument()
+    expect(within(cell('2026-11-09')).getByTestId('entries-2026-11-09')).not.toHaveClass(
+      'overflow-y-auto',
+    )
   })
 
-  it('lists milestones first', () => {
-    setup(
+  it('opens a day view with every entry, milestones first', async () => {
+    const user = setup(
       '#/calendar',
       crowded(
         [],
         [{ id: 'mm', laneId: 'l1', name: '节点mm', date: '2026-11-09', done: false, note: '' }],
       ),
     )
-    expect(titles('2026-11-09')).toEqual(['节点mm', '甲', '乙', '丙', '丁'])
+    await user.click(moreButton())
+    const dialog = screen.getByRole('dialog', { name: /11月9日/ })
+    expect(dialog).toHaveTextContent('4 个待办 · 1 个节点')
+    expect(focusTitles()).toEqual(['节点mm', '甲', '乙', '丙', '丁'])
+    // 同一批条目只画一份：这一格里不再重复
+    expect(titles('2026-11-09')).toEqual([])
   })
 
-  it('puts finished todos after the unfinished ones', () => {
-    setup('#/calendar', {
+  it('puts finished todos after the unfinished ones in the day view', async () => {
+    const user = setup('#/calendar', {
       ...crowded(),
       todos: crowded().todos.map((todo) => (todo.id === 'a' ? { ...todo, done: true } : todo)),
     })
-    expect(titles('2026-11-09')).toEqual(['乙', '丙', '丁', '甲'])
+    await user.click(moreButton())
+    expect(focusTitles()).toEqual(['乙', '丙', '丁', '甲'])
   })
 
-  it('opens the editor for the last entry of a crowded day', async () => {
+  it('closes with Esc, the close button, or a click on the backdrop, and returns focus to “+N”', async () => {
     const user = setup('#/calendar', crowded())
+    for (const close of [
+      () => user.keyboard('{Escape}'),
+      () => user.click(screen.getByRole('button', { name: '关闭' })),
+      () => user.click(document.querySelector('.day-focus-backdrop')!),
+    ]) {
+      await user.click(moreButton())
+      expect(screen.getByTestId('day-focus')).toBeInTheDocument()
+      await close()
+      expect(screen.queryByTestId('day-focus')).not.toBeInTheDocument()
+      expect(moreButton()).toHaveFocus()
+    }
+  })
+
+  it('edits an entry from the day view and stays in it; Esc closes only the editor', async () => {
+    const user = setup('#/calendar', crowded())
+    await user.click(moreButton())
+    await user.click(screen.getByTestId('todo-d'))
+    const editor = await screen.findByRole('dialog', { name: '编辑待办' })
+    expect(within(editor).getByLabelText('标题')).toHaveValue('丁')
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: '编辑待办' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('day-focus')).toBeInTheDocument()
+  })
+
+  it('a click on the backdrop while the editor is open closes only the editor', async () => {
+    const user = setup('#/calendar', crowded())
+    await user.click(moreButton())
+    await user.click(screen.getByTestId('todo-d'))
+    await screen.findByRole('dialog', { name: '编辑待办' })
+    await user.click(document.querySelector('.day-focus-backdrop')!)
+    expect(screen.queryByRole('dialog', { name: '编辑待办' })).not.toBeInTheDocument()
+    expect(screen.getByTestId('day-focus')).toBeInTheDocument()
+  })
+
+  it('ticks a todo and adds a new one on that day from inside the view', async () => {
+    const user = setup('#/calendar', crowded())
+    await user.click(moreButton())
+    await user.click(
+      within(screen.getByTestId('day-focus')).getByRole('checkbox', { name: '完成「甲」' }),
+    )
+    expect(s().data.todos.find((todo) => todo.id === 'a')?.done).toBe(true)
+    await user.click(screen.getByRole('button', { name: '添加待办' }))
+    expect(
+      s().data.todos.some((todo) => todo.title === '新待办' && todo.date === '2026-11-09'),
+    ).toBe(true)
+  })
+
+  it('keeps a newly created todo visible on a full day while it is being edited', async () => {
+    const user = setup('#/calendar', crowded())
+    cell('2026-11-09').focus()
+    await user.keyboard('{Enter}')
+    await screen.findByRole('dialog', { name: '编辑待办' })
+    // 新待办不挂板块，排在最后；正在编辑，所以必须显示出来，面板才有地方贴
+    const mine = s().data.todos.find((todo) => todo.title === '新待办')!
+    expect(within(cell('2026-11-09')).getByTestId(`todo-${mine.id}`)).toBeInTheDocument()
+    expect(titles('2026-11-09')).toHaveLength(3)
+    expect(moreButton()).toHaveTextContent('+2')
+  })
+
+  it('opens the editor for the last entry of a crowded day through the day view', async () => {
+    const user = setup('#/calendar', crowded())
+    await user.click(moreButton())
     await user.click(screen.getByTestId('todo-d'))
     const dialog = await screen.findByRole('dialog', { name: '编辑待办' })
     expect(within(dialog).getByLabelText('标题')).toHaveValue('丁')

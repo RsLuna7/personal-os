@@ -5,6 +5,7 @@ import {
   entryId,
   NEUTRAL,
   unscheduledTodos,
+  visibleEntries,
   type CalendarData,
   type DayEntry,
 } from './cells'
@@ -113,5 +114,46 @@ describe('unscheduledTodos', () => {
       open.id,
       done.id,
     ])
+  })
+})
+
+describe('visibleEntries', () => {
+  const day = (n: number) =>
+    Array.from({ length: n }, (_, index): DayEntry => ({
+      kind: 'todo',
+      todo: todo({ id: `x${index}`, title: `事${index}` }),
+    }))
+  const ids = (entries: DayEntry[]) => entries.map(entryId)
+
+  it('shows everything up to the cap', () => {
+    const { shown, hidden } = visibleEntries(day(3))
+    expect(shown).toHaveLength(3)
+    expect(hidden).toBe(0)
+  })
+
+  it('shows the first three and counts the rest', () => {
+    const { shown, hidden } = visibleEntries(day(8))
+    expect(ids(shown)).toEqual(['x0', 'x1', 'x2'])
+    expect(hidden).toBe(5)
+  })
+
+  it('always shows a pinned entry, which takes the last visible place', () => {
+    const { shown, hidden } = visibleEntries(day(8), ['x6'])
+    expect(ids(shown)).toEqual(['x0', 'x1', 'x6'])
+    expect(hidden).toBe(5)
+  })
+
+  it('keeps entries in their original order and ignores empty pins', () => {
+    const { shown } = visibleEntries(day(8), [null, undefined, 'x4', 'x7'])
+    expect(ids(shown)).toEqual(['x0', 'x4', 'x7'])
+  })
+
+  it('does not change anything for a pin that is already visible', () => {
+    expect(ids(visibleEntries(day(8), ['x1']).shown)).toEqual(['x0', 'x1', 'x2'])
+  })
+
+  it('shows an extra entry when every visible place is pinned', () => {
+    const { shown } = visibleEntries(day(8), ['x0', 'x1', 'x2', 'x5'])
+    expect(ids(shown)).toEqual(['x0', 'x1', 'x2', 'x5'])
   })
 })

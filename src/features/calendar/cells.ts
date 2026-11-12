@@ -66,6 +66,34 @@ export function entriesByDay(data: CalendarData): Map<ISODate, DayEntry[]> {
   return byDay
 }
 
+/** 一格最多直接显示这么多条，其余收进“+N”，点开看全部。 */
+export const MAX_VISIBLE = 3
+
+/**
+ * 一格里显示哪些条目：前 `MAX_VISIBLE` 条；正在编辑、正在拖动的那一条（`pinnedIds`）
+ * 永远显示，哪怕它排在后面——不然新建的待办一出生就被藏起来，编辑面板也找不到它。
+ * 钉住的条目占掉后面的位置，顺序不变。`hidden` 是没显示的条数。
+ */
+export function visibleEntries(
+  entries: DayEntry[],
+  pinnedIds: readonly (string | null | undefined)[] = [],
+  cap: number = MAX_VISIBLE,
+): { shown: DayEntry[]; hidden: number } {
+  if (entries.length <= cap) return { shown: entries, hidden: 0 }
+  const pinned = new Set(pinnedIds.filter((id): id is string => !!id))
+  const isPinned = (entry: DayEntry) => pinned.has(entryId(entry))
+  const chosen = entries.slice(0, cap)
+  for (const entry of entries.slice(cap)) {
+    if (!isPinned(entry)) continue
+    // 挤掉最靠后的一条没钉住的；全是钉住的就多显示一条
+    const victim = chosen.findLastIndex((item) => !isPinned(item))
+    if (victim !== -1) chosen.splice(victim, 1)
+    chosen.push(entry)
+  }
+  const shown = entries.filter((entry) => chosen.includes(entry))
+  return { shown, hidden: entries.length - shown.length }
+}
+
 /** 没有日期的待办：未完成的在前，其余顺序同上。 */
 export function unscheduledTodos(data: CalendarData): Todo[] {
   return data.todos.filter((todo) => todo.date === null).sort(todoComparator(data.lanes))

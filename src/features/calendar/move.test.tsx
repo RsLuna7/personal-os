@@ -218,6 +218,19 @@ describe('dragging an unscheduled todo into the grid', () => {
   const item = () => within(unscheduled()).getByTestId('todo-t4')
   const pressList = () => fireEvent.pointerDown(item(), { ...LIST_POINT, button: 0, pointerId: 1 })
 
+  it('shows the dragged todo on a day that already has three, instead of hiding it behind “+N”', () => {
+    for (const title of ['一', '二', '三'])
+      act(() => void s().addTodo({ title, date: '2026-11-18' }))
+    pressList()
+    move('2026-11-18')
+    expect(within(cell('2026-11-18')).getByTestId('todo-t4')).toHaveAttribute(
+      'data-dragging',
+      'true',
+    )
+    expect(within(cell('2026-11-18')).getAllByTestId(/^todo-/)).toHaveLength(3)
+    fireEvent.pointerUp(window, { ...LIST_POINT, pointerId: 1 })
+  })
+
   it('puts it on the day under the pointer in one undo step', async () => {
     const before = s().past.length
     pressList()

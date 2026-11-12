@@ -72,8 +72,11 @@ export function useCalendarKeys({ month, today }: Options): {
   tabDay: number
   onDayFocus: (day: number) => void
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void
+  /** 刚用键盘挪过的那一条：它换到的格子可能已经有三条，要钉住它，焦点才有地方去 */
+  movedId: string | null
 } {
   const [focusDay, setFocusDay] = useState<number | null>(null)
+  const [movedId, setMovedId] = useState<string | null>(null)
   // 翻月或者元素被重新挂载之后，等页面画好再把焦点放过去；几次渲染里都找不到就放弃。
   // 有后备选择器时，找不到目标但找得到后备元素，就改把焦点放到后备元素上
   const pending = useRef<{ selector: string; fallback: string | null; tries: number } | null>(null)
@@ -127,6 +130,7 @@ export function useCalendarKeys({ month, today }: Options): {
       ArrowUp: -7,
       ArrowDown: 7,
     }
+    setMovedId(null)
     if (event.key in arrows) {
       event.preventDefault()
       goToDay(day + arrows[event.key]!)
@@ -183,6 +187,7 @@ export function useCalendarKeys({ month, today }: Options): {
         // 条目换了格子会重新挂载，所以等页面画好再把焦点放回去；
         // 挪到别的月时页面跟着翻月；万一条目找不到，焦点退回那一天的格子
         focusLater(`[data-item-id="${id}"]`, `[data-day="${day}"]`)
+        setMovedId(id)
         setFocusDay(day)
         moveItem(kind, id, fromDay(day))
         showMonthOf(day)
@@ -205,5 +210,5 @@ export function useCalendarKeys({ month, today }: Options): {
     }
   }
 
-  return { tabDay, onDayFocus: setFocusDay, onKeyDown }
+  return { tabDay, onDayFocus: setFocusDay, onKeyDown, movedId }
 }

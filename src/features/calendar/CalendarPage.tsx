@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useStore } from '@/data/store'
 import { closeEditor, useEditorStore, type Editing } from '@/features/editor/editorStore'
@@ -6,9 +6,11 @@ import { MilestoneEditor } from '@/features/editor/MilestoneEditor'
 import { TodoEditor } from '@/features/editor/TodoEditor'
 import { useUndoKeys } from '@/features/editor/useUndoKeys'
 import { routeHref } from '@/app/useHashRoute'
+import { runViewTransition } from '@/app/viewTransition'
 import { useToday } from '@/features/timeline/useToday'
 import { fromDay, toDay } from '@/features/timeline/days'
 import { entriesByDay, unscheduledTodos, type CalendarData } from './cells'
+import { DayFocus } from './DayFocus'
 import { MonthGrid } from './MonthGrid'
 import { UnscheduledList } from './UnscheduledList'
 import { useCalendarDrag, type Preview } from './useCalendarDrag'
@@ -86,13 +88,48 @@ export function CalendarPage({ param }: CalendarPageProps) {
   const weeks = monthWeeks(month)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const { preview, beginMove } = useCalendarDrag({ gridRef, weeks })
-  const { tabDay, onDayFocus, onKeyDown } = useCalendarKeys({ month, today })
+  const { tabDay, onDayFocus, onKeyDown, movedId } = useCalendarKeys({ month, today })
+  // 放大视图开着的那一天；换到别的月、那一天不在网格里，就等于关了
+  const [focusedDay, setFocusedDay] = useState<number | null>(null)
+  const openDay =
+    focusedDay !== null && weeks.some((week) => week.includes(focusedDay)) ? focusedDay : null
   const calendarData = withPreview(
     { lanes: data.lanes, milestones: data.milestones, todos: data.todos },
     preview,
   )
   const byDay = entriesByDay(calendarData)
   const unscheduled = unscheduledTodos(calendarData)
+
+  /** 那一格放大成卡片：格子和卡片共用 view-transition-name，浏览器把它从格子的位置放大到页面中央。 */
+  const dayElement = (day: number) => document.querySelector<HTMLElement>(`[data-day="${day}"]`)
+  const openDayFocus = (day: number) => {
+    const cell = dayElement(day)
+    if (cell) cell.style.viewTransitionName = 'day-surface'
+    runViewTransition('day-open', () => {
+      if (cell) cell.style.viewTransitionName = ''
+      setFocusedDay(day)
+    })
+  }
+  const closeDayFocus = () => {
+    if (openDay === null) return
+    const day = openDay
+    const cell = dayElement(day)
+    runViewTransition(
+      'day-close',
+      () => {
+        if (cell) cell.style.viewTransitionName = 'day-surface'
+        setFocusedDay(null)
+      },
+      () => {
+        if (cell) cell.style.viewTransitionName = ''
+        // 焦点回到打开它的“+N”
+        const iso = fromDay(day)
+        ;(
+          document.querySelector<HTMLElement>(`[data-testid="more-${iso}"]`) ?? dayElement(day)
+        )?.focus()
+      },
+    )
+  }
 
   // 编辑面板跟着条目走：条目换到别的月，就翻到那个月；那个月翻不到就关掉面板
   const offscreenDay = offscreenEditedDay(editing, calendarData, weeks)
@@ -193,6 +230,9 @@ export function CalendarPage({ param }: CalendarPageProps) {
             lanes={data.lanes}
             byDay={byDay}
             selection={selection}
+            pinnedIds={[editing?.id, preview?.id, movedId]}
+            expandedDay={openDay}
+            onOpenDay={openDayFocus}
             gridRef={gridRef}
             preview={preview}
             onMoveStart={beginMove}
@@ -209,6 +249,16 @@ export function CalendarPage({ param }: CalendarPageProps) {
           onKeyDown={onKeyDown}
         />
       </div>
+      {openDay !== null && (
+        <DayFocus
+          day={openDay}
+          today={today}
+          entries={byDay.get(fromDay(openDay)) ?? []}
+          lanes={data.lanes}
+          selection={selection}
+          onClose={closeDayFocus}
+        />
+      )}
       {editing?.kind === 'todo' && (
         <TodoEditor
           todoId={editing.id}

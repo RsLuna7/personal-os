@@ -1,7 +1,7 @@
 import { flushSync } from 'react-dom'
 import type { Route } from './useHashRoute'
 
-export type TransitionKind = 'expand' | 'collapse'
+export type TransitionKind = 'expand' | 'collapse' | 'day-open' | 'day-close'
 
 /** 展开后今天线和色块的入场动画最长约 1.1 秒，留一点余量再去掉标记 */
 const ENTER_MARK_MS = 1400
@@ -26,9 +26,15 @@ function prefersReducedMotion(): boolean {
  * 浏览器不支持、或系统开了“减少动态效果”时，直接切换。
  * `<html>` 上的 data-vt 和 data-timeline-enter 给 CSS 选择动画用，见 index.css。
  */
-export function runViewTransition(kind: TransitionKind, update: () => void): void {
+export function runViewTransition(
+  kind: TransitionKind,
+  update: () => void,
+  /** 过渡结束（或没有过渡、直接切换）之后调用 */
+  done?: () => void,
+): void {
   if (typeof document.startViewTransition !== 'function' || prefersReducedMotion()) {
     update()
+    done?.()
     return
   }
   const root = document.documentElement
@@ -47,5 +53,6 @@ export function runViewTransition(kind: TransitionKind, update: () => void): voi
     .catch(() => {})
     .finally(() => {
       if (root.dataset.vt === kind) delete root.dataset.vt
+      done?.()
     })
 }
