@@ -18,6 +18,7 @@ import {
   type Todo,
 } from './schema'
 import { normalizeLinkUrl } from './links'
+import { applyTemplate, type Template } from './templates'
 
 export const HISTORY_LIMIT = 100
 
@@ -51,6 +52,8 @@ interface StoreState {
   toggleTodo(id: string): void
   removeTodo(id: string): void
   setTerms(terms: Term[]): void
+  /** 把模板按开始日期追加到现有数据后面，算一步撤销。 */
+  addFromTemplate(template: Template, startDate: ISODate): void
   /** 整体替换数据，可撤销（导入、载入示例、清空）。 */
   replaceData(data: AppData): void
   /** 整体替换数据，不可撤销并清空历史（启动、跨标签页同步）。 */
@@ -287,6 +290,10 @@ export const useStore = create<StoreState>()((set, get) => {
 
     setTerms(terms) {
       commit({ ...get().data, terms })
+    },
+
+    addFromTemplate(template, startDate) {
+      commit(applyTemplate(get().data, template, startDate, newId))
     },
 
     replaceData(data) {

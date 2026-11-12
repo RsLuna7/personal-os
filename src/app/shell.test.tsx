@@ -56,6 +56,7 @@ it('lists the menu items in order', async () => {
   expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
     '导出备份',
     '导入备份',
+    '从模板添加',
     '编辑学期',
     '载入示例',
     '清空数据',

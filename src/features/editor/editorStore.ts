@@ -12,9 +12,15 @@ interface EditorState {
   /** 正在行内改名的板块 */
   renamingLaneId: string | null
   termsOpen: boolean
+  templateOpen: boolean
 }
 
-const initialState: EditorState = { editing: null, renamingLaneId: null, termsOpen: false }
+const initialState: EditorState = {
+  editing: null,
+  renamingLaneId: null,
+  termsOpen: false,
+  templateOpen: false,
+}
 
 /** 哪个编辑面板开着。纯界面状态，不进入数据和撤销历史。 */
 export const useEditorStore = create<EditorState>()(() => initialState)
@@ -37,4 +43,8 @@ export function startRenamingLane(id: string | null): void {
 
 export function setTermsOpen(open: boolean): void {
   useEditorStore.setState({ termsOpen: open })
+}
+
+export function setTemplateOpen(open: boolean): void {
+  useEditorStore.setState({ templateOpen: open })
 }

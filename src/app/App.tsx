@@ -1,7 +1,8 @@
 import { useState, useSyncExternalStore } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import type { Persistence } from '@/data/persistence'
-import { setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
+import { setTemplateOpen, setTermsOpen, useEditorStore } from '@/features/editor/editorStore'
+import { TemplateDialog } from '@/features/editor/TemplateDialog'
 import { TermsDialog } from '@/features/editor/TermsDialog'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { Home } from '@/features/home/Home'
@@ -23,6 +24,7 @@ const noSaveError = () => null
 export function App({ persistence }: AppProps) {
   const [route, setRoute, param] = useHashRoute()
   const termsOpen = useEditorStore((state) => state.termsOpen)
+  const templateOpen = useEditorStore((state) => state.templateOpen)
   const [corruptRaw, setCorruptRaw] = useState<string | null>(() =>
     persistence?.status.status === 'corrupt' ? persistence.status.raw : null,
   )
@@ -68,6 +70,7 @@ export function App({ persistence }: AppProps) {
         )}
       </main>
       <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />
+      <TemplateDialog open={templateOpen} onOpenChange={setTemplateOpen} />
       <Toaster position="bottom-center" />
     </div>
   )
