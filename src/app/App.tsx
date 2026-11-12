@@ -58,7 +58,8 @@ export function App({ persistence }: AppProps) {
         {route === 'home' ? (
           <Home />
         ) : route === 'timeline' ? (
-          <Timeline />
+          // 和主页的时间线卡片是“同一块”，展开、收起时互相放大缩回
+          <Timeline className="vt-timeline" />
         ) : route === 'calendar' ? (
           <CalendarPage param={param} />
         ) : route === 'modules' ? (

@@ -15,7 +15,8 @@ export function TimelineCard() {
           展开
         </a>
       </SectionHeader>
-      <div className="overflow-hidden rounded-[16px] bg-(--bg-card) shadow-(--shadow-card)">
+      {/* vt-timeline：点“展开”时这张卡片放大成完整时间线，见 index.css */}
+      <div className="vt-timeline overflow-hidden rounded-[16px] bg-(--bg-card) shadow-(--shadow-card)">
         <Timeline readOnly className="max-h-[420px]" />
       </div>
     </section>

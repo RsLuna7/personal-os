@@ -84,6 +84,27 @@ it('expands to the full editable timeline and back', async () => {
   expect(await screen.findByTestId('now-strip')).toBeInTheDocument()
 })
 
+it('plays the expand and collapse transitions between home and the full timeline', async () => {
+  const kinds: (string | undefined)[] = []
+  document.startViewTransition = ((callback?: () => void) => {
+    kinds.push(document.documentElement.dataset.vt)
+    callback?.()
+    return { ready: Promise.resolve(), finished: Promise.resolve() } as unknown as ViewTransition
+  }) as Document['startViewTransition']
+  try {
+    const user = setup()
+    await user.click(screen.getByRole('link', { name: '展开' }))
+    expect(await screen.findByRole('button', { name: '添加板块' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: '全局' }))
+    expect(await screen.findByTestId('now-strip')).toBeInTheDocument()
+    expect(kinds).toEqual(['expand', 'collapse'])
+  } finally {
+    delete (document as Partial<Document>).startViewTransition
+    delete document.documentElement.dataset.vt
+    delete document.documentElement.dataset.timelineEnter
+  }
+})
+
 it('shows the empty state instead of the dashboard when there are no lanes', () => {
   s().hydrate(createEmptyData())
   render(<App />)
