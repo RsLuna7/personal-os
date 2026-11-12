@@ -16,6 +16,7 @@ import {
   needsBackupReminder,
   serialize,
 } from '@/data/backup'
+import { countIcsEvents, buildIcs, icsFileName } from '@/data/ics'
 import { getStorage, loadUiPrefs } from '@/data/persistence'
 import { createSampleData } from '@/data/sample'
 import { createEmptyData } from '@/data/schema'
@@ -29,6 +30,13 @@ function exportBackup(): void {
   const store = useStore.getState()
   downloadText(exportFileName(todayISO()), serialize(store.data))
   store.markExported(new Date().toISOString())
+}
+
+/** 导出日历文件。不算备份，不更新“上次导出”时间。 */
+function exportCalendar(): void {
+  const { data } = useStore.getState()
+  downloadText(icsFileName(todayISO()), buildIcs(data, new Date()), 'text/calendar;charset=utf-8')
+  toast.success(`已导出日历，共 ${countIcsEvents(data)} 项`)
 }
 
 async function importBackup(file: File): Promise<void> {
@@ -51,7 +59,7 @@ function clearAll(): void {
   showUndoToast('已清空数据')
 }
 
-/** 顶栏右侧的“⋯”菜单：备份、学期、示例、清空。 */
+/** 顶栏右侧的“⋯”菜单：备份、日历导出、学期、示例、清空。 */
 export function MoreMenu() {
   const fileInput = useRef<HTMLInputElement | null>(null)
   const hasData = useStore((state) => state.data.lanes.length > 0)
@@ -83,8 +91,9 @@ export function MoreMenu() {
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-36">
+        <DropdownMenuContent align="end" className="w-44">
           <DropdownMenuItem onSelect={exportBackup}>导出备份</DropdownMenuItem>
+          <DropdownMenuItem onSelect={exportCalendar}>导出日历 (.ics)</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => fileInput.current?.click()}>导入备份</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setTermsOpen(true)}>编辑学期</DropdownMenuItem>
