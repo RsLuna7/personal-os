@@ -57,6 +57,7 @@ it('lists the menu items in order', async () => {
     '导出备份',
     '导出日历 (.ics)',
     '导入备份',
+    '从模板添加',
     '编辑学期',
     '载入示例',
     '清空数据',

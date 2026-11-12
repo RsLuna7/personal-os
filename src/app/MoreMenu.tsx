@@ -22,7 +22,7 @@ import { createSampleData } from '@/data/sample'
 import { createEmptyData } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { showUndoToast } from '@/features/editor/deleteToast'
-import { setTermsOpen } from '@/features/editor/editorStore'
+import { setTemplateOpen, setTermsOpen } from '@/features/editor/editorStore'
 import { todayISO } from '@/features/timeline/days'
 import { readBackupFile } from './importFile'
 
@@ -59,7 +59,7 @@ function clearAll(): void {
   showUndoToast('已清空数据')
 }
 
-/** 顶栏右侧的“⋯”菜单：备份、日历导出、学期、示例、清空。 */
+/** 顶栏右侧的“⋯”菜单：备份、日历导出、模板、学期、示例、清空。 */
 export function MoreMenu() {
   const fileInput = useRef<HTMLInputElement | null>(null)
   const hasData = useStore((state) => state.data.lanes.length > 0)
@@ -96,6 +96,7 @@ export function MoreMenu() {
           <DropdownMenuItem onSelect={exportCalendar}>导出日历 (.ics)</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => fileInput.current?.click()}>导入备份</DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setTemplateOpen(true)}>从模板添加</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setTermsOpen(true)}>编辑学期</DropdownMenuItem>
           <DropdownMenuItem onSelect={loadSample}>载入示例</DropdownMenuItem>
           <DropdownMenuSeparator />
