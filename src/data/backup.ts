@@ -63,8 +63,12 @@ export function needsBackupReminder(
   return now.getTime() - since > REMINDER_DAYS * 86_400_000
 }
 
-export function downloadText(filename: string, text: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }))
+export function downloadText(
+  filename: string,
+  text: string,
+  type = 'text/plain;charset=utf-8',
+): void {
+  const url = URL.createObjectURL(new Blob([text], { type }))
   const link = document.createElement('a')
   link.href = url
   link.download = filename

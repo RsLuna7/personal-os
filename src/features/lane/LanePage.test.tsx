@@ -23,10 +23,11 @@ const data: AppData = {
       start: '2026-11-02',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
   ],
-  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', done: false, note: '' }],
 }
 
 beforeEach(() => {

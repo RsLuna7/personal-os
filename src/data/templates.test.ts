@@ -15,10 +15,11 @@ const existing: AppData = {
       start: '2026-11-09',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
   ],
-  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', done: false, note: '' }],
 }
 
 const counter = () => {
@@ -79,6 +80,12 @@ describe('applyTemplate', () => {
       const last = Math.max(...next.phases.map((phase) => Date.parse(phase.end)))
       expect(next.milestones.every((m) => Date.parse(m.date) <= last)).toBe(true)
     }
+  })
+
+  it('creates phases and milestones that are not done', () => {
+    const next = applyTemplate(createEmptyData(), semester, '2026-12-01', counter())
+    expect(next.phases.every((phase) => phase.done === false)).toBe(true)
+    expect(next.milestones.every((milestone) => milestone.done === false)).toBe(true)
   })
 
   it('appends to existing data without touching it', () => {

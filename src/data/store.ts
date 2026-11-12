@@ -217,7 +217,10 @@ export const useStore = create<StoreState>()((set, get) => {
       const id = newId()
       commit({
         ...data,
-        phases: [...data.phases, { id, laneId, name, start, end, tentative: false, note: '' }],
+        phases: [
+          ...data.phases,
+          { id, laneId, name, start, end, tentative: false, done: false, note: '' },
+        ],
       })
       return id
     },
@@ -238,7 +241,10 @@ export const useStore = create<StoreState>()((set, get) => {
     addMilestone({ laneId, date, name = '新节点' }) {
       const { data } = get()
       const id = newId()
-      commit({ ...data, milestones: [...data.milestones, { id, laneId, name, date, note: '' }] })
+      commit({
+        ...data,
+        milestones: [...data.milestones, { id, laneId, name, date, done: false, note: '' }],
+      })
       return id
     },
 

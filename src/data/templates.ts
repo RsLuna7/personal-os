@@ -128,6 +128,7 @@ export function applyTemplate(
     start: shiftDate(startDate, phase.startDay),
     end: shiftDate(startDate, phase.endDay),
     tentative: false,
+    done: false,
     note: '',
   }))
   const milestones: Milestone[] = template.milestones.map((milestone) => ({
@@ -135,6 +136,7 @@ export function applyTemplate(
     laneId: laneIds[milestone.lane],
     name: clip(milestone.name),
     date: shiftDate(startDate, milestone.day),
+    done: false,
     note: '',
   }))
 

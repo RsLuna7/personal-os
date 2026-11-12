@@ -31,7 +31,15 @@ function todo(patch: Partial<Todo> = {}): Todo {
 
 function milestone(patch: Partial<Milestone> = {}): Milestone {
   counter += 1
-  return { id: `m${counter}`, laneId: 'l1', name: '节点', date: '2026-11-12', note: '', ...patch }
+  return {
+    id: `m${counter}`,
+    laneId: 'l1',
+    name: '节点',
+    date: '2026-11-12',
+    done: false,
+    note: '',
+    ...patch,
+  }
 }
 
 const data = (patch: Partial<CalendarData> = {}): CalendarData => ({

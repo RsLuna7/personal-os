@@ -34,7 +34,12 @@ it('adds phases and milestones with default names', () => {
   const l = s().addLane()
   s().addPhase({ laneId: l, start: '2026-11-09', end: '2026-12-07' })
   s().addMilestone({ laneId: l, date: '2026-12-19' })
-  expect(s().data.phases[0]).toMatchObject({ name: '新阶段', tentative: false, note: '' })
+  expect(s().data.phases[0]).toMatchObject({
+    name: '新阶段',
+    tentative: false,
+    done: false,
+    note: '',
+  })
   expect(s().data.milestones[0]).toMatchObject({ name: '新节点', note: '' })
 })
 it('undoes and redoes', () => {

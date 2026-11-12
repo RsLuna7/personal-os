@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { runViewTransition, transitionBetween } from './viewTransition'
 
 export const ROUTES = ['home', 'timeline', 'calendar', 'modules', 'today'] as const
 export type Route = (typeof ROUTES)[number]
@@ -31,17 +32,30 @@ export function routeHref(route: Route, param?: string | null): string {
 
 export function useHashRoute(): [Route, (r: Route, param?: string | null) => void, string | null] {
   const [parsed, setParsed] = useState<ParsedHash>(() => parseHash(window.location.hash))
+  // 当前路由的最新值；切换时用它判断要不要播放过渡，不必等 React 渲染
+  const currentRef = useRef(parsed)
+
+  // 主页和完整时间线之间切换时播放展开或收起的过渡，其他切换直接换页
+  const apply = useCallback((next: ParsedHash) => {
+    const kind = transitionBetween(currentRef.current.route, next.route)
+    currentRef.current = next
+    if (kind) runViewTransition(kind, () => setParsed(next))
+    else setParsed(next)
+  }, [])
 
   useEffect(() => {
-    const onChange = () => setParsed(parseHash(window.location.hash))
+    const onChange = () => apply(parseHash(window.location.hash))
     window.addEventListener('hashchange', onChange)
     return () => window.removeEventListener('hashchange', onChange)
-  }, [])
+  }, [apply])
 
-  const setRoute = useCallback((r: Route, param?: string | null) => {
-    window.location.hash = routeHref(r, param)
-    setParsed(parseHash(window.location.hash))
-  }, [])
+  const setRoute = useCallback(
+    (r: Route, param?: string | null) => {
+      window.location.hash = routeHref(r, param)
+      apply(parseHash(window.location.hash))
+    },
+    [apply],
+  )
 
   return [parsed.route, setRoute, parsed.param]
 }

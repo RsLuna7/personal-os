@@ -1,3 +1,4 @@
+import { Check } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Milestone } from '@/data/schema'
 import { useStore } from '@/data/store'
@@ -54,7 +55,8 @@ export function MilestoneDot({
           aria-hidden={exiting || undefined}
           role={exiting ? undefined : readOnly ? 'img' : 'button'}
           tabIndex={exiting ? -1 : readOnly ? undefined : 0}
-          aria-label={`${milestone.name}，${date}，${countdown}`}
+          aria-label={`${milestone.name}，${date}，${countdown}${milestone.done ? '，已完成' : ''}`}
+          data-done={String(milestone.done)}
           data-selected={String(selected)}
           className={
             'milestone-dot absolute top-1.5 left-0 flex items-center rounded-[6px] select-none ' +
@@ -76,10 +78,14 @@ export function MilestoneDot({
           }}
           onDoubleClick={(event) => event.stopPropagation()}
         >
-          <span
-            className="shrink-0 rounded-full bg-(--lane-dot)"
-            style={{ width: DOT_SIZE, height: DOT_SIZE }}
-          />
+          {milestone.done ? (
+            <Check aria-hidden className="size-3 shrink-0 text-(--lane-dot)" strokeWidth={3} />
+          ) : (
+            <span
+              className="shrink-0 rounded-full bg-(--lane-dot)"
+              style={{ width: DOT_SIZE, height: DOT_SIZE }}
+            />
+          )}
           {labelWidth >= MIN_LABEL_WIDTH && (
             <span
               className="truncate text-[12px] text-(--text)"
@@ -95,6 +101,7 @@ export function MilestoneDot({
         <div className="font-medium">{milestone.name}</div>
         <div>{date}</div>
         <div>{countdown}</div>
+        {milestone.done && <div>已完成</div>}
       </TooltipContent>
     </Tooltip>
   )

@@ -39,7 +39,7 @@ describe('migrations[1] (v1 to v2)', () => {
   })
 
   it('produces data that passes the current schema once every step has run', () => {
-    expect(appDataSchema.safeParse(migrations[2](migrations[1](v1))).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v1, migrations, 4).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -53,6 +53,66 @@ describe('migrations[1] (v1 to v2)', () => {
     const result = migrations[1](broken) as { lanes: unknown }
     expect(result.lanes).toBe('x')
     expect(appDataSchema.safeParse(result).success).toBe(false)
+  })
+})
+
+describe('migrations[3] (v3 to v4)', () => {
+  const v3 = {
+    schemaVersion: 3,
+    lanes: [{ id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] }],
+    phases: [
+      {
+        id: 'p1',
+        laneId: 'l1',
+        name: '复习',
+        start: '2026-11-01',
+        end: '2026-11-08',
+        tentative: false,
+        note: '',
+      },
+    ],
+    milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+    terms: [],
+    todos: [],
+    lastExportAt: null,
+  }
+
+  it('marks every phase and milestone as not done and bumps the version', () => {
+    const result = migrations[3](v3) as {
+      schemaVersion: number
+      phases: { done: boolean; name: string }[]
+      milestones: { done: boolean; name: string }[]
+    }
+    expect(result.schemaVersion).toBe(4)
+    expect(result.phases).toEqual([{ ...v3.phases[0], done: false }])
+    expect(result.milestones).toEqual([{ ...v3.milestones[0], done: false }])
+  })
+
+  it('keeps a done value that is already there', () => {
+    const result = migrations[3]({
+      ...v3,
+      phases: [{ ...v3.phases[0], done: true }],
+    }) as { phases: { done: boolean }[] }
+    expect(result.phases[0].done).toBe(true)
+  })
+
+  it('leaves non-array phases for validation to reject', () => {
+    const result = migrations[3]({ ...v3, phases: 'x' })
+    expect(appDataSchema.safeParse(result).success).toBe(false)
+  })
+
+  it('produces data that passes the current schema', () => {
+    expect(appDataSchema.safeParse(migrations[3](v3)).success).toBe(true)
+  })
+
+  it('does not mutate its input', () => {
+    const copy = structuredClone(v3)
+    migrations[3](v3)
+    expect(v3).toEqual(copy)
+  })
+
+  it('runs from version 3 up to the current version', () => {
+    expect(runMigrations(v3, migrations, 4).from).toBe(3)
   })
 })
 
@@ -74,7 +134,7 @@ describe('migrations[2] (v2 to v3)', () => {
   })
 
   it('produces data that passes the current schema', () => {
-    expect(appDataSchema.safeParse(migrations[2](v2)).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v2, migrations, 4).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -84,6 +144,6 @@ describe('migrations[2] (v2 to v3)', () => {
   })
 
   it('runs from version 2 up to the current version', () => {
-    expect(runMigrations(v2, migrations, 3).from).toBe(2)
+    expect(runMigrations(v2, migrations, 4).from).toBe(2)
   })
 })

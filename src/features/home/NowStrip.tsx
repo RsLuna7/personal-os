@@ -66,25 +66,27 @@ export function NowStrip({ today, activeCount, upcoming }: NowStripProps) {
       {/* 没有即将到来的节点时整块不显示 */}
       {upcoming && (
         <div data-lane-color={upcoming.lane.color} className="min-w-0">
+          {/* 和另外两格一样只有一个大字（倒计时）；节点名和板块、日期放在下面一行 */}
           <Stat
             label="下一个节点"
-            note={`${upcoming.lane.name} · ${formatDay(today + upcoming.inDays)}`}
+            note={
+              <span
+                title={`${upcoming.milestone.name} · ${upcoming.lane.name} · ${formatDay(today + upcoming.inDays)}`}
+              >
+                <span
+                  aria-hidden
+                  className="mr-1.5 inline-block size-2 rounded-full bg-(--lane-dot) align-middle"
+                />
+                <span className="font-medium text-(--text)">{upcoming.milestone.name}</span>
+                {` · ${upcoming.lane.name} · ${formatDay(today + upcoming.inDays)}`}
+              </span>
+            }
           >
-            <span
-              aria-hidden
-              className="size-2.5 shrink-0 self-center rounded-full bg-(--lane-dot)"
-            />
-            <span
-              className="min-w-0 truncate text-[16px] font-semibold text-(--text)"
-              title={upcoming.milestone.name}
-            >
-              {upcoming.milestone.name}
-            </span>
             {upcoming.inDays === 0 ? (
-              <span className={`ml-2 ${BIG}`}>就是今天</span>
+              <span className={BIG}>今天</span>
             ) : (
               <>
-                <span className={`ml-2 ${BIG}`}>{upcoming.inDays}</span>
+                <span className={BIG}>{upcoming.inDays}</span>
                 <span className={UNIT}>天后</span>
               </>
             )}

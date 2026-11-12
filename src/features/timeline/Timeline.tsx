@@ -121,9 +121,10 @@ export function Timeline({ readOnly = false, className = '' }: TimelineProps) {
                 />
               ))}
             </div>
-            {lanes.map((lane) => (
+            {lanes.map((lane, index) => (
               <LaneRow
                 key={lane.id}
+                index={index}
                 lane={lane}
                 phases={phasesByLane.get(lane.id) ?? NO_PHASES}
                 milestones={milestonesByLane.get(lane.id) ?? NO_MILESTONES}

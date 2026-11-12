@@ -27,10 +27,11 @@ const data: AppData = {
       start: '2026-11-09',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
   ],
-  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+  milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', done: false, note: '' }],
   terms: [{ id: 't1', name: '大三上', start: '2026-09-07', end: '2027-01-18' }],
 }
 
@@ -142,6 +143,30 @@ it('toggles tentative', async () => {
   await user.click(within(dialog).getByLabelText('待确认'))
   expect(phase()!.tentative).toBe(true)
   expect(screen.getByTestId('phase-p1')).toHaveAttribute('data-tentative', 'true')
+})
+
+it('toggles done on a phase', async () => {
+  const user = setup()
+  const dialog = await openPhaseEditor(user)
+  expect(within(dialog).getByLabelText('已完成')).not.toBeChecked()
+  await user.click(within(dialog).getByLabelText('已完成'))
+  expect(phase()!.done).toBe(true)
+  expect(screen.getByTestId('phase-p1')).toHaveAttribute('data-done', 'true')
+  expect(screen.getByTestId('phase-p1')).toHaveAccessibleName(/已完成/)
+  await user.click(within(dialog).getByLabelText('已完成'))
+  expect(phase()!.done).toBe(false)
+  expect(screen.getByTestId('phase-p1')).toHaveAttribute('data-done', 'false')
+})
+
+it('toggles done on a milestone', async () => {
+  const user = setup()
+  await user.click(screen.getByTestId('milestone-m1'))
+  const dialog = await screen.findByRole('dialog', { name: '编辑节点' })
+  expect(within(dialog).getByLabelText('已完成')).not.toBeChecked()
+  await user.click(within(dialog).getByLabelText('已完成'))
+  expect(milestone()!.done).toBe(true)
+  expect(screen.getByTestId('milestone-m1')).toHaveAttribute('data-done', 'true')
+  expect(screen.getByTestId('milestone-m1')).toHaveAccessibleName(/已完成/)
 })
 
 it('moves a phase to another lane', async () => {
