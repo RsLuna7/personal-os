@@ -55,6 +55,7 @@ it('lists the menu items in order', async () => {
   await openMenu(user)
   expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
     '导出备份',
+    '导出日历 (.ics)',
     '导入备份',
     '编辑学期',
     '载入示例',
@@ -68,6 +69,23 @@ it('exports the current data and records the export time', async () => {
   await user.click(await screen.findByRole('menuitem', { name: '导出备份' }))
   expect(downloadText).toHaveBeenCalledWith('personal-os-2026-11-10.json', serialize(mine))
   expect(s().data.lastExportAt).toBe(new Date(2026, 10, 10, 12, 0).toISOString())
+})
+
+it('exports an .ics calendar without touching the backup time', async () => {
+  const user = setup({
+    ...mine,
+    milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+  })
+  await openMenu(user)
+  await user.click(await screen.findByRole('menuitem', { name: '导出日历 (.ics)' }))
+  expect(downloadText).toHaveBeenCalledTimes(1)
+  const [name, text, type] = vi.mocked(downloadText).mock.calls[0]
+  expect(name).toBe('personal-os-2026-11-10.ics')
+  expect(type).toBe('text/calendar;charset=utf-8')
+  expect(text).toContain('BEGIN:VCALENDAR\r\n')
+  expect(text).toContain('SUMMARY:初试')
+  expect(await screen.findByText('已导出日历，共 1 项')).toBeInTheDocument()
+  expect(s().data.lastExportAt).toBeNull()
 })
 
 it('imports a valid file, replaces the data and offers undo', async () => {
