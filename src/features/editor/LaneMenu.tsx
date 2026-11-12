@@ -66,6 +66,11 @@ export function LaneMenu({
   variant?: 'compact' | 'title'
 }) {
   const lane = useStore((state) => state.data.lanes.find((item) => item.id === laneId))
+  // 按排序后的位置判断能不能上移、下移；导入的数据里 order 不一定从 0 连续
+  const position = useStore((state) => {
+    const target = state.data.lanes.find((item) => item.id === laneId)
+    return target ? state.data.lanes.filter((item) => item.order < target.order).length : 0
+  })
   const laneCount = useStore((state) => state.data.lanes.length)
   const updateLane = useStore((state) => state.updateLane)
   const moveLane = useStore((state) => state.moveLane)
@@ -116,11 +121,11 @@ export function LaneMenu({
           ))}
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled={lane.order === 0} onSelect={() => moveLane(lane.id, -1)}>
+        <DropdownMenuItem disabled={position === 0} onSelect={() => moveLane(lane.id, -1)}>
           上移
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={lane.order >= laneCount - 1}
+          disabled={position >= laneCount - 1}
           onSelect={() => moveLane(lane.id, 1)}
         >
           下移

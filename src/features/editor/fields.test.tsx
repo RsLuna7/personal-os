@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useAnchorElement } from './fields'
+import { isPlausibleDate, useAnchorElement } from './fields'
 
 const SELECTOR = '[data-testid="target"]'
 
@@ -45,5 +45,16 @@ describe('useAnchorElement', () => {
     rerender()
     expect(result.current).toBe(second)
     expect(result.current?.isConnected).toBe(true)
+  })
+})
+
+describe('isPlausibleDate', () => {
+  it('accepts years from 1900 to 9998 and rejects partial or out-of-range input', () => {
+    expect(isPlausibleDate('2026-11-12')).toBe(true)
+    expect(isPlausibleDate('1900-01-01')).toBe(true)
+    expect(isPlausibleDate('9998-12-31')).toBe(true)
+    expect(isPlausibleDate('9999-12-31')).toBe(false)
+    expect(isPlausibleDate('0020-01-01')).toBe(false)
+    expect(isPlausibleDate('2026-1-1')).toBe(false)
   })
 })
