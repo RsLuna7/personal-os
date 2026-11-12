@@ -24,9 +24,9 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-6 border-b border-(--border) bg-(--bg-page) px-6">
-      <span className="text-[16px] font-medium text-(--text)">个人 OS</span>
-      <nav aria-label="主导航" className="flex items-center gap-2">
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-(--border) bg-(--bg-page) px-4 whitespace-nowrap sm:gap-6 sm:px-6">
+      <span className="shrink-0 text-[16px] font-medium text-(--text)">个人 OS</span>
+      <nav aria-label="主导航" className="flex shrink-0 items-center gap-1 sm:gap-2">
         {NAV.map((item) => {
           // 展开的完整时间线属于“全局”
           const active = item.route === route || (item.route === 'home' && route === 'timeline')

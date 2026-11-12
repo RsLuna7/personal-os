@@ -1,6 +1,7 @@
 import { laneHref } from '@/features/lane/select'
 import { countdownText, formatDay } from '@/features/timeline/format'
 import { toDay } from '@/features/timeline/days'
+import { SectionHeader } from './SectionHeader'
 import type { LaneSummary } from './summary'
 
 interface LaneCardProps {
@@ -96,9 +97,7 @@ interface LaneOverviewProps {
 export function LaneOverview({ summaries, today }: LaneOverviewProps) {
   return (
     <section aria-labelledby="lane-overview-title">
-      <h2 id="lane-overview-title" className="mb-3 font-serif text-[18px] font-bold text-(--text)">
-        板块概览
-      </h2>
+      <SectionHeader id="lane-overview-title" title="板块概览" />
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
         {summaries.map((summary) => (
           <LaneCard key={summary.lane.id} summary={summary} today={today} />
