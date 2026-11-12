@@ -5,7 +5,7 @@ import { colorOfLane } from '@/features/calendar/cells'
 import { openEditor } from '@/features/editor/editorStore'
 import { fromDay } from '@/features/timeline/days'
 import { formatDay } from '@/features/timeline/format'
-import { recentDays, streak, type DayMark } from './habits'
+import { createdDay, RECENT_DAYS, recentDays, streak, type DayMark } from './habits'
 
 const MARK_TEXT: Record<DayMark, string> = { done: '已打卡', missed: '未打卡', off: '不用打' }
 
@@ -27,6 +27,7 @@ interface HabitRowProps {
 export function HabitRow({ habit, lanes, today, due }: HabitRowProps) {
   const checkedToday = habit.checks.includes(fromDay(today))
   const count = streak(habit, today)
+  const start = createdDay(habit)
   const toggle = (day: number) => useStore.getState().toggleCheck(habit.id, fromDay(day))
 
   return (
@@ -59,16 +60,24 @@ export function HabitRow({ habit, lanes, today, due }: HabitRowProps) {
       >
         {habit.name}
       </button>
-      <span className="flex shrink-0 items-center gap-[3px]">
+      <span
+        role="group"
+        aria-label={`「${habit.name}」最近 ${RECENT_DAYS} 天`}
+        className="flex shrink-0 items-center gap-[3px]"
+      >
         {recentDays(habit, today).map(({ day, mark }) => (
           <button
             key={day}
             type="button"
             data-mark={mark}
-            aria-label={`${formatDay(day)} ${MARK_TEXT[mark]}`}
+            aria-label={`${habit.name} ${formatDay(day)} ${MARK_TEXT[mark]}`}
+            aria-pressed={mark === 'done'}
             title={`${formatDay(day)} ${MARK_TEXT[mark]}`}
+            // 习惯建立之前的日子不能打卡：打了也不算进连续记录
+            disabled={day < start}
             onClick={() => toggle(day)}
-            className={`size-3 cursor-pointer rounded-[3px] border transition-colors duration-(--dur-fast) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--text) ${MARK_CLASS[mark]}`}
+            // 格子只有 12px，用伪元素把可点的范围撑到约 15×24px，不改变排版
+            className={`relative size-3 cursor-pointer rounded-[3px] border transition-colors duration-(--dur-fast) after:absolute after:-inset-x-[1.5px] after:-inset-y-1.5 after:content-[''] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-(--text) disabled:cursor-default ${MARK_CLASS[mark]}`}
           />
         ))}
       </span>

@@ -42,16 +42,21 @@ export function TodayColumn({
     const store = useStore.getState()
     return (
       <>
-        <RowAction
-          label={`推到明天「${todo.title}」`}
-          icon={SunriseIcon}
-          onClick={() => store.updateTodo(todo.id, { date: fromDay(today + 1) })}
-        />
-        <RowAction
-          label={`移回收件箱「${todo.title}」`}
-          icon={InboxIcon}
-          onClick={() => store.updateTodo(todo.id, { date: null })}
-        />
+        {/* 做完的不给挪：挪走以后哪一栏都不显示做完的待办，就找不到了 */}
+        {!todo.done && (
+          <>
+            <RowAction
+              label={`推到明天「${todo.title}」`}
+              icon={SunriseIcon}
+              onClick={() => store.updateTodo(todo.id, { date: fromDay(today + 1) })}
+            />
+            <RowAction
+              label={`移回收件箱「${todo.title}」`}
+              icon={InboxIcon}
+              onClick={() => store.updateTodo(todo.id, { date: null })}
+            />
+          </>
+        )}
         <RowAction
           label={`删除「${todo.title}」`}
           icon={Trash2Icon}
@@ -71,7 +76,7 @@ export function TodayColumn({
       todo={todo}
       lanes={lanes}
       onToggle={toggle}
-      onPointerDown={onRowPointerDown}
+      onPointerDown={todo.done ? undefined : onRowPointerDown}
       dragging={draggingId === todo.id}
       meta={
         overdue && todo.date ? (

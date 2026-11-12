@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/app/App'
 import { createEmptyData, type AppData } from '@/data/schema'
@@ -84,4 +84,33 @@ it('opens the habit editor from a habit name', async () => {
   const user = setup({ habits: [habit('背单词', [1, 2, 3, 4, 5, 6, 7])] })
   await user.click(screen.getByRole('button', { name: '背单词' }))
   expect(await screen.findByRole('dialog', { name: '编辑习惯' })).toBeInTheDocument()
+})
+
+it('undoes with Ctrl+Z on the today page', async () => {
+  const user = setup({ todos: [todo('买牛奶', '2026-11-12')] })
+  await user.click(screen.getByRole('button', { name: '删除「买牛奶」' }))
+  expect(s().data.todos).toEqual([])
+  await user.keyboard('{Control>}z{/Control}')
+  expect(s().data.todos.map((item) => item.id)).toEqual(['买牛奶'])
+})
+
+it('keeps the todo editor open when its todo leaves the page', async () => {
+  const user = setup({ todos: [todo('买牛奶', '2026-11-12')] })
+  await user.click(screen.getByRole('button', { name: '买牛奶' }))
+  expect(await screen.findByRole('dialog', { name: '编辑待办' })).toBeInTheDocument()
+  act(() => s().updateTodo('买牛奶', { date: '2026-12-31' }))
+  expect(screen.getByRole('dialog', { name: '编辑待办' })).toBeInTheDocument()
+})
+
+it('keeps the habit editor open when the habit stops being due today', async () => {
+  const user = setup({ habits: [habit('背单词', [1, 2, 3, 4, 5, 6, 7])] })
+  await user.click(screen.getByRole('button', { name: '背单词' }))
+  const dialog = await screen.findByRole('dialog', { name: '编辑习惯' })
+  // 今天周四：关掉“每天”时留下今天，习惯还在今天要打的列表里
+  await user.click(within(dialog).getByRole('switch', { name: '每天' }))
+  expect(s().data.habits[0].weekdays).toEqual([4])
+  await user.click(within(dialog).getByRole('button', { name: '周一' }))
+  await user.click(within(dialog).getByRole('button', { name: '周四' }))
+  expect(s().data.habits[0].weekdays).toEqual([1])
+  expect(screen.getByRole('dialog', { name: '编辑习惯' })).toBeInTheDocument()
 })

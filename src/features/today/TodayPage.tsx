@@ -3,6 +3,7 @@ import { useStore } from '@/data/store'
 import { closeEditor, useEditorStore } from '@/features/editor/editorStore'
 import { HabitEditor } from '@/features/editor/HabitEditor'
 import { TodoEditor } from '@/features/editor/TodoEditor'
+import { useUndoKeys } from '@/features/editor/useUndoKeys'
 import { homeTodos } from '@/features/home/todayTodos'
 import { fromDay, toDay } from '@/features/timeline/days'
 import { formatDay } from '@/features/timeline/format'
@@ -26,6 +27,7 @@ export function TodayPage() {
   const editing = useEditorStore((state) => state.editing)
   const today = useToday()
   const drag = useColumnDrag({ today })
+  useUndoKeys()
   const draggingId = drag.dragging?.todo.id ?? null
 
   const week = useMemo(() => {

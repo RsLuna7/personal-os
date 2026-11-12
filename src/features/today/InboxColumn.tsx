@@ -52,16 +52,19 @@ export function InboxColumn({
                 todo={todo}
                 lanes={lanes}
                 onToggle={toggle}
-                onPointerDown={onRowPointerDown}
+                // 刚勾掉、还在停留的不给挪：挪进今天也只会躲进“已完成”
+                onPointerDown={todo.done ? undefined : onRowPointerDown}
                 dragging={draggingId === todo.id}
                 actions={
-                  <RowAction
-                    label={`移到今天「${todo.title}」`}
-                    icon={ArrowRightIcon}
-                    onClick={() =>
-                      useStore.getState().updateTodo(todo.id, { date: fromDay(today) })
-                    }
-                  />
+                  !todo.done && (
+                    <RowAction
+                      label={`移到今天「${todo.title}」`}
+                      icon={ArrowRightIcon}
+                      onClick={() =>
+                        useStore.getState().updateTodo(todo.id, { date: fromDay(today) })
+                      }
+                    />
+                  )
                 }
               />
             ))}

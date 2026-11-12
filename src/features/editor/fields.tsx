@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useState, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
@@ -185,7 +185,27 @@ export function EditorPopover({
   children,
 }: EditorPopoverProps) {
   const element = useAnchorElement(anchor, anchorSelector)
-  if (!element) return null
+  // 面板开着时，它贴着的那一行可能离开页面（比如今日页把待办改到下个月、习惯今天不用打了）。
+  // 这时面板留在原处，贴着那一行最后的位置，而不是突然消失。
+  const [found, setFound] = useState(false)
+  if (element && !found) setFound(true)
+  const elementRef = useRef(element)
+  const lastRect = useRef<DOMRect | null>(null)
+  useLayoutEffect(() => {
+    elementRef.current = element
+    if (element?.isConnected) lastRect.current = element.getBoundingClientRect()
+  })
+  const virtualAnchor = useMemo(
+    () => ({
+      getBoundingClientRect: () => {
+        const current = elementRef.current
+        if (current?.isConnected) lastRect.current = current.getBoundingClientRect()
+        return lastRect.current ?? new DOMRect()
+      },
+    }),
+    [],
+  )
+  if (!found) return null
 
   return (
     <Popover
@@ -194,7 +214,7 @@ export function EditorPopover({
         if (!open) onClose()
       }}
     >
-      <PopoverAnchor virtualRef={{ current: element }} />
+      <PopoverAnchor virtualRef={{ current: virtualAnchor }} />
       <PopoverContent
         aria-label={label}
         align="start"

@@ -194,3 +194,10 @@ it('lets the next press click normally after a drag that produced no click', () 
   fireEvent.click(title)
   expect(useEditorStore.getState().editing).toMatchObject({ kind: 'todo', id: 'b' })
 })
+
+it('does not drag a done todo', () => {
+  setup([{ id: 'a', date: '2026-11-12', done: true }])
+  fireEvent.click(screen.getByRole('button', { name: /已完成 1/ }))
+  drag('a', { x: 400, y: 50 }, { x: 100, y: 50 })
+  expect(todo('a')?.date).toBe('2026-11-12')
+})

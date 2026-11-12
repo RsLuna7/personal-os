@@ -114,3 +114,16 @@ it('says so when there is nothing for today', () => {
   const { column } = setup([])
   expect(within(column).getByText('今天没有待办')).toBeInTheDocument()
 })
+
+it('offers no move actions on done todos', async () => {
+  const { user, column } = setup([{ id: 'a', title: '交作业', done: true }])
+  await user.click(within(column).getByRole('button', { name: /已完成 1/ }))
+  expect(within(column).getByText('交作业')).toBeInTheDocument()
+  expect(
+    within(column).queryByRole('button', { name: '移回收件箱「交作业」' }),
+  ).not.toBeInTheDocument()
+  expect(
+    within(column).queryByRole('button', { name: '推到明天「交作业」' }),
+  ).not.toBeInTheDocument()
+  expect(within(column).getByRole('button', { name: '删除「交作业」' })).toBeInTheDocument()
+})

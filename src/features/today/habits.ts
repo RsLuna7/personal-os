@@ -10,7 +10,7 @@ export function weekdayOf(day: number): number {
 }
 
 /** 习惯是哪天建的（使用者本地日历上的日期）。 */
-function createdDay(habit: Habit): number {
+export function createdDay(habit: Habit): number {
   return toDay(todayISO(new Date(habit.createdAt)))
 }
 

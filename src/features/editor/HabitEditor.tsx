@@ -5,6 +5,8 @@ import { Switch } from '@/components/ui/switch'
 import type { Habit } from '@/data/schema'
 import { EVERY_DAY, useStore } from '@/data/store'
 import { showDeleteToast } from './deleteToast'
+import { weekdayOf } from '@/features/today/habits'
+import { useToday } from '@/features/timeline/useToday'
 import { cleanName, EditorPopover, LaneSelect, NameField } from './fields'
 
 const WEEKDAY_SHORT = ['一', '二', '三', '四', '五', '六', '日']
@@ -50,6 +52,7 @@ function HabitForm({
   const lanes = useStore((state) => state.data.lanes)
   const updateHabit = useStore((state) => state.updateHabit)
   const removeHabit = useStore((state) => state.removeHabit)
+  const today = useToday()
   const everyDayId = useId()
   const nameInput = useRef<HTMLInputElement | null>(null)
   const everyDay = habit.weekdays.length === 7
@@ -93,8 +96,8 @@ function HabitForm({
           <Switch
             id={everyDayId}
             checked={everyDay}
-            // 关掉“每天”时先只留周一，再由下面的星期按钮挑
-            onCheckedChange={(on) => save({ weekdays: on ? EVERY_DAY : [1] })}
+            // 关掉“每天”时先只留今天是星期几（习惯今天照样要打），再由下面的星期按钮挑
+            onCheckedChange={(on) => save({ weekdays: on ? EVERY_DAY : [weekdayOf(today)] })}
           />
         </div>
         {!everyDay && (

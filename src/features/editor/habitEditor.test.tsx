@@ -6,6 +6,12 @@ import { HabitEditor } from './HabitEditor'
 
 const s = () => useStore.getState()
 
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 10, 9, 9, 0)) // 周一
+})
+afterEach(() => vi.useRealTimers())
+
 function setup(weekdays = [1, 2, 3, 4, 5, 6, 7]) {
   s().hydrate({
     ...createEmptyData(),
@@ -44,7 +50,7 @@ it('renames the habit', async () => {
 it('switches from every day to chosen weekdays', async () => {
   const { user } = setup()
   await user.click(screen.getByRole('switch', { name: '每天' }))
-  // 关掉“每天”后先只剩周一
+  // 关掉“每天”后先只剩今天（周一）
   expect(habit().weekdays).toEqual([1])
   await user.click(screen.getByRole('button', { name: '周三' }))
   expect(habit().weekdays).toEqual([1, 3])

@@ -61,11 +61,12 @@ it('checks in for today and the streak grows', async () => {
 it('backfills and clears a day within the last week', async () => {
   const { user, column } = setup([{ id: 'words', name: '背单词' }])
   const row = within(column).getByTestId('habit-words')
-  const cell = within(row).getByRole('button', { name: '11月6日 未打卡' })
+  const cell = within(row).getByRole('button', { name: '背单词 11月6日 未打卡' })
   await user.click(cell)
   expect(habit('words').checks).toEqual(['2026-11-06'])
-  const done = within(row).getByRole('button', { name: '11月6日 已打卡' })
+  const done = within(row).getByRole('button', { name: '背单词 11月6日 已打卡' })
   expect(done).toHaveAttribute('data-mark', 'done')
+  expect(done).toHaveAttribute('aria-pressed', 'true')
   await user.click(done)
   expect(habit('words').checks).toEqual([])
 })
@@ -73,13 +74,13 @@ it('backfills and clears a day within the last week', async () => {
 it('shows only the last seven days', () => {
   const { column } = setup([{ id: 'words', name: '背单词' }])
   const row = within(column).getByTestId('habit-words')
-  expect(within(row).getAllByRole('button', { name: /^\d+月\d+日 / })).toHaveLength(7)
+  expect(within(row).getAllByRole('button', { name: /^背单词 \d+月\d+日 / })).toHaveLength(7)
 })
 
 it('labels off days and hides a zero streak', () => {
   const { column } = setup([{ id: 'gym', name: '健身', weekdays: [4] }])
   const row = within(column).getByTestId('habit-gym')
-  expect(within(row).getByRole('button', { name: '11月11日 不用打' })).toHaveAttribute(
+  expect(within(row).getByRole('button', { name: '健身 11月11日 不用打' })).toHaveAttribute(
     'data-mark',
     'off',
   )
@@ -102,4 +103,11 @@ it('opens the editor from the habit name', async () => {
   const { user, column } = setup([{ id: 'words', name: '背单词' }])
   await user.click(within(column).getByRole('button', { name: '背单词' }))
   expect(useEditorStore.getState().editing).toMatchObject({ kind: 'habit', id: 'words' })
+})
+
+it('does not let you check days before the habit existed', () => {
+  const { column } = setup([{ id: 'new', name: '冥想', createdAt: '2026-11-10T08:00:00.000Z' }])
+  const row = within(column).getByTestId('habit-new')
+  expect(within(row).getByRole('button', { name: '冥想 11月9日 不用打' })).toBeDisabled()
+  expect(within(row).getByRole('button', { name: '冥想 11月10日 未打卡' })).toBeEnabled()
 })
