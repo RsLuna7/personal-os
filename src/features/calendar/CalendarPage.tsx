@@ -9,8 +9,16 @@ import { routeHref } from '@/app/useHashRoute'
 import { runViewTransition } from '@/app/viewTransition'
 import { useToday } from '@/features/timeline/useToday'
 import { fromDay, toDay } from '@/features/timeline/days'
-import { entriesByDay, unscheduledTodos, type CalendarData } from './cells'
+import {
+  entriesByDay,
+  filterByLanes,
+  laneKey,
+  NEUTRAL,
+  unscheduledTodos,
+  type CalendarData,
+} from './cells'
 import { DayFocus } from './DayFocus'
+import { LaneFilter } from './LaneFilter'
 import { MonthGrid } from './MonthGrid'
 import { UnscheduledList } from './UnscheduledList'
 import { useCalendarDrag, type Preview } from './useCalendarDrag'
@@ -97,7 +105,16 @@ export function CalendarPage({ param }: CalendarPageProps) {
     { lanes: data.lanes, milestones: data.milestones, todos: data.todos },
     preview,
   )
-  const byDay = entriesByDay(calendarData)
+  // 板块筛选只影响“显示什么”：编辑、拖动、翻月仍然用完整的数据
+  const [activeLanes, setActiveLanes] = useState<string[]>([])
+  const laneKeys = new Set([...data.lanes.map((lane) => lane.id), NEUTRAL])
+  const active = new Set(activeLanes.filter((key) => laneKeys.has(key)))
+  const hasNeutral =
+    data.todos.some((todo) => laneKey(data.lanes, todo.laneId) === NEUTRAL) ||
+    data.milestones.some((item) => laneKey(data.lanes, item.laneId) === NEUTRAL)
+  const byDay = entriesByDay(
+    filterByLanes(calendarData, active, [editing?.id, preview?.id, movedId]),
+  )
   const unscheduled = unscheduledTodos(calendarData)
 
   /** 那一格放大成卡片：格子和卡片共用 view-transition-name，浏览器把它从格子的位置放大到页面中央。 */
@@ -209,6 +226,17 @@ export function CalendarPage({ param }: CalendarPageProps) {
         >
           今天
         </a>
+        <LaneFilter
+          lanes={data.lanes}
+          hasNeutral={hasNeutral}
+          active={active}
+          onToggle={(key) =>
+            setActiveLanes(
+              active.has(key) ? [...active].filter((k) => k !== key) : [...active, key],
+            )
+          }
+          onClear={() => setActiveLanes([])}
+        />
       </div>
       <div className="flex min-h-0 flex-1 gap-4 px-6 pb-6">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">

@@ -566,6 +566,57 @@
   }
 }
 
+/* 页头的板块图例 / 筛选：色点加名字，选中的有淡底，筛选时没选中的退后 */
+.lane-filter {
+  scrollbar-width: none;
+}
+.lane-filter::-webkit-scrollbar {
+  display: none;
+}
+.lane-chip {
+  display: inline-flex;
+  height: 28px;
+  flex-shrink: 0;
+  cursor: pointer;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+.lane-chip:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text);
+}
+.lane-chip:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+.lane-chip[aria-pressed='true'] {
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+}
+.lane-chip[data-dim='true'] {
+  opacity: 0.55;
+}
+.lane-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--lane-dot);
+}
+.lane-chip-clear {
+  margin-left: 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* 待办：细竖色条加标题；完成后标题变淡加删除线、色条变灰 */
 .todo-item {
   color: var(--text);

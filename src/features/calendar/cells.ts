@@ -38,6 +38,31 @@ export function colorOfLane(lanes: Lane[], laneId: string | null): EntryColor {
   return lanes.find((lane) => lane.id === laneId)?.color ?? NEUTRAL
 }
 
+/** 条目所属的筛选项：板块的 id；不挂板块（或板块找不到）是 NEUTRAL。 */
+export function laneKey(lanes: Lane[], laneId: string | null): string {
+  return lanes.some((lane) => lane.id === laneId) ? laneId! : NEUTRAL
+}
+
+/**
+ * 只显示选中板块的待办和节点（`active` 为空表示不筛选）。`keepIds` 里的条目不受筛选影响：
+ * 正在编辑、拖动的那一条要是被筛掉，编辑面板就找不到它了。
+ */
+export function filterByLanes(
+  data: CalendarData,
+  active: ReadonlySet<string>,
+  keepIds: readonly (string | null | undefined)[] = [],
+): CalendarData {
+  if (active.size === 0) return data
+  const keep = new Set(keepIds.filter((id): id is string => !!id))
+  const shown = (id: string, laneId: string | null) =>
+    keep.has(id) || active.has(laneKey(data.lanes, laneId))
+  return {
+    ...data,
+    milestones: data.milestones.filter((item) => shown(item.id, item.laneId)),
+    todos: data.todos.filter((item) => shown(item.id, item.laneId)),
+  }
+}
+
 export function entryId(entry: DayEntry): string {
   return entry.kind === 'todo' ? entry.todo.id : entry.milestone.id
 }
