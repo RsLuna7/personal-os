@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { isHttpUrl } from './links'
 
-export const CURRENT_SCHEMA_VERSION = 4
+export const CURRENT_SCHEMA_VERSION = 5
 
 export const LANE_COLORS = [
   'iris',
@@ -85,13 +85,28 @@ export interface Todo {
   createdAt: string
 }
 
+/** 每日打卡的习惯 */
+export interface Habit {
+  id: string
+  name: string
+  /** null 表示不挂板块 */
+  laneId: string | null
+  /** 哪几天要打卡，1 = 周一 … 7 = 周日，升序不重复，至少一个 */
+  weekdays: number[]
+  /** 打了卡的日期，升序不重复 */
+  checks: ISODate[]
+  /** ISO 时间：用来排序，也决定从哪天开始算 */
+  createdAt: string
+}
+
 export interface AppData {
-  schemaVersion: 4
+  schemaVersion: 5
   lanes: Lane[]
   phases: Phase[]
   milestones: Milestone[]
   terms: Term[]
   todos: Todo[]
+  habits: Habit[]
   lastExportAt: string | null
 }
 
@@ -152,6 +167,19 @@ const todoSchema = z.object({
   createdAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), '时间不合法'),
 })
 
+function isUnique(values: readonly unknown[]): boolean {
+  return new Set(values).size === values.length
+}
+
+const habitSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  laneId: idSchema.nullable(),
+  weekdays: z.array(z.number().int().min(1).max(7)).min(1).refine(isUnique, '星期重复'),
+  checks: z.array(dateSchema).refine(isUnique, '打卡日期重复'),
+  createdAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), '时间不合法'),
+})
+
 const termSchema = z.object({
   id: idSchema,
   name: nameSchema,
@@ -167,6 +195,7 @@ export const appDataSchema: z.ZodType<AppData> = z
     milestones: z.array(milestoneSchema),
     terms: z.array(termSchema),
     todos: z.array(todoSchema),
+    habits: z.array(habitSchema),
     lastExportAt: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
@@ -181,6 +210,7 @@ export const appDataSchema: z.ZodType<AppData> = z
       ...data.milestones,
       ...data.terms,
       ...data.todos,
+      ...data.habits,
     ]) {
       if (seen.has(item.id)) issue(`id 重复：${item.id}`)
       seen.add(item.id)
@@ -197,6 +227,12 @@ export const appDataSchema: z.ZodType<AppData> = z
       }
     }
 
+    for (const habit of data.habits) {
+      if (habit.laneId !== null && !laneIds.has(habit.laneId)) {
+        issue(`习惯「${habit.name}」指向不存在的板块`)
+      }
+    }
+
     for (const item of [...data.phases, ...data.terms]) {
       if (item.start >= item.end) issue(`「${item.name}」的开始必须早于结束`)
     }
@@ -210,6 +246,7 @@ export function createEmptyData(): AppData {
     milestones: [],
     terms: [],
     todos: [],
+    habits: [],
     lastExportAt: null,
   }
 }

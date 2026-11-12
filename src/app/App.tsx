@@ -7,10 +7,10 @@ import { TermsDialog } from '@/features/editor/TermsDialog'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { Home } from '@/features/home/Home'
 import { ReviewPage } from '@/features/review/ReviewPage'
+import { TodayPage } from '@/features/today/TodayPage'
 import { LanePage } from '@/features/lane/LanePage'
 import { Timeline } from '@/features/timeline/Timeline'
 import { DataErrorScreen } from './DataErrorScreen'
-import { PlaceholderPage } from './PlaceholderPage'
 import { TopBar } from './TopBar'
 import { useHashRoute } from './useHashRoute'
 
@@ -70,7 +70,7 @@ export function App({ persistence }: AppProps) {
         ) : route === 'review' ? (
           <ReviewPage />
         ) : (
-          <PlaceholderPage />
+          <TodayPage />
         )}
       </main>
       <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />

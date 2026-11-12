@@ -358,3 +358,72 @@ describe('todos', () => {
     expect(todos()).toHaveLength(1)
   })
 })
+
+describe('habits', () => {
+  it('adds a daily habit with no lane by default', () => {
+    const id = s().addHabit()
+    expect(s().data.habits).toEqual([
+      expect.objectContaining({
+        id,
+        name: '新习惯',
+        laneId: null,
+        weekdays: [1, 2, 3, 4, 5, 6, 7],
+        checks: [],
+      }),
+    ])
+  })
+  it('toggles a check on and off', () => {
+    const id = s().addHabit()
+    s().toggleCheck(id, '2026-11-12')
+    expect(s().data.habits[0].checks).toEqual(['2026-11-12'])
+    s().toggleCheck(id, '2026-11-12')
+    expect(s().data.habits[0].checks).toEqual([])
+  })
+  it('keeps checks sorted', () => {
+    const id = s().addHabit()
+    s().toggleCheck(id, '2026-11-12')
+    s().toggleCheck(id, '2026-11-10')
+    expect(s().data.habits[0].checks).toEqual(['2026-11-10', '2026-11-12'])
+  })
+  it('ignores a check for a missing habit', () => {
+    s().addHabit()
+    const before = s().past.length
+    s().toggleCheck('missing', '2026-11-12')
+    expect(s().past.length).toBe(before)
+  })
+  it('stores weekdays sorted and unique', () => {
+    const id = s().addHabit()
+    s().updateHabit(id, { weekdays: [5, 1, 5, 3] })
+    expect(s().data.habits[0].weekdays).toEqual([1, 3, 5])
+  })
+  it('ignores an update that leaves no weekday', () => {
+    const id = s().addHabit()
+    s().updateHabit(id, { weekdays: [] })
+    expect(s().data.habits[0].weekdays).toEqual([1, 2, 3, 4, 5, 6, 7])
+  })
+  it('renames and links a habit to a lane', () => {
+    const l = s().addLane()
+    const id = s().addHabit({ name: '跑步' })
+    s().updateHabit(id, { name: '晨跑', laneId: l })
+    expect(s().data.habits[0]).toMatchObject({ name: '晨跑', laneId: l })
+  })
+  it('removes a habit and undo brings it back', () => {
+    const id = s().addHabit()
+    s().removeHabit(id)
+    expect(s().data.habits).toEqual([])
+    s().undo()
+    expect(s().data.habits.map((h) => h.id)).toEqual([id])
+  })
+  it('each habit action is one undo step', () => {
+    const id = s().addHabit()
+    s().toggleCheck(id, '2026-11-12')
+    s().undo()
+    expect(s().data.habits[0].checks).toEqual([])
+  })
+  it('unlinks habits from a removed lane', () => {
+    const l = s().addLane()
+    s().addHabit({ laneId: l })
+    s().removeLane(l)
+    expect(s().data.habits[0].laneId).toBeNull()
+  })
+})

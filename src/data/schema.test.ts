@@ -85,10 +85,10 @@ it.each([
     'term whose start is not before end',
     { ...base, terms: [{ id: 't1', name: '大三上', start: '2027-01-10', end: '2027-01-10' }] },
   ],
-  ['a newer schema version', { ...base, schemaVersion: 5 }],
+  ['a newer schema version', { ...base, schemaVersion: 6 }],
   ['the old schema version', { ...base, schemaVersion: 1 }],
   ['an older schema version', { ...base, schemaVersion: 2 }],
-  ['the previous schema version', { ...base, schemaVersion: 3 }],
+  ['the previous schema version', { ...base, schemaVersion: 4 }],
   [
     'a phase with a non-boolean done',
     { ...base, lanes: [lane], phases: [{ ...phase, done: 'yes' }] },
@@ -154,3 +154,37 @@ it.each([
     { ...base, lanes: [{ ...lane, links: [{ ...link, id: 'p1' }] }], phases: [phase] },
   ],
 ])('rejects %s', (_, data) => expect(appDataSchema.safeParse(data).success).toBe(false))
+
+describe('habits', () => {
+  const habit = {
+    id: 'h1',
+    name: '背单词',
+    laneId: 'l1',
+    weekdays: [1, 3, 5],
+    checks: ['2026-11-09', '2026-11-11'],
+    createdAt: '2026-11-01T08:00:00.000Z',
+  }
+  const withHabit = (overrides: object) => ({
+    ...base,
+    lanes: [lane],
+    habits: [{ ...habit, ...overrides }],
+  })
+
+  it('accepts a valid habit', () =>
+    expect(appDataSchema.safeParse(withHabit({})).success).toBe(true))
+  it.each([[[]], [[0]], [[8]], [[1, 1]], [[1.5]]])('rejects weekdays %j', (weekdays) =>
+    expect(appDataSchema.safeParse(withHabit({ weekdays })).success).toBe(false),
+  )
+  it('rejects duplicate check dates', () =>
+    expect(
+      appDataSchema.safeParse(withHabit({ checks: ['2026-11-09', '2026-11-09'] })).success,
+    ).toBe(false))
+  it('rejects an invalid check date', () =>
+    expect(appDataSchema.safeParse(withHabit({ checks: ['2026-02-30'] })).success).toBe(false))
+  it('rejects a habit pointing at a missing lane', () =>
+    expect(appDataSchema.safeParse(withHabit({ laneId: 'missing' })).success).toBe(false))
+  it('rejects a habit whose id clashes with a todo', () =>
+    expect(appDataSchema.safeParse({ ...withHabit({ id: 't1' }), todos: [todo] }).success).toBe(
+      false,
+    ))
+})

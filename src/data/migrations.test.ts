@@ -39,7 +39,7 @@ describe('migrations[1] (v1 to v2)', () => {
   })
 
   it('produces data that passes the current schema once every step has run', () => {
-    expect(appDataSchema.safeParse(runMigrations(v1, migrations, 4).data).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v1, migrations, 5).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -102,7 +102,7 @@ describe('migrations[3] (v3 to v4)', () => {
   })
 
   it('produces data that passes the current schema', () => {
-    expect(appDataSchema.safeParse(migrations[3](v3)).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v3, migrations, 5).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -112,7 +112,7 @@ describe('migrations[3] (v3 to v4)', () => {
   })
 
   it('runs from version 3 up to the current version', () => {
-    expect(runMigrations(v3, migrations, 4).from).toBe(3)
+    expect(runMigrations(v3, migrations, 5).from).toBe(3)
   })
 })
 
@@ -134,7 +134,7 @@ describe('migrations[2] (v2 to v3)', () => {
   })
 
   it('produces data that passes the current schema', () => {
-    expect(appDataSchema.safeParse(runMigrations(v2, migrations, 4).data).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v2, migrations, 5).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -144,6 +144,38 @@ describe('migrations[2] (v2 to v3)', () => {
   })
 
   it('runs from version 2 up to the current version', () => {
-    expect(runMigrations(v2, migrations, 4).from).toBe(2)
+    expect(runMigrations(v2, migrations, 5).from).toBe(2)
+  })
+})
+
+describe('migrations[4] (v4 to v5)', () => {
+  const v4 = {
+    schemaVersion: 4,
+    lanes: [],
+    phases: [],
+    milestones: [],
+    terms: [],
+    todos: [],
+    lastExportAt: null,
+  }
+
+  it('adds an empty habit list', () => {
+    const result = migrations[4](v4)
+    expect(result).toEqual({ ...v4, schemaVersion: 5, habits: [] })
+    expect(appDataSchema.safeParse(result).success).toBe(true)
+  })
+
+  it('keeps habits that are already there', () => {
+    const habits = [
+      {
+        id: 'h1',
+        name: '跑步',
+        laneId: null,
+        weekdays: [1],
+        checks: [],
+        createdAt: '2026-11-01T00:00:00.000Z',
+      },
+    ]
+    expect((migrations[4]({ ...v4, habits }) as { habits: unknown }).habits).toEqual(habits)
   })
 })

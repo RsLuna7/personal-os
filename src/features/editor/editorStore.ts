@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export interface Editing {
-  kind: 'phase' | 'milestone' | 'todo'
+  kind: 'phase' | 'milestone' | 'todo' | 'habit'
   id: string
   /** 打开后选中名称，方便直接改名（新建时用） */
   selectName: boolean

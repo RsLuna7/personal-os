@@ -1,7 +1,7 @@
 import type { Todo } from '@/data/schema'
 import { toDay } from '@/features/timeline/days'
 
-/** 主页待办清单最多显示几条（不算已完成），其余去日历（以后是“今日”页）看 */
+/** 主页待办清单最多显示几条（不算已完成），其余去今日页看 */
 export const HOME_TODO_LIMIT = 5
 
 export interface HomeTodos {
