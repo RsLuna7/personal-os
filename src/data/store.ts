@@ -8,6 +8,7 @@ import {
   NOTE_MAX,
   URL_MAX,
   type AppData,
+  type Habit,
   type ISODate,
   type Lane,
   type LaneColor,
@@ -53,6 +54,13 @@ interface StoreState {
   /** 把几条待办一起改到某天，算一步撤销（主页“全部移到今天”）。没有匹配的待办时数据不变。 */
   moveTodos(ids: string[], date: ISODate): void
   removeTodo(id: string): void
+  /** 返回新习惯的 id。默认叫“新习惯”、每天打、不挂板块。 */
+  addHabit(input?: { name?: string; weekdays?: number[]; laneId?: string | null }): string
+  /** 星期会整理成升序不重复；一天都不剩时不生效。 */
+  updateHabit(id: string, patch: Partial<Pick<Habit, 'name' | 'weekdays' | 'laneId'>>): void
+  /** 那天打卡或取消打卡。 */
+  toggleCheck(id: string, date: ISODate): void
+  removeHabit(id: string): void
   setTerms(terms: Term[]): void
   /** 把模板按开始日期追加到现有数据后面，算一步撤销。 */
   addFromTemplate(template: Template, startDate: ISODate): void
@@ -78,6 +86,12 @@ function cleanLink(title: string, url: string): Pick<Link, 'title' | 'url'> | nu
   const cleanUrl = normalizeLinkUrl(url)
   if (cleanUrl === null || cleanUrl.length > URL_MAX) return null
   return { title: cleanTitle, url: cleanUrl }
+}
+
+export const EVERY_DAY = [1, 2, 3, 4, 5, 6, 7]
+
+function cleanWeekdays(weekdays: number[]): number[] {
+  return [...new Set(weekdays)].sort((a, b) => a - b)
 }
 
 function sortedLanes(lanes: Lane[]): Lane[] {
@@ -211,6 +225,9 @@ export const useStore = create<StoreState>()((set, get) => {
         milestones: data.milestones.filter((milestone) => milestone.laneId !== id),
         // 待办不跟着板块走：变成不挂板块
         todos: data.todos.map((todo) => (todo.laneId === id ? { ...todo, laneId: null } : todo)),
+        habits: data.habits.map((habit) =>
+          habit.laneId === id ? { ...habit, laneId: null } : habit,
+        ),
       })
     },
 
@@ -304,6 +321,59 @@ export const useStore = create<StoreState>()((set, get) => {
     removeTodo(id) {
       const { data } = get()
       commit({ ...data, todos: data.todos.filter((todo) => todo.id !== id) })
+    },
+
+    addHabit({ name = '新习惯', weekdays = EVERY_DAY, laneId = null } = {}) {
+      const { data } = get()
+      const id = newId()
+      commit({
+        ...data,
+        habits: [
+          ...data.habits,
+          {
+            id,
+            name,
+            laneId,
+            weekdays: cleanWeekdays(weekdays),
+            checks: [],
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      })
+      return id
+    },
+
+    updateHabit(id, patch) {
+      const next = { ...patch }
+      if (next.weekdays !== undefined) {
+        if (next.weekdays.length === 0) return
+        next.weekdays = cleanWeekdays(next.weekdays)
+      }
+      const { data } = get()
+      commit({
+        ...data,
+        habits: data.habits.map((habit) => (habit.id === id ? { ...habit, ...next } : habit)),
+      })
+    },
+
+    toggleCheck(id, date) {
+      const { data } = get()
+      if (!data.habits.some((habit) => habit.id === id)) return
+      commit({
+        ...data,
+        habits: data.habits.map((habit) => {
+          if (habit.id !== id) return habit
+          const checks = habit.checks.includes(date)
+            ? habit.checks.filter((day) => day !== date)
+            : [...habit.checks, date].sort()
+          return { ...habit, checks }
+        }),
+      })
+    },
+
+    removeHabit(id) {
+      const { data } = get()
+      commit({ ...data, habits: data.habits.filter((habit) => habit.id !== id) })
     },
 
     setTerms(terms) {

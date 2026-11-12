@@ -34,7 +34,7 @@ it.each([
       phases: [{ ...sample.phases[0], end: sample.phases[0].start }],
     }),
   ],
-  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 5 })],
+  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 6 })],
   [
     'invalid-shape',
     JSON.stringify({ ...sample, todos: [{ ...sample.todos[0], laneId: 'missing' }] }),
@@ -86,7 +86,7 @@ it('upgrades a version 2 backup on import: no todos', () => {
   )
   expect(result.ok).toBe(true)
   if (!result.ok) return
-  expect(result.data.schemaVersion).toBe(4)
+  expect(result.data.schemaVersion).toBe(5)
   expect(result.data.todos).toEqual([])
   expect(result.data.phases).toEqual(sample.phases)
 })
@@ -102,7 +102,7 @@ it('upgrades a version 1 backup on import', () => {
   const result = parseImport(JSON.stringify(v1))
   expect(result.ok).toBe(true)
   if (!result.ok) return
-  expect(result.data.schemaVersion).toBe(4)
+  expect(result.data.schemaVersion).toBe(5)
   expect(result.data.todos).toEqual([])
   expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
   expect(result.data.phases).toEqual(sample.phases)
@@ -131,4 +131,10 @@ it('round-trips done phases and milestones', () => {
   }
   const result = parseImport(serialize(data))
   expect(result.ok && result.data).toEqual(data)
+})
+
+it('imports a version 4 file with no habits', () => {
+  const { habits: _habits, ...v4 } = { ...sample, schemaVersion: 4 }
+  const result = parseImport(JSON.stringify(v4))
+  expect(result).toEqual({ ok: true, data: { ...sample, habits: [] } })
 })

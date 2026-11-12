@@ -9,6 +9,9 @@ export function createSampleData(today: ISODate): AppData {
   const mondayMs = todayMs - weekday * DAY_MS
   const at = (weeks: number, days = 0): ISODate =>
     new Date(mondayMs + (weeks * 7 + days) * DAY_MS).toISOString().slice(0, 10)
+  const daysAgo = (n: number): ISODate => new Date(todayMs - n * DAY_MS).toISOString().slice(0, 10)
+  /** 几天前打过卡，升序 */
+  const ago = (...days: number[]): ISODate[] => [...days].sort((a, b) => b - a).map(daysAgo)
 
   const todo = (n: number, title: string, date: ISODate | null, laneId: string | null): Todo => ({
     id: `sample-todo-${n}`,
@@ -154,6 +157,32 @@ export function createSampleData(today: ISODate): AppData {
       todo(8, '做一套模拟题', at(1, 2), 'sample-lane-exam'),
       todo(9, '看一遍课程大纲', null, 'sample-lane-course'),
       todo(10, '预约体检', null, null),
+    ],
+    habits: [
+      {
+        id: 'sample-habit-words',
+        name: '背单词',
+        laneId: 'sample-lane-exam',
+        weekdays: [1, 2, 3, 4, 5, 6, 7],
+        checks: ago(1, 2, 3, 4, 5, 7, 8, 9),
+        createdAt: `${daysAgo(30)}T00:00:00.000Z`,
+      },
+      {
+        id: 'sample-habit-gym',
+        name: '健身',
+        laneId: null,
+        weekdays: [1, 3, 5],
+        checks: ago(2, 5, 7, 9),
+        createdAt: `${daysAgo(30)}T00:00:00.000Z`,
+      },
+      {
+        id: 'sample-habit-read',
+        name: '读书 20 分钟',
+        laneId: null,
+        weekdays: [1, 2, 3, 4, 5, 6, 7],
+        checks: ago(0, 1),
+        createdAt: `${daysAgo(10)}T00:00:00.000Z`,
+      },
     ],
   }
 }
