@@ -45,3 +45,18 @@ it('keeps the calendar item active on a month address', () => {
   expect(screen.getByRole('link', { name: '日历' })).toHaveAttribute('aria-current', 'page')
   expect(screen.getByRole('link', { name: '全局' })).not.toHaveAttribute('aria-current')
 })
+
+it('collapses the full timeline back to home from the top bar', async () => {
+  window.location.hash = '#/timeline'
+  render(<App />)
+  const collapse = screen.getByRole('link', { name: '收起' })
+  expect(collapse).toHaveAttribute('href', '#/home')
+  await userEvent.click(collapse)
+  expect(window.location.hash).toBe('#/home')
+  expect(screen.queryByRole('link', { name: '收起' })).not.toBeInTheDocument()
+})
+
+it('only shows the collapse button on the full timeline', () => {
+  render(<App />)
+  expect(screen.queryByRole('link', { name: '收起' })).not.toBeInTheDocument()
+})
