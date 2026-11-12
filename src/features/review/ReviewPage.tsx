@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useStore } from '@/data/store'
@@ -130,25 +130,28 @@ export function ReviewPage() {
           {range}
           {shown === thisWeek ? '（本周）' : ''}
         </p>
-        <Section
-          id="review-done"
-          title="本周完成"
-          groups={review.done}
-          empty="这一周还没有标记完成的事项。"
-        />
-        <Section
-          id="review-overdue"
-          title="逾期未完成"
-          hint="截至今天"
-          groups={review.overdue}
-          empty="没有逾期未完成的事项。"
-        />
-        <Section
-          id="review-upcoming"
-          title="下周到期"
-          groups={review.upcoming}
-          empty="下一周没有到期的事项。"
-        />
+        {/* 换一周时三组整块重新挂载，入场动画再播一遍 */}
+        <Fragment key={shown}>
+          <Section
+            id="review-done"
+            title="本周完成"
+            groups={review.done}
+            empty="这一周还没有标记完成的事项。"
+          />
+          <Section
+            id="review-overdue"
+            title="逾期未完成"
+            hint="截至今天"
+            groups={review.overdue}
+            empty="没有逾期未完成的事项。"
+          />
+          <Section
+            id="review-upcoming"
+            title="下周到期"
+            groups={review.upcoming}
+            empty="下一周没有到期的事项。"
+          />
+        </Fragment>
       </div>
     </div>
   )

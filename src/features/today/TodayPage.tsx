@@ -95,7 +95,7 @@ export function TodayPage() {
       {drag.dragging && (
         <div
           aria-hidden
-          className="pointer-events-none fixed top-0 left-0 z-50 max-w-60 truncate rounded-[8px] bg-(--bg-card) px-3 py-1.5 text-[14px] text-(--text) opacity-90 shadow-(--shadow-card)"
+          className="drag-ghost pointer-events-none fixed top-0 left-0 z-50 max-w-60 truncate rounded-[8px] bg-(--bg-card) px-3 py-1.5 text-[14px] text-(--text) opacity-90 shadow-(--shadow-card)"
           style={{
             transform: `translate(${drag.dragging.x + 12}px, ${drag.dragging.y + 8}px)`,
           }}

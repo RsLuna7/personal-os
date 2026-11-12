@@ -1,5 +1,5 @@
 import { formatDay } from '@/features/timeline/format'
-import { BIG, Stat, UNIT } from './Stat'
+import { BIG, SOON_DAYS, Stat, UNIT } from './Stat'
 import type { UpcomingMilestone } from './summary'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
@@ -22,7 +22,7 @@ export function NowStrip({ today, activeCount, upcoming }: NowStripProps) {
       className="flex items-stretch rounded-[16px] bg-(--bg-card) px-6 py-4 shadow-(--shadow-card) [&>*+*]:ml-8 [&>*+*]:border-l [&>*+*]:border-(--border) [&>*+*]:pl-8"
     >
       <div className="flex shrink-0 items-stretch gap-4">
-        <span aria-hidden className="w-1.5 rounded-full bg-(--today)" />
+        <span aria-hidden className="now-today-bar w-1.5 rounded-full bg-(--today)" />
         <Stat label="今天">
           <span className={BIG}>
             {formatDay(today)} 周{weekday}
@@ -42,7 +42,11 @@ export function NowStrip({ today, activeCount, upcoming }: NowStripProps) {
 
       {/* 没有即将到来的节点时整块不显示 */}
       {upcoming && (
-        <div data-lane-color={upcoming.lane.color} className="min-w-0">
+        <div
+          data-lane-color={upcoming.lane.color}
+          data-soon={String(upcoming.inDays <= SOON_DAYS)}
+          className="min-w-0"
+        >
           {/* 和另外两格一样只有一个大字（倒计时）；节点名和板块、日期放在下面一行 */}
           <Stat
             label="下一个节点"
