@@ -29,7 +29,7 @@ function Stat({ label, children, note }: StatProps) {
 
 interface NowStripProps {
   today: number
-  /** 正在进行的阶段个数（每个板块最多算一个） */
+  /** 正在进行的阶段个数（同一板块里同时进行的都算） */
   activeCount: number
   upcoming: UpcomingMilestone | null
 }
