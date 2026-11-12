@@ -10,7 +10,7 @@ interface LaneHeaderProps {
 
 /** 板块页顶部：大标题和一行摘要，摘要的内容和主页的板块概览卡一致。 */
 export function LaneHeader({ summary, today }: LaneHeaderProps) {
-  const { lane, current, progress, daysLeft, next, nextMilestone } = summary
+  const { lane, current, alsoActive, progress, daysLeft, next, nextMilestone } = summary
   const percent = progress === null ? 0 : Math.round(progress * 100)
 
   const parts: string[] = []
@@ -19,6 +19,8 @@ export function LaneHeader({ summary, today }: LaneHeaderProps) {
       `当前：${current.name}${current.tentative ? '（待确认）' : ''}`,
       `已过 ${percent}% · 还剩 ${daysLeft} 天`,
     )
+    if (alsoActive.length > 0)
+      parts.push(`同时进行：${alsoActive.map((phase) => phase.name).join('、')}`)
   } else {
     parts.push('暂无进行中阶段')
   }

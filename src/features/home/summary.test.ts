@@ -1,7 +1,7 @@
 import { createEmptyData, type AppData, type Phase } from '@/data/schema'
 import { createSampleData } from '@/data/sample'
 import { toDay } from '@/features/timeline/days'
-import { nextMilestone, summarizeLane, summarizeLanes } from './summary'
+import { activePhaseCount, isIdle, nextMilestone, summarizeLane, summarizeLanes } from './summary'
 
 const lane = { id: 'l1', name: '考研', color: 'iris' as const, order: 0, note: '', links: [] }
 const phase = (id: string, start: string, end: string, extra: Partial<Phase> = {}): Phase => ({
@@ -21,8 +21,8 @@ describe('summarizeLane', () => {
   it('finds the current phase, progress and days left', () => {
     const summary = summarizeLane(lane, [phase('a', '2026-11-01', '2026-11-21')], [], today)
     expect(summary.current?.id).toBe('a')
-    // 11-01 到 11-10 共 10 天，总长 20 天
-    expect(summary.progress).toBeCloseTo(0.5)
+    // 11-01 到 11-09 已过完 9 天，今天还没过完，总长 20 天
+    expect(summary.progress).toBeCloseTo(0.45)
     // 含今天，到 11-21（不含）还有 11 天
     expect(summary.daysLeft).toBe(11)
   })
@@ -42,7 +42,17 @@ describe('summarizeLane', () => {
       phase('late', '2026-11-05', '2026-11-30'),
       phase('early', '2026-11-02', '2026-11-30'),
     ]
-    expect(summarizeLane(lane, phases, [], today).current?.id).toBe('early')
+    const summary = summarizeLane(lane, phases, [], today)
+    expect(summary.current?.id).toBe('early')
+    expect(summary.alsoActive.map((item) => item.id)).toEqual(['late', 'tentative'])
+  })
+
+  it('never fills the progress bar before the last day is over', () => {
+    const lastDay = summarizeLane(lane, [phase('a', '2026-11-01', '2026-11-11')], [], today)
+    expect(lastDay.daysLeft).toBe(1)
+    expect(lastDay.progress).toBeLessThan(1)
+    const firstDay = summarizeLane(lane, [phase('a', '2026-11-10', '2026-11-20')], [], today)
+    expect(firstDay.progress).toBe(0)
   })
 
   it('picks the next phase after the current one ends', () => {
@@ -120,5 +130,29 @@ describe('nextMilestone', () => {
       ],
     }
     expect(nextMilestone(data, today)).toBeNull()
+  })
+})
+
+describe('isIdle and activePhaseCount', () => {
+  it('counts every phase in progress, including ones running in parallel', () => {
+    const phases = [phase('a', '2026-11-01', '2026-11-30'), phase('b', '2026-11-05', '2026-11-20')]
+    const summary = summarizeLane(lane, phases, [], today)
+    expect(activePhaseCount([summary])).toBe(2)
+  })
+
+  it('is idle only with nothing in progress, nothing coming and no upcoming milestone', () => {
+    expect(isIdle(summarizeLane(lane, [], [], today))).toBe(true)
+    expect(isIdle(summarizeLane(lane, [phase('up', '2026-12-01', '2026-12-20')], [], today))).toBe(
+      false,
+    )
+    const milestone = {
+      id: 'm',
+      laneId: 'l1',
+      name: '考',
+      date: '2026-12-01',
+      done: false,
+      note: '',
+    }
+    expect(isIdle(summarizeLane(lane, [], [milestone], today))).toBe(false)
   })
 })

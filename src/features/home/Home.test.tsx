@@ -141,3 +141,58 @@ it('turns each overview card into a link to its lane page', async () => {
   expect(await screen.findByRole('heading', { level: 1, name: '示例课程' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: '板块' })).toHaveAttribute('aria-current', 'page')
 })
+
+describe('lanes with nothing planned and parallel phases', () => {
+  const lane = (id: string, name: string, order: number) => ({
+    id,
+    name,
+    color: 'iris' as const,
+    order,
+    note: '',
+    links: [],
+  })
+  const phase = (id: string, laneId: string, start: string, end: string) => ({
+    id,
+    laneId,
+    name: id,
+    start,
+    end,
+    tentative: false,
+    done: false,
+    note: '',
+  })
+  const data = () => ({
+    ...createEmptyData(),
+    lanes: [lane('busy', '备考', 0), lane('idle-a', '健身', 1), lane('idle-b', '日语', 2)],
+    phases: [
+      phase('复习', 'busy', '2026-11-02', '2026-11-30'),
+      phase('刷题', 'busy', '2026-11-09', '2026-11-23'),
+    ],
+  })
+
+  it('collapses lanes with nothing planned into a row of links', () => {
+    s().hydrate(data())
+    render(<App />)
+    expect(screen.getByTestId('overview-busy')).toBeInTheDocument()
+    expect(screen.queryByTestId('overview-idle-a')).not.toBeInTheDocument()
+    const row = screen.getByTestId('idle-lanes')
+    expect(row).toHaveTextContent('还没有安排')
+    expect(within(row).getByRole('link', { name: '健身' })).toHaveAttribute(
+      'href',
+      laneHref('idle-a'),
+    )
+    expect(within(row).getByRole('link', { name: '日语' })).toBeInTheDocument()
+  })
+
+  it('shows phases running in parallel and counts them all', () => {
+    s().hydrate(data())
+    render(<App />)
+    expect(screen.getByTestId('overview-busy')).toHaveTextContent('还有「刷题」同时进行')
+    expect(within(screen.getByTestId('now-strip')).getByText('2')).toBeInTheDocument()
+  })
+
+  it('has no idle row when every lane has something planned', () => {
+    setup()
+    expect(screen.queryByTestId('idle-lanes')).not.toBeInTheDocument()
+  })
+})

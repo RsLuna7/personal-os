@@ -5,7 +5,9 @@ export interface LaneSummary {
   lane: Lane
   /** 正在进行的阶段；同时有多个时，优先已确定的，再取开始得更早的 */
   current: Phase | null
-  /** 当前阶段已过去的比例，0 到 1；没有当前阶段时为 null */
+  /** 和 current 同时在进行的其他阶段，按同样的顺序 */
+  alsoActive: Phase[]
+  /** 当前阶段已过去的比例，0 到 1，今天还没过完、不算已过；没有当前阶段时为 null */
   progress: number | null
   /** 当前阶段还剩几天（含今天），没有当前阶段时为 null */
   daysLeft: number | null
@@ -35,6 +37,7 @@ export function summarizeLane(
     .filter((phase) => toDay(phase.start) <= today && today < toDay(phase.end))
     .sort((a, b) => Number(a.tentative) - Number(b.tentative) || byStart(a, b))
   const current = active[0] ?? null
+  const alsoActive = active.slice(1)
 
   const horizon = current ? toDay(current.end) : today + 1
   const next = own.filter((phase) => toDay(phase.start) >= horizon).sort(byStart)[0] ?? null
@@ -49,11 +52,25 @@ export function summarizeLane(
   if (current) {
     const start = toDay(current.start)
     const end = toDay(current.end)
-    progress = (today - start + 1) / (end - start)
+    // 和“还剩 N 天（含今天）”一致：今天还没过完，最后一天进度条不会先满
+    progress = (today - start) / (end - start)
     daysLeft = end - today
   }
 
-  return { lane, current, progress, daysLeft, next, nextMilestone }
+  return { lane, current, alsoActive, progress, daysLeft, next, nextMilestone }
+}
+
+/** 后面什么都没安排的板块：没有进行中的阶段、没有之后的阶段，也没有今天及之后的节点。 */
+export function isIdle(summary: LaneSummary): boolean {
+  return !summary.current && !summary.next && !summary.nextMilestone
+}
+
+/** 正在进行的阶段一共几个（同一板块里同时进行的都算）。 */
+export function activePhaseCount(summaries: LaneSummary[]): number {
+  return summaries.reduce(
+    (total, summary) => total + (summary.current ? 1 + summary.alsoActive.length : 0),
+    0,
+  )
 }
 
 /** 按板块顺序，每个板块一条摘要。 */
