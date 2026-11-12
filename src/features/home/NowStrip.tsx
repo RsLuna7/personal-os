@@ -1,7 +1,31 @@
+import type { ReactNode } from 'react'
 import { formatDay } from '@/features/timeline/format'
 import type { UpcomingMilestone } from './summary'
 
 const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六']
+
+/** 大字：每格的主数值，字号统一，几格的基线才能对齐 */
+const BIG = 'font-serif text-[26px] leading-tight font-bold text-(--text)'
+/** 大字后面跟的单位或补充 */
+const UNIT = 'text-[14px] text-(--text-muted)'
+
+interface StatProps {
+  label: string
+  children: ReactNode
+  /** 数值下面的一行小字 */
+  note?: ReactNode
+}
+
+/** 一格：上面小标签，下面大字数值。 */
+function Stat({ label, children, note }: StatProps) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[12px] text-(--text-muted)">{label}</div>
+      <div className="flex min-w-0 items-baseline gap-1 whitespace-nowrap">{children}</div>
+      {note && <div className="truncate text-[12px] text-(--text-muted)">{note}</div>}
+    </div>
+  )
+}
 
 interface NowStripProps {
   today: number
@@ -18,54 +42,53 @@ export function NowStrip({ today, activeCount, upcoming }: NowStripProps) {
     <section
       aria-label="现在"
       data-testid="now-strip"
-      className="flex items-stretch gap-8 rounded-[16px] bg-(--bg-card) px-6 py-5 shadow-(--shadow-card)"
+      className="flex items-stretch rounded-[16px] bg-(--bg-card) px-6 py-4 shadow-(--shadow-card) [&>*+*]:ml-8 [&>*+*]:border-l [&>*+*]:border-(--border) [&>*+*]:pl-8"
     >
-      <div className="flex items-stretch gap-4">
+      <div className="flex shrink-0 items-stretch gap-4">
         <span aria-hidden className="w-1.5 rounded-full bg-(--today)" />
-        <div>
-          <div className="text-[12px] text-(--text-muted)">今天</div>
-          <div className="font-serif text-[26px] leading-tight font-bold text-(--text)">
+        <Stat label="今天">
+          <span className={BIG}>
             {formatDay(today)} 周{weekday}
-          </div>
-        </div>
+          </span>
+        </Stat>
       </div>
+
       {/* 没有进行中的阶段时不显示：板块概览卡片里已经写了 */}
       {activeCount > 0 && (
-        <div className="self-center text-[14px] text-(--text-muted)">
-          <span className="mr-1 font-serif text-[26px] font-bold text-(--text)">{activeCount}</span>
-          个阶段进行中
+        <div className="shrink-0">
+          <Stat label="进行中">
+            <span className={BIG}>{activeCount}</span>
+            <span className={UNIT}>个阶段</span>
+          </Stat>
         </div>
       )}
+
       {/* 没有即将到来的节点时整块不显示 */}
       {upcoming && (
-        <div className="ml-auto text-right">
-          <div className="text-[12px] text-(--text-muted)">下一个节点</div>
-          <div
-            data-lane-color={upcoming.lane.color}
-            className="flex items-center justify-end gap-4"
+        <div data-lane-color={upcoming.lane.color} className="min-w-0">
+          <Stat
+            label="下一个节点"
+            note={`${upcoming.lane.name} · ${formatDay(today + upcoming.inDays)}`}
           >
-            <div>
-              <div className="flex items-center justify-end gap-2 text-[16px] font-semibold text-(--text)">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-full bg-(--lane-dot)" />
-                {upcoming.milestone.name}
-              </div>
-              <div className="text-[12px] text-(--text-muted)">
-                {upcoming.lane.name} · {formatDay(today + upcoming.inDays)}
-              </div>
-            </div>
-            <div className="rounded-[10px] bg-(--lane-solid) px-3 py-1.5 text-(--lane-solid-text)">
-              {upcoming.inDays === 0 ? (
-                <span className="text-[16px] font-semibold">就是今天</span>
-              ) : (
-                <>
-                  <span className="font-serif text-[26px] leading-none font-bold">
-                    {upcoming.inDays}
-                  </span>
-                  <span className="ml-1 text-[12px]">天后</span>
-                </>
-              )}
-            </div>
-          </div>
+            <span
+              aria-hidden
+              className="size-2.5 shrink-0 self-center rounded-full bg-(--lane-dot)"
+            />
+            <span
+              className="min-w-0 truncate text-[16px] font-semibold text-(--text)"
+              title={upcoming.milestone.name}
+            >
+              {upcoming.milestone.name}
+            </span>
+            {upcoming.inDays === 0 ? (
+              <span className={`ml-2 ${BIG}`}>就是今天</span>
+            ) : (
+              <>
+                <span className={`ml-2 ${BIG}`}>{upcoming.inDays}</span>
+                <span className={UNIT}>天后</span>
+              </>
+            )}
+          </Stat>
         </div>
       )}
     </section>
