@@ -54,13 +54,14 @@ export function MonthGrid({
         gridTemplateRows: `repeat(${weeks.length}, minmax(${WEEK_ROW_MIN_HEIGHT}px, 1fr))`,
       }}
     >
-      {weeks.flat().map((day) => {
+      {weeks.flat().map((day, index) => {
         const iso = fromDay(day)
         return (
           <DayCell
             key={day}
             day={day}
             today={today}
+            row={Math.floor(index / 7)}
             outside={!iso.startsWith(monthPrefix)}
             entries={byDay.get(iso) ?? []}
             lanes={lanes}

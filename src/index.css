@@ -206,27 +206,161 @@
   }
 }
 
-/* 日历：每天一张圆角卡片，底色看 data-tint，今天是虚线边框 */
+/*
+ * 日历：画布底色上每天一张白色圆角卡片，和主页同一套材质。
+ * 时间感靠层层退后：今天最强（橙色实心日期徽标 + 外圈光），未来是白卡片，过去和周末淡一档，
+ * 不在本月的格子去掉卡片，只剩淡淡的数字。虚线在这个产品里留给“待确认”，今天不再用。
+ */
 .day-cell {
-  background-color: var(--cell-bg);
-  /* 所有格子都有同宽的边框，今天只是换成虚线，内容不会位移 */
+  background-color: var(--bg-card);
+  /* 所有格子都有同宽的边框，今天只是换颜色，内容不会位移 */
   border: 1.5px solid transparent;
-  border-radius: 10px;
-  transition: background-color var(--dur-base) var(--ease-out);
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(60 50 30 / 0.05);
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+  /* 进入和翻月时按行错开浮起；只播一次 */
+  animation: cell-in 360ms var(--ease-out) calc(var(--row, 0) * 32ms) backwards;
+}
+.day-cell:hover {
+  box-shadow:
+    0 1px 2px rgb(60 50 30 / 0.06),
+    0 6px 16px rgb(60 50 30 / 0.1);
 }
 .day-cell:not([data-tint='none']) {
   background-color: var(--lane-fill);
 }
-.day-cell[data-today='true'] {
-  border-style: dashed;
-  border-color: var(--today);
+.day-cell[data-weekend='true']:not([data-tint]),
+.day-cell[data-weekend='true'][data-tint='none'] {
+  background-color: color-mix(in srgb, var(--bg-card) 62%, var(--bg-canvas));
+}
+.day-cell[data-past='true'][data-tint='none'] {
+  background-color: color-mix(in srgb, var(--bg-card) 55%, var(--bg-canvas));
 }
 .day-cell[data-outside='true'] {
+  background-color: transparent;
+  box-shadow: none;
+}
+.day-cell[data-outside='true'] .day-list {
   opacity: 0.55;
 }
-.day-cell[data-today='true'] .day-number {
-  font-weight: 600;
+.day-number {
+  display: inline-flex;
+  min-width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
   color: var(--text);
+}
+.day-cell[data-past='true'] .day-number,
+.day-cell[data-weekend='true'] .day-number {
+  color: var(--text-muted);
+}
+.day-cell[data-outside='true'] .day-number {
+  color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+  font-weight: 400;
+}
+.day-cell[data-today='true'] {
+  border-color: color-mix(in srgb, var(--today) 55%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--today) 14%, transparent),
+    0 8px 20px rgb(60 50 30 / 0.1);
+}
+.day-cell[data-today='true'] .day-number {
+  background-color: var(--today);
+  color: #fff;
+  font-weight: 600;
+  /* 落地时外圈扩散一次，提醒“今天在这里” */
+  animation: today-ping 900ms ease-out 480ms 1 backwards;
+}
+@keyframes cell-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+@keyframes today-ping {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--today) 50%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+/* 拖动中：目标格描边，被拖的条目浮起来 */
+.day-cell[data-drop='true'] {
+  outline: 2px solid color-mix(in srgb, var(--text) 70%, transparent);
+  outline-offset: -2px;
+}
+.day-cell .todo-item[data-dragging='true'],
+.day-cell .milestone-dot[data-dragging='true'] {
+  opacity: 0.95;
+  box-shadow: 0 4px 10px rgb(60 50 30 / 0.22);
+  border-radius: 6px;
+}
+.day-cell .todo-item[data-dragging='true'] {
+  background-color: var(--bg-card);
+  box-shadow:
+    0 0 0 1px var(--border),
+    0 4px 10px rgb(60 50 30 / 0.18);
+}
+/* 悬停格子时右上角出现“＋”，不用知道双击也能新建 */
+.day-add {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  opacity: 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.day-cell:hover .day-add,
+.day-cell:focus-within .day-add {
+  opacity: 1;
+}
+.day-add:hover {
+  background-color: var(--text);
+  color: var(--bg-card);
+}
+/* 节点：板块色实心小胶囊，比待办有分量 */
+.day-cell .milestone-dot {
+  min-height: 22px;
+  padding: 0 7px 0 6px;
+  border-radius: 6px;
+  background-color: var(--lane-solid);
+  color: var(--lane-solid-text);
+}
+.day-cell .milestone-dot > span:first-child {
+  background-color: currentColor;
+  opacity: 0.85;
+}
+.day-cell .milestone-dot[data-selected='true'] {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-cell,
+  .day-cell[data-today='true'] .day-number,
+  .todo-check svg {
+    animation: none;
+  }
 }
 
 /* 一天的条目装不下时在格子里滚动：不画滚动条，还有内容的那一侧边缘淡出 */
@@ -301,6 +435,16 @@
 .todo-check:focus-visible {
   outline: 2px solid var(--text);
   outline-offset: 1px;
+}
+/* 勾上时对勾轻弹一下 */
+.todo-check svg {
+  animation: check-pop 260ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    scale: 0.3;
+  }
 }
 
 /* Deleted phases and milestones fade out before they are removed. */
