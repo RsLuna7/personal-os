@@ -7,6 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ChevronDownIcon } from 'lucide-react'
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui'
 import { Input } from '@/components/ui/input'
 import { LANE_COLORS, NAME_MAX, type LaneColor } from '@/data/schema'
@@ -94,6 +95,13 @@ export function LaneMenu({
           }
         >
           {lane.name}
+          {/* 大标题点开是菜单（改名、颜色、移动、删除），加个小箭头提示 */}
+          {variant === 'title' && (
+            <ChevronDownIcon
+              aria-hidden
+              className="lane-title-chevron ml-1 inline size-5 align-middle text-(--text-muted)"
+            />
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
