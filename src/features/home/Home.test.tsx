@@ -1,6 +1,7 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from '@/app/App'
+import { LINGER_MS } from './TodoBoard'
 import { createSampleData } from '@/data/sample'
 import { createEmptyData } from '@/data/schema'
 import { useStore } from '@/data/store'
@@ -210,5 +211,100 @@ describe('lanes with nothing planned and parallel phases', () => {
   it('has no idle row when every lane has something planned', () => {
     setup()
     expect(screen.queryByTestId('idle-lanes')).not.toBeInTheDocument()
+  })
+})
+
+describe('to-do board', () => {
+  it('lists overdue and today’s to-dos and ticks them off in place', async () => {
+    const user = setup()
+    const board = screen.getByTestId('todo-board')
+    // 示例数据以 11-10 为今天，今天有待办（见 beforeEach 里的系统时间）
+    expect(board).toHaveTextContent('今天')
+    const first = within(board).getAllByRole('checkbox')[0]
+    const id = first.closest('li')!.dataset.testid!.replace('home-todo-', '')
+    await user.click(first)
+    expect(s().data.todos.find((item) => item.id === id)?.done).toBe(true)
+  })
+
+  it('is hidden when there is nothing overdue and nothing today', () => {
+    s().hydrate({ ...createSampleData('2026-11-10'), todos: [] })
+    render(<App />)
+    expect(screen.queryByTestId('todo-board')).not.toBeInTheDocument()
+  })
+
+  it('links to the calendar and says how many are not shown', () => {
+    const data = createSampleData('2026-11-10')
+    const extra = Array.from({ length: 6 }, (_, i) => ({
+      id: `x${i}`,
+      title: `多出来的${i}`,
+      date: '2026-11-10',
+      done: false,
+      laneId: null,
+      createdAt: '2026-11-10T00:00:00Z',
+    }))
+    s().hydrate({ ...data, todos: [...data.todos, ...extra] })
+    render(<App />)
+    const board = screen.getByTestId('todo-board')
+    expect(within(board).getAllByRole('checkbox')).toHaveLength(5)
+    expect(within(board).getByRole('link', { name: /还有 \d+ 项 · 去日历/ })).toHaveAttribute(
+      'href',
+      '#/calendar',
+    )
+  })
+
+  const board = (todos: { id: string; title: string; date: string; done?: boolean }[]) => {
+    s().hydrate({
+      ...createSampleData('2026-11-10'),
+      todos: todos.map((item, i) => ({
+        laneId: null,
+        done: false,
+        createdAt: `2026-11-01T00:00:0${i}Z`,
+        ...item,
+      })),
+    })
+    render(<App />)
+    return screen.getByTestId('todo-board')
+  }
+
+  it('moves every overdue to-do to today in one undo step', async () => {
+    const el = board([
+      { id: 'a', title: '前天的', date: '2026-11-08' },
+      { id: 'b', title: '昨天的', date: '2026-11-09' },
+    ])
+    const n = s().past.length
+    await userEvent.setup().click(within(el).getByRole('button', { name: '全部移到今天' }))
+    expect(s().data.todos.map((todo) => todo.date)).toEqual(['2026-11-10', '2026-11-10'])
+    expect(s().past.length).toBe(n + 1)
+    expect(within(el).queryByText(/^过期/)).not.toBeInTheDocument()
+  })
+
+  it('folds finished to-dos into a count that does not use up the five slots', async () => {
+    const el = board([
+      ...[1, 2, 3, 4, 5].map((i) => ({ id: `o${i}`, title: `待做${i}`, date: '2026-11-10' })),
+      { id: 'd1', title: '做完了', date: '2026-11-10', done: true },
+    ])
+    expect(within(el).getAllByRole('checkbox')).toHaveLength(5)
+    expect(within(el).queryByText('做完了')).not.toBeInTheDocument()
+    const toggle = within(el).getByRole('button', { name: /已完成 1/ })
+    await userEvent.setup().click(toggle)
+    expect(within(el).getByText('做完了')).toBeInTheDocument()
+  })
+
+  it('leaves a ticked to-do in place for a moment before folding it away', () => {
+    vi.useFakeTimers()
+    try {
+      const el = board([{ id: 'a', title: '交作业', date: '2026-11-10' }])
+      fireEvent.click(within(el).getByRole('checkbox', { name: '完成「交作业」' }))
+      expect(within(el).getByText('交作业')).toBeInTheDocument()
+      expect(within(el).getByRole('checkbox', { name: '完成「交作业」' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      )
+      act(() => vi.advanceTimersByTime(LINGER_MS))
+      expect(within(el).queryByRole('checkbox', { name: '完成「交作业」' })).not.toBeInTheDocument()
+      expect(within(el).getByRole('button', { name: /已完成 1/ })).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

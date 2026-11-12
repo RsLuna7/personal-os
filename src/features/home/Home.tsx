@@ -6,6 +6,7 @@ import { LaneOverview } from './LaneOverview'
 import { NowStrip } from './NowStrip'
 import { activePhaseCount, isIdle, nextMilestone, summarizeLanes } from './summary'
 import { TimelineCard } from './TimelineCard'
+import { TodoBoard } from './TodoBoard'
 
 /** 全局：现在的情况、整体时间线、各板块概览。 */
 export function Home() {
@@ -25,6 +26,7 @@ export function Home() {
       <div className="mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-6">
         <NowStrip today={today} activeCount={activePhaseCount(summaries)} upcoming={upcoming} />
         <TimelineCard plannedLaneIds={plannedLaneIds} />
+        <TodoBoard todos={data.todos} lanes={data.lanes} today={today} />
         <LaneOverview summaries={summaries} today={today} />
       </div>
     </div>

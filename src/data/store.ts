@@ -50,6 +50,8 @@ interface StoreState {
   addTodo(input?: { title?: string; date?: ISODate | null; laneId?: string | null }): string
   updateTodo(id: string, patch: Partial<Pick<Todo, 'title' | 'date' | 'done' | 'laneId'>>): void
   toggleTodo(id: string): void
+  /** 把几条待办一起改到某天，算一步撤销（主页“全部移到今天”）。没有匹配的待办时数据不变。 */
+  moveTodos(ids: string[], date: ISODate): void
   removeTodo(id: string): void
   setTerms(terms: Term[]): void
   /** 把模板按开始日期追加到现有数据后面，算一步撤销。 */
@@ -287,6 +289,16 @@ export const useStore = create<StoreState>()((set, get) => {
     toggleTodo(id) {
       const todo = get().data.todos.find((item) => item.id === id)
       if (todo) get().updateTodo(id, { done: !todo.done })
+    },
+
+    moveTodos(ids, date) {
+      const { data } = get()
+      const targets = new Set(ids)
+      if (!data.todos.some((todo) => targets.has(todo.id))) return
+      commit({
+        ...data,
+        todos: data.todos.map((todo) => (targets.has(todo.id) ? { ...todo, date } : todo)),
+      })
     },
 
     removeTodo(id) {
