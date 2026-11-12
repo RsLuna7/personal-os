@@ -206,3 +206,13 @@ it('does not move the selected timeline item with the arrow keys on this page', 
   await user.keyboard('{ArrowRight}')
   expect(s().data.phases[0]!.start).toBe('2026-11-02')
 })
+
+it('slides one highlight behind the selected lane in the sidebar', async () => {
+  const user = setup()
+  const pill = () => sidebar().querySelector('[data-testid="lane-side-pill"]')
+  expect(pill()).toHaveAttribute('data-lane-color', 'iris')
+  expect(pill()).toHaveAttribute('aria-hidden', 'true')
+  await user.click(row('实习'))
+  await waitFor(() => expect(pill()).toHaveAttribute('data-lane-color', 'teal'))
+  expect(sidebar().querySelectorAll('[data-testid="lane-side-pill"]')).toHaveLength(1)
+})

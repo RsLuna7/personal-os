@@ -99,7 +99,7 @@ export function LaneMenu({
           {variant === 'title' && (
             <ChevronDownIcon
               aria-hidden
-              className="ml-1 inline size-5 align-middle text-(--text-muted)"
+              className="lane-title-chevron ml-1 inline size-5 align-middle text-(--text-muted)"
             />
           )}
         </button>

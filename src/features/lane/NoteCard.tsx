@@ -60,11 +60,14 @@ export function NoteCard({ lane }: { lane: Lane }) {
         onChange={(event) => setDraft(event.target.value)}
         onBlur={save}
         // 支持 field-sizing 的浏览器连自动换行也算进高度；不支持的按换行数（rows）
-        className="max-h-[calc(12lh+1rem+2px)] min-h-[calc(2lh+1rem+2px)] w-full resize-none [field-sizing:content] rounded-[8px] border border-(--border) bg-(--bg-page) px-3 py-2 text-[14px] leading-relaxed text-(--text) placeholder:text-(--text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
+        className="lane-note max-h-[calc(12lh+1rem+2px)] min-h-[calc(2lh+1rem+2px)] w-full resize-none [field-sizing:content] rounded-[8px] border border-(--border) bg-(--bg-page) px-3 py-2 text-[14px] leading-relaxed text-(--text) placeholder:text-(--text-muted) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
       />
       {/* 离上限还远时底下这一行整个不占地方；over > 0 时 showCount 必然为真 */}
       {showCount && (
-        <div className="mt-1 flex justify-between gap-2 text-[12px]">
+        <div
+          data-over={String(over > 0)}
+          className="lane-note-count mt-1 flex justify-between gap-2 text-[12px]"
+        >
           {over > 0 ? (
             <p role="alert" className="text-(--danger)">
               超出 {over} 字，缩短后才能保存

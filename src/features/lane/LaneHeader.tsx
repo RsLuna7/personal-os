@@ -31,14 +31,14 @@ export function LaneHeader({ summary, today }: LaneHeaderProps) {
       className="rounded-[16px] bg-(--bg-card) px-6 py-5 shadow-(--shadow-card)"
     >
       <div className="flex items-center gap-3">
-        <span aria-hidden className="size-3 shrink-0 rounded-full bg-(--lane-dot)" />
-        <h1 className="min-w-0">
+        <span aria-hidden className="lane-dot-drop size-3 shrink-0 rounded-full bg-(--lane-dot)" />
+        <h1 className="lane-title min-w-0">
           <LaneMenu laneId={lane.id} variant="title" />
         </h1>
       </div>
 
       {/* 窄一些时当前阶段单独一行，节点和下一阶段并排在下面；够宽（lg）才三格一行 */}
-      <div className="mt-4 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-(--border) pt-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="lane-stats mt-4 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-(--border) pt-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <div data-testid="lane-stat-current" className="col-span-2 min-w-0 lg:col-span-1">
           {current ? (
             <>
@@ -58,11 +58,11 @@ export function LaneHeader({ summary, today }: LaneHeaderProps) {
                   className="h-2 flex-1 overflow-hidden rounded-full bg-(--lane-fill)"
                 >
                   <div
-                    className="h-full rounded-full bg-(--lane-solid)"
+                    className="lane-progress-fill h-full rounded-full bg-(--lane-solid)"
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <span className="shrink-0 text-[12px] text-(--text-muted) tabular-nums">
+                <span className="lane-progress-pct shrink-0 text-[12px] text-(--text-muted) tabular-nums">
                   {percent}%
                 </span>
               </div>

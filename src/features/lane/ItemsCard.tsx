@@ -38,17 +38,20 @@ function ItemRow({ item, today, selected }: ItemRowProps) {
           openEditor(item.kind, item.id)
         }}
         className={
-          'flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left text-[14px] transition-colors duration-(--dur-fast) ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text) ' +
-          (selected ? 'bg-(--lane-fill)' : 'hover:bg-(--bg-subtle)')
+          'lane-item-row flex w-full items-center gap-3 rounded-[8px] px-2 py-2 text-left text-[14px] transition-colors duration-(--dur-fast) ease-(--ease-out) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text) ' +
+          (selected ? 'bg-(--lane-fill)' : 'lane-item-hover')
         }
       >
         {isPhase ? (
           <span
             aria-hidden
-            className="h-3 w-5 shrink-0 rounded-[3px] border border-(--lane-border) bg-(--lane-fill)"
+            className="lane-item-swatch h-3 w-5 shrink-0 rounded-[3px] border border-(--lane-border) bg-(--lane-fill)"
           />
         ) : (
-          <span aria-hidden className="mx-1 size-3 shrink-0 rounded-full bg-(--lane-dot)" />
+          <span
+            aria-hidden
+            className="lane-item-dot mx-1 size-3 shrink-0 rounded-full bg-(--lane-dot)"
+          />
         )}
         <span className="min-w-0 flex-1 truncate font-medium text-(--text)" title={name}>
           {name}
@@ -93,11 +96,21 @@ export function ItemsCard({ lane, today }: { lane: Lane; today: number }) {
         <h2 id={titleId} className="mr-auto font-serif text-[18px] font-bold text-(--text)">
           阶段与节点
         </h2>
-        <Button variant="outline" size="sm" onClick={() => addPhaseToLane(lane.id)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="lane-add"
+          onClick={() => addPhaseToLane(lane.id)}
+        >
           <PlusIcon className="size-3.5" aria-hidden />
           添加阶段
         </Button>
-        <Button variant="outline" size="sm" onClick={() => addMilestoneToLane(lane.id)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="lane-add"
+          onClick={() => addMilestoneToLane(lane.id)}
+        >
           <PlusIcon className="size-3.5" aria-hidden />
           添加节点
         </Button>
@@ -125,7 +138,7 @@ export function ItemsCard({ lane, today }: { lane: Lane; today: number }) {
               已结束 {ended.length} 项
             </button>
           )}
-          <ul className="flex flex-col gap-0.5">
+          <ul className="lane-items flex flex-col gap-0.5">
             {/* 一个列表：编辑时日期跨过今天，行只是换位置，不会重新挂载 */}
             {(expanded ? [...ended, ...current] : current).map((item) => (
               <ItemRow key={item.id} item={item} today={today} selected={isSelected(item)} />
