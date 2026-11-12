@@ -29,21 +29,17 @@ export function NowStrip({ today, activeCount, upcoming }: NowStripProps) {
           </div>
         </div>
       </div>
-      <div className="self-center text-[14px] text-(--text-muted)">
-        {activeCount > 0 ? (
-          <>
-            <span className="mr-1 font-serif text-[26px] font-bold text-(--text)">
-              {activeCount}
-            </span>
-            个阶段进行中
-          </>
-        ) : (
-          '没有进行中的阶段'
-        )}
-      </div>
-      <div className="ml-auto text-right">
-        <div className="text-[12px] text-(--text-muted)">下一个节点</div>
-        {upcoming ? (
+      {/* 没有进行中的阶段时不显示：板块概览卡片里已经写了 */}
+      {activeCount > 0 && (
+        <div className="self-center text-[14px] text-(--text-muted)">
+          <span className="mr-1 font-serif text-[26px] font-bold text-(--text)">{activeCount}</span>
+          个阶段进行中
+        </div>
+      )}
+      {/* 没有即将到来的节点时整块不显示 */}
+      {upcoming && (
+        <div className="ml-auto text-right">
+          <div className="text-[12px] text-(--text-muted)">下一个节点</div>
           <div
             data-lane-color={upcoming.lane.color}
             className="flex items-center justify-end gap-4"
@@ -70,10 +66,8 @@ export function NowStrip({ today, activeCount, upcoming }: NowStripProps) {
               )}
             </div>
           </div>
-        ) : (
-          <div className="text-[14px] text-(--text-muted)">暂无即将到来的节点</div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   )
 }

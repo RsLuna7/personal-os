@@ -91,11 +91,22 @@ it('shows the empty state instead of the dashboard when there are no lanes', () 
   expect(screen.queryByTestId('now-strip')).not.toBeInTheDocument()
 })
 
-it('has no upcoming milestone message when every milestone is in the past', () => {
+it('hides the next milestone when there is no upcoming one', () => {
   const data = createSampleData('2026-11-10')
   s().hydrate({ ...data, milestones: [] })
   render(<App />)
-  expect(screen.getByTestId('now-strip')).toHaveTextContent('暂无即将到来的节点')
+  const strip = screen.getByTestId('now-strip')
+  expect(strip).not.toHaveTextContent('下一个节点')
+  expect(strip).not.toHaveTextContent('暂无即将到来的节点')
+})
+
+it('hides the active count when no phase is in progress', () => {
+  const data = createSampleData('2026-11-10')
+  s().hydrate({ ...data, phases: [] })
+  render(<App />)
+  const strip = screen.getByTestId('now-strip')
+  expect(strip).not.toHaveTextContent('个阶段进行中')
+  expect(strip).not.toHaveTextContent('没有进行中的阶段')
 })
 
 it('turns each overview card into a link to its lane page', async () => {

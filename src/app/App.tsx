@@ -44,7 +44,7 @@ export function App({ persistence }: AppProps) {
   }
 
   return (
-    <div className="flex h-full min-w-[1024px] flex-col bg-(--bg-page) text-(--text)">
+    <div className="flex h-full min-w-[768px] flex-col bg-(--bg-page) text-(--text)">
       {saveError && (
         <div
           role="alert"
