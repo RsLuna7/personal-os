@@ -20,6 +20,8 @@
   --text: var(--sand-12);
   --text-muted: var(--sand-11);
   --today: var(--orange-9);
+  /* 品牌字标里 OS 的颜色：和“今天”同色系，深一档保证文字对比度 */
+  --brand: var(--orange-11);
 
   /* 主页的层次：画布比卡片深一档，卡片靠明暗和阴影浮起来 */
   --bg-canvas: var(--sand-3);
