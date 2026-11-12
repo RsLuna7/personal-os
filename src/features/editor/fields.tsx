@@ -24,9 +24,15 @@ export function cleanName(value: string): string {
   return value.trim().slice(0, NAME_MAX) || FALLBACK_NAME
 }
 
+export const MIN_PLAUSIBLE_YEAR = 1900
+/** 结束日期要加一天才存，9999 年会变成 5 位数的年份，存不进去也读不回来。 */
+export const MAX_PLAUSIBLE_YEAR = 9998
+
 /** 日期输入框在输入年份的过程中会给出 0002、0020 这样的中间值，不当真。 */
 export function isPlausibleDate(value: string): value is ISODate {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number(value.slice(0, 4)) >= 1900
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const year = Number(value.slice(0, 4))
+  return year >= MIN_PLAUSIBLE_YEAR && year <= MAX_PLAUSIBLE_YEAR
 }
 
 export function ErrorText({ children }: { children: ReactNode }) {

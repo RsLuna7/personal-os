@@ -327,3 +327,29 @@ it('opens the editor with the name selected right after creating a phase by doub
   expect(name).toHaveValue('新阶段')
   expect([name.selectionStart, name.selectionEnd]).toEqual([0, 3])
 })
+
+it('does not save an end date in year 9999, which would be stored as a five-digit year', async () => {
+  const user = setup()
+  const dialog = await openPhaseEditor(user)
+  const end = within(dialog).getByLabelText('结束')
+  fireEvent.change(end, { target: { value: '9999-12-31' } })
+  fireEvent.blur(end)
+  expect(phase()!.end).toBe('2026-12-07')
+  expect(await within(dialog).findByRole('alert')).toBeInTheDocument()
+})
+
+it('offers lane move buttons by position even when order values have gaps', async () => {
+  const user = setup({
+    ...data,
+    lanes: [
+      { id: 'l1', name: '考研', color: 'iris', order: 3, note: '', links: [] },
+      { id: 'l2', name: '四级', color: 'tomato', order: 8, note: '', links: [] },
+    ],
+  })
+  await user.click(screen.getByRole('button', { name: '考研' }))
+  expect(await screen.findByRole('menuitem', { name: '上移' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+  expect(screen.getByRole('menuitem', { name: '下移' })).not.toHaveAttribute('aria-disabled')
+})
