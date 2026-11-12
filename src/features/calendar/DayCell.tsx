@@ -80,8 +80,8 @@ function useScrollHints() {
 }
 
 /**
- * 一天的卡片：日期数字在左上，条目沉在底部；条目多了就在格子里上下滚动。
- * 底色是第一条未完成待办的板块浅色；没有待办或都做完了是中性底。
+ * 一天的卡片：日期数字在左上，条目紧跟在它下面；条目多了就在格子里上下滚动。
+ * 左上角晕一层第一条未完成待办的板块浅色；没有待办或都做完了是中性底。
  * 今天是橙色实心日期徽标；过去的日子和周末淡一档；悬停时右上角出现“＋”。
  */
 export function DayCell({
@@ -139,7 +139,7 @@ export function DayCell({
         // 左右各留一点，条目的焦点框不会被滚动区域裁掉
         className="day-list absolute inset-x-1 top-9 bottom-1.5 flex flex-col overflow-y-auto px-0.5"
       >
-        <div ref={contentRef} className="mt-auto flex flex-col gap-0.5 pt-1">
+        <div ref={contentRef} className="flex flex-col gap-0.5 pt-1">
           {entries.map((entry) =>
             entry.kind === 'todo' ? (
               <TodoItem
