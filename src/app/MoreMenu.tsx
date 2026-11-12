@@ -18,7 +18,7 @@ import {
 } from '@/data/backup'
 import { countIcsEvents, buildIcs, icsFileName } from '@/data/ics'
 import { getStorage, loadUiPrefs } from '@/data/persistence'
-import { createSampleData } from '@/data/sample'
+import { createShowcaseData } from '@/data/showcase'
 import { createEmptyData } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { showUndoToast } from '@/features/editor/deleteToast'
@@ -50,7 +50,7 @@ async function importBackup(file: File): Promise<void> {
 }
 
 function loadSample(): void {
-  useStore.getState().replaceData(createSampleData(todayISO()))
+  useStore.getState().replaceData(createShowcaseData(todayISO()))
   showUndoToast('已载入示例')
 }
 
