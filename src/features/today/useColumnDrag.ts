@@ -117,12 +117,22 @@ export function useColumnDrag({ today, isEnabled = wideEnough }: Options): {
   return { dragging, over, onRowPointerDown }
 }
 
-/** 拖完松手后浏览器可能还会补一个 click，这里吞掉它（只吞紧接着的那一个）。 */
+/**
+ * 拖完松手后浏览器可能还会补一个 click，这里吞掉它（只吞紧接着的那一个）。
+ * 松手的位置换了元素时浏览器不补 click：这时下一次按下就是新的手势，吞点击的监听要在那时拿掉，
+ * 不能只靠计时器（后台标签页里计时器会被推迟，下一次正常点击就被吞了）。
+ */
 function swallowNextClick(): void {
+  const release = () => {
+    window.removeEventListener('click', swallow, { capture: true })
+    window.removeEventListener('pointerdown', release, { capture: true })
+  }
   const swallow = (click: MouseEvent) => {
     click.stopPropagation()
     click.preventDefault()
+    release()
   }
-  window.addEventListener('click', swallow, { capture: true, once: true })
-  setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0)
+  window.addEventListener('click', swallow, { capture: true })
+  window.addEventListener('pointerdown', release, { capture: true })
+  setTimeout(release, 0)
 }

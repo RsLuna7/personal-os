@@ -180,3 +180,17 @@ it('ignores presses when dragging is disabled', () => {
   expect(screen.getByTestId('todo-a')).toHaveAttribute('data-dragging', 'false')
   fireEvent.pointerUp(window, { clientX: 400, clientY: 0 })
 })
+
+it('lets the next press click normally after a drag that produced no click', () => {
+  setup([
+    { id: 'a', date: '2026-11-14' },
+    { id: 'b', date: '2026-11-14' },
+  ])
+  drag('a', { x: 100, y: 50 }, { x: 400, y: 50 })
+  // 没有等清理计时器：松手后浏览器没补点击，下一次按下就是新的手势
+  const title = screen.getByRole('button', { name: '待办1' })
+  fireEvent.pointerDown(title, { clientX: 100, clientY: 50, button: 0, pointerId: 2 })
+  fireEvent.pointerUp(window, { clientX: 100, clientY: 50, pointerId: 2 })
+  fireEvent.click(title)
+  expect(useEditorStore.getState().editing).toMatchObject({ kind: 'todo', id: 'b' })
+})

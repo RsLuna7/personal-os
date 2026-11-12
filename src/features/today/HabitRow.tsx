@@ -72,7 +72,7 @@ export function HabitRow({ habit, lanes, today, due }: HabitRowProps) {
           />
         ))}
       </span>
-      <span className="w-10 shrink-0 text-right text-[12px] text-(--text-muted) tabular-nums">
+      <span className="w-9 shrink-0 text-right text-[12px] text-(--text-muted) tabular-nums">
         {count > 0 ? `${count} 天` : ''}
       </span>
     </li>

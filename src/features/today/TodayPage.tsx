@@ -63,7 +63,7 @@ export function TodayPage() {
           {week && <span className="text-[14px] text-(--text-muted)">{week}</span>}
           <span className="ml-auto text-[13px] text-(--text-muted) tabular-nums">{progress}</span>
         </header>
-        <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.4fr_1fr]">
+        <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.3fr_1.2fr]">
           <TodayColumn
             className="lg:order-2"
             todos={data.todos}
