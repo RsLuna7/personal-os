@@ -1,6 +1,5 @@
 import type { Lane, Milestone, Todo } from '@/data/schema'
 import {
-  cellTint,
   colorOfLane,
   entriesByDay,
   entryId,
@@ -102,52 +101,6 @@ describe('colorOfLane', () => {
     expect(colorOfLane(lanes, 'l2')).toBe('teal')
     expect(colorOfLane(lanes, null)).toBe(NEUTRAL)
     expect(colorOfLane(lanes, 'gone')).toBe(NEUTRAL)
-  })
-})
-
-describe('cellTint', () => {
-  const tintOf = (todos: Todo[], milestones: Milestone[] = []) =>
-    cellTint(entriesByDay(data({ todos, milestones })).get('2026-11-12') ?? [], lanes)
-
-  it('is plain (null) with nothing on the day', () => expect(cellTint([], lanes)).toBeNull())
-
-  it('is plain with only finished todos', () => {
-    expect(tintOf([todo({ done: true, laneId: 'l1' })])).toBeNull()
-  })
-
-  it('is plain with only a milestone', () => expect(tintOf([], [milestone()])).toBeNull())
-
-  it('takes the lane colour of the first unfinished todo', () => {
-    expect(tintOf([todo({ laneId: 'l2' })])).toBe('teal')
-  })
-
-  it('goes by sorted order: the earlier lane wins over the later one', () => {
-    expect(tintOf([todo({ laneId: 'l2' }), todo({ laneId: 'l1' })])).toBe('iris')
-  })
-
-  it('is neutral when the first unfinished todo has no lane', () => {
-    expect(tintOf([todo({ laneId: null })])).toBe(NEUTRAL)
-  })
-
-  it('skips a finished todo to find the first unfinished one', () => {
-    expect(tintOf([todo({ done: true, laneId: 'l1' }), todo({ laneId: 'l2' })])).toBe('teal')
-  })
-
-  it('puts a todo with a lane ahead of one without, so the lane colour wins', () => {
-    expect(tintOf([todo({ laneId: null }), todo({ laneId: 'l2' })])).toBe('teal')
-  })
-
-  it('changes when the first unfinished todo is finished', () => {
-    const a = todo({ laneId: 'l1' })
-    const b = todo({ laneId: 'l2' })
-    expect(tintOf([a, b])).toBe('iris')
-    expect(tintOf([{ ...a, done: true }, b])).toBe('teal')
-    expect(
-      tintOf([
-        { ...a, done: true },
-        { ...b, done: true },
-      ]),
-    ).toBeNull()
   })
 })
 

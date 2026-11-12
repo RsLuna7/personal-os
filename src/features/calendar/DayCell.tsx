@@ -5,7 +5,7 @@ import type { Lane } from '@/data/schema'
 import type { Selection } from '@/data/store'
 import { fromDay } from '@/features/timeline/days'
 import { formatDayWithYear } from '@/features/timeline/format'
-import { cellTint, colorOfLane, type DayEntry } from './cells'
+import { colorOfLane, type DayEntry } from './cells'
 import { MilestoneItem } from './MilestoneItem'
 import { TodoItem } from './TodoItem'
 import { addTodoOnDay, type MoveTarget, type Preview } from './useCalendarDrag'
@@ -81,7 +81,6 @@ function useScrollHints() {
 
 /**
  * 一天的卡片：日期数字在左上，条目紧跟在它下面；条目多了就在格子里上下滚动。
- * 左上角晕一层第一条未完成待办的板块浅色；没有待办或都做完了是中性底。
  * 今天是橙色实心日期徽标；过去的日子和周末淡一档；悬停时右上角出现“＋”。
  */
 export function DayCell({
@@ -98,7 +97,6 @@ export function DayCell({
   onDayFocus,
 }: DayCellProps) {
   const iso = fromDay(day)
-  const tint = cellTint(entries, lanes)
   const { listRef, contentRef, hints, onScroll } = useScrollHints()
 
   return (
@@ -110,8 +108,6 @@ export function DayCell({
       data-weekend={String(isWeekend(day))}
       data-outside={String(outside)}
       data-drop={String(preview?.day === day)}
-      data-tint={tint ?? 'none'}
-      data-lane-color={tint ?? undefined}
       tabIndex={day === tabDay ? 0 : -1}
       aria-label={formatDayWithYear(day)}
       onFocus={() => onDayFocus(day)}

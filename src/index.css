@@ -229,24 +229,15 @@
     0 1px 2px rgb(60 50 30 / 0.06),
     0 6px 16px rgb(60 50 30 / 0.1);
 }
-/* 板块色只是左上角一层淡淡的晕染，颜色主要由条目自己承担；整格涂满太吵，也说不清是哪个板块 */
-.day-cell:not([data-tint='none']) {
-  background-image: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--lane-fill) 80%, var(--bg-card)) 0%,
-    var(--bg-card) 70%
-  );
-}
-.day-cell[data-weekend='true'][data-tint='none']:not([data-outside='true']) {
+.day-cell[data-weekend='true']:not([data-outside='true']) {
   background-color: color-mix(in srgb, var(--bg-card) 62%, var(--bg-canvas));
 }
-.day-cell[data-past='true'][data-tint='none']:not([data-outside='true']) {
+.day-cell[data-past='true']:not([data-outside='true']) {
   background-color: color-mix(in srgb, var(--bg-card) 55%, var(--bg-canvas));
 }
-/* 不在本月：整张卡片去掉（底色、晕染、阴影都清掉），不管这天有没有待办 */
+/* 不在本月：整张卡片去掉（底色、阴影都清掉），不管这天有没有待办 */
 .day-cell[data-outside='true'] {
   background-color: transparent;
-  background-image: none;
   box-shadow: none;
 }
 .day-cell[data-outside='true'] .day-list {

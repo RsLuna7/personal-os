@@ -192,45 +192,18 @@ describe('items on the cards', () => {
 })
 
 describe('card colours', () => {
-  it('tints the cell with the lane colour of its first unfinished todo', () => {
+  it('keeps every cell neutral: the colour lives on the items, not on the card', () => {
     setup()
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'iris')
-    expect(cell('2026-11-12')).toHaveAttribute('data-lane-color', 'iris')
+    for (const iso of ['2026-11-12', '2026-11-13', '2026-11-14', '2026-11-20']) {
+      expect(cell(iso)).not.toHaveAttribute('data-tint')
+      expect(cell(iso)).not.toHaveAttribute('data-lane-color')
+    }
   })
 
-  it('stays plain when every todo of the day is finished', () => {
+  it('gives each item its own lane colour, neutral when it has no lane', () => {
     setup()
-    expect(cell('2026-11-13')).toHaveAttribute('data-tint', 'none')
-    expect(cell('2026-11-13')).not.toHaveAttribute('data-lane-color')
-  })
-
-  it('stays plain on a day with nothing, or with only a milestone', () => {
-    setup()
-    expect(cell('2026-11-14')).toHaveAttribute('data-tint', 'none')
-    expect(cell('2026-11-20')).toHaveAttribute('data-tint', 'none')
-  })
-
-  it('uses the neutral tint when the first unfinished todo has no lane', () => {
-    setup('#/calendar', { ...data, todos: [data.todos[1]!] })
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'neutral')
-    expect(cell('2026-11-12')).toHaveAttribute('data-lane-color', 'neutral')
-  })
-
-  it('does not hand the cell tint to a lane-less todo inside it', () => {
-    setup()
-    // 这一格被染成 iris，但“买菜”不挂板块，自己的颜色仍是中性灰
+    expect(screen.getByTestId('todo-t1')).toHaveAttribute('data-lane-color', 'iris')
     expect(screen.getByTestId('todo-t2')).toHaveAttribute('data-lane-color', 'neutral')
-  })
-
-  it('follows the todos: a new finished state or a moved todo changes the tint', () => {
-    setup()
-    act(() => s().updateTodo('t1', { done: true }))
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'neutral')
-    act(() => s().updateTodo('t2', { done: true }))
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'none')
-    act(() => s().updateTodo('t1', { done: false, date: '2026-11-14' }))
-    expect(cell('2026-11-14')).toHaveAttribute('data-tint', 'iris')
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'none')
   })
 
   it('marks today and the days outside the month', () => {

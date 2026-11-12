@@ -12,9 +12,6 @@ export interface CalendarData {
 
 export type DayEntry = { kind: 'milestone'; milestone: Milestone } | { kind: 'todo'; todo: Todo }
 
-/** 格子的底色：null 是中性灰底（没有待办或都做完了），NEUTRAL 是中性浅色，其余是板块色。 */
-export type CellTint = EntryColor | null
-
 const UNKNOWN_LANE_ORDER = Number.MAX_SAFE_INTEGER
 
 function compareText(a: string, b: string): number {
@@ -67,14 +64,6 @@ export function entriesByDay(data: CalendarData): Map<ISODate, DayEntry[]> {
   for (const milestone of milestones) push(milestone.date, { kind: 'milestone', milestone })
   for (const todo of todos) push(todo.date!, { kind: 'todo', todo })
   return byDay
-}
-
-/** 格子底色：排序后第一条未完成待办所属的板块色；没有未完成待办就是 null。 */
-export function cellTint(entries: DayEntry[], lanes: Lane[]): CellTint {
-  for (const entry of entries) {
-    if (entry.kind === 'todo' && !entry.todo.done) return colorOfLane(lanes, entry.todo.laneId)
-  }
-  return null
 }
 
 /** 没有日期的待办：未完成的在前，其余顺序同上。 */
