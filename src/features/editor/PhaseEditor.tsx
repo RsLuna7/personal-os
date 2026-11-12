@@ -59,6 +59,7 @@ function PhaseForm({
   const updatePhase = useStore((state) => state.updatePhase)
   const removePhase = useStore((state) => state.removePhase)
   const tentativeId = useId()
+  const doneId = useId()
   const noteId = useId()
   const [note, setNote] = useDraft(phase.note)
   const nameInput = useRef<HTMLInputElement | null>(null)
@@ -118,6 +119,10 @@ function PhaseForm({
           checked={phase.tentative}
           onCheckedChange={(tentative) => save({ tentative })}
         />
+      </div>
+      <div className="flex items-center justify-between">
+        <Label htmlFor={doneId}>已完成</Label>
+        <Switch id={doneId} checked={phase.done} onCheckedChange={(done) => save({ done })} />
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor={noteId}>备注</Label>

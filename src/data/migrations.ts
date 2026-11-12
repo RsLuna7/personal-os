@@ -28,8 +28,21 @@ function v2ToV3(old: unknown): unknown {
   return { todos: [], ...(old as object), schemaVersion: 3 }
 }
 
-/** 以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3, 3: v3ToV4 }`。 */
-export const migrations: Record<number, Migration> = { 1: v1ToV2, 2: v2ToV3 }
+/** 版本 3 → 4：阶段和节点新增“已完成”，旧数据一律是未完成。 */
+function v3ToV4(old: unknown): unknown {
+  const data = old as { phases?: unknown; milestones?: unknown }
+  const addDone = (items: unknown) =>
+    Array.isArray(items) ? items.map((item: object) => ({ done: false, ...item })) : items
+  return {
+    ...data,
+    schemaVersion: 4,
+    phases: addDone(data.phases),
+    milestones: addDone(data.milestones),
+  }
+}
+
+/** 以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3, 3: v3ToV4, 4: v4ToV5 }`。 */
+export const migrations: Record<number, Migration> = { 1: v1ToV2, 2: v2ToV3, 3: v3ToV4 }
 
 export function runMigrations(
   raw: unknown,

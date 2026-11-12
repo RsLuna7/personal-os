@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { NOTE_MAX, type Milestone } from '@/data/schema'
 import { useStore } from '@/data/store'
@@ -55,6 +56,7 @@ function MilestoneForm({
   const updateMilestone = useStore((state) => state.updateMilestone)
   const removeMilestone = useStore((state) => state.removeMilestone)
   const noteId = useId()
+  const doneId = useId()
   const [note, setNote] = useDraft(milestone.note)
   const nameInput = useRef<HTMLInputElement | null>(null)
 
@@ -92,6 +94,10 @@ function MilestoneForm({
         />
       </div>
       <LaneSelect value={milestone.laneId} lanes={lanes} onChange={(laneId) => save({ laneId })} />
+      <div className="flex items-center justify-between">
+        <Label htmlFor={doneId}>已完成</Label>
+        <Switch id={doneId} checked={milestone.done} onCheckedChange={(done) => save({ done })} />
+      </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor={noteId}>备注</Label>
         <Textarea

@@ -1,4 +1,4 @@
-import { useMemo, type MouseEvent } from 'react'
+import { useMemo, type CSSProperties, type MouseEvent } from 'react'
 import type { Lane, Milestone, Phase } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { openEditor } from '@/features/editor/editorStore'
@@ -15,6 +15,8 @@ import { LABEL_COLUMN_WIDTH } from './useViewport'
 export const NEW_PHASE_WEEKS = 4
 
 interface LaneRowProps {
+  /** 第几条泳道（从 0 开始）：展开动画里色块按这个依次出现 */
+  index?: number
   lane: Lane
   phases: Phase[]
   milestones: Milestone[]
@@ -25,6 +27,7 @@ interface LaneRowProps {
 }
 
 export function LaneRow({
+  index = 0,
   lane,
   phases,
   milestones,
@@ -61,7 +64,7 @@ export function LaneRow({
       data-testid={`lane-${lane.id}`}
       data-lane-color={lane.color}
       className="lane-row relative flex"
-      style={{ height: `${height}px` }}
+      style={{ height: `${height}px`, '--lane-i': index } as CSSProperties}
     >
       <div
         className="flex shrink-0 items-center gap-2 border-r border-(--border) px-3"

@@ -20,6 +20,8 @@
   --text: var(--sand-12);
   --text-muted: var(--sand-11);
   --today: var(--orange-9);
+  /* 品牌字标里 OS 的颜色：和“今天”同色系，深一档保证文字对比度 */
+  --brand: var(--orange-11);
 
   /* 主页的层次：画布比卡片深一档，卡片靠明暗和阴影浮起来 */
   --bg-canvas: var(--sand-3);
@@ -28,8 +30,8 @@
   --shadow-card-hover: 0 2px 4px rgb(0 0 0 / 0.08), 0 10px 28px rgb(60 50 30 / 0.16);
   --danger: var(--tomato-11);
 
-  /* 日历的日期格：没有待办时的中性灰底，已完成待办的色条 */
-  --cell-bg: var(--bg-subtle);
+  /* 日历的日期格：没有待办时的中性灰底（比页面底色深一档，空日历也看得出格子），已完成待办的色条 */
+  --cell-bg: var(--sand-3);
   --done-bar: var(--sand-8);
 
   --dur-fast: 150ms;
@@ -154,13 +156,14 @@
   --lane-solid-text: #fff;
 }
 
-/* 不挂板块的待办：中性灰，和八种板块色同一套变量 */
+/* 不挂板块的待办：中性灰，和八种板块色同一套变量。
+   格子底色比空格（--cell-bg）再深一档，两种灰分得出 */
 [data-lane-color='neutral'] {
-  --lane-fill: var(--sand-3);
+  --lane-fill: var(--sand-4);
   --lane-border: var(--sand-7);
   --lane-text: var(--sand-12);
   --lane-text-past: var(--sand-11);
-  --lane-fill-past: var(--sand-3);
+  --lane-fill-past: var(--sand-4);
   --lane-border-past: var(--sand-6);
   --lane-dot: var(--sand-9);
   --lane-solid: var(--sand-11);

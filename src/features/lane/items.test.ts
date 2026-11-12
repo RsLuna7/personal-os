@@ -11,6 +11,7 @@ const phase = (id: string, start: string, end: string, extra: Partial<Phase> = {
   start,
   end,
   tentative: false,
+  done: false,
   note: '',
   ...extra,
 })
@@ -20,6 +21,7 @@ const milestone = (id: string, date: string, extra: Partial<Milestone> = {}): Mi
   laneId: 'L',
   name: id,
   date,
+  done: false,
   note: '',
   ...extra,
 })

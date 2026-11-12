@@ -10,6 +10,7 @@ const phase = {
   start: '2026-11-09',
   end: '2027-06-28',
   tentative: false,
+  done: false,
   note: '',
 }
 const todo = {
@@ -20,7 +21,14 @@ const todo = {
   laneId: 'l1',
   createdAt: '2026-11-10T08:00:00.000Z',
 }
-const milestone = { id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }
+const milestone = {
+  id: 'm1',
+  laneId: 'l1',
+  name: '初试',
+  date: '2026-12-19',
+  done: false,
+  note: '',
+}
 
 it('accepts empty data', () => expect(appDataSchema.safeParse(base).success).toBe(true))
 
@@ -77,9 +85,18 @@ it.each([
     'term whose start is not before end',
     { ...base, terms: [{ id: 't1', name: '大三上', start: '2027-01-10', end: '2027-01-10' }] },
   ],
-  ['a newer schema version', { ...base, schemaVersion: 4 }],
+  ['a newer schema version', { ...base, schemaVersion: 5 }],
   ['the old schema version', { ...base, schemaVersion: 1 }],
-  ['the previous schema version', { ...base, schemaVersion: 2 }],
+  ['an older schema version', { ...base, schemaVersion: 2 }],
+  ['the previous schema version', { ...base, schemaVersion: 3 }],
+  [
+    'a phase with a non-boolean done',
+    { ...base, lanes: [lane], phases: [{ ...phase, done: 'yes' }] },
+  ],
+  [
+    'a milestone with a non-boolean done',
+    { ...base, lanes: [lane], milestones: [{ ...milestone, done: 1 }] },
+  ],
   ['data without todos', { ...base, todos: undefined }],
   ['a todo pointing at a missing lane', { ...base, todos: [todo] }],
   [

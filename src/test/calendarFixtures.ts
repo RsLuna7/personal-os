@@ -26,7 +26,7 @@ export const calendarData: AppData = {
     { id: 'l1', name: '考研', color: 'iris', order: 0, note: '', links: [] },
     { id: 'l2', name: '实习', color: 'teal', order: 1, note: '', links: [] },
   ],
-  milestones: [{ id: 'm1', laneId: 'l2', name: '面试', date: '2026-11-20', note: '' }],
+  milestones: [{ id: 'm1', laneId: 'l2', name: '面试', date: '2026-11-20', done: false, note: '' }],
   todos: [
     makeTodo('t1', { title: '写周报', date: '2026-11-12', laneId: 'l1' }),
     makeTodo('t2', { title: '买菜', date: '2026-11-12' }),
