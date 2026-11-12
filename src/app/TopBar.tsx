@@ -24,8 +24,14 @@ export function TopBar({ route, onNavigate }: TopBarProps) {
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-(--border) bg-(--bg-page) px-4 whitespace-nowrap sm:gap-6 sm:px-6">
-      <span className="shrink-0 text-[16px] font-medium text-(--text)">个人 OS</span>
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-(--border) bg-(--bg-page) px-4 whitespace-nowrap sm:px-6 lg:gap-6">
+      {/* 品牌字标：Kairos 是希腊神话里“恰当时机”之神 */}
+      <span title="Kairos OS · 个人 OS" className="flex shrink-0 items-baseline gap-1 leading-none">
+        <span className="font-['Playball_Kairos',cursive] text-[30px] text-(--text)">Kairos</span>
+        <span className="font-['Cormorant_Garamond_OS',serif] text-[28px] font-semibold text-(--brand) italic">
+          OS
+        </span>
+      </span>
       <nav aria-label="主导航" className="flex shrink-0 items-center gap-1 sm:gap-2">
         {NAV.map((item) => {
           // 展开的完整时间线属于“全局”
