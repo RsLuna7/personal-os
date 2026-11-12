@@ -115,3 +115,37 @@ it('does not leave a ghost behind when a phase only changes', () => {
   act(() => s().updatePhase('p1', { name: '基础一轮' }))
   expect(exiting()).toHaveLength(0)
 })
+
+describe('with prefers-reduced-motion', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        onchange: null,
+      })),
+    )
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('removes a deleted phase at once, with no ghost and no layout gap', () => {
+    expect(screen.getByTestId('phase-p2').style.top).toBe('72px')
+    act(() => s().removePhase('p1'))
+    expect(screen.queryByTestId('phase-p1')).not.toBeInTheDocument()
+    expect(exiting()).toHaveLength(0)
+    expect(screen.getByTestId('phase-p2').style.top).toBe('32px')
+  })
+
+  it('removes a deleted milestone at once, with no ghost', () => {
+    act(() => s().removeMilestone('m1'))
+    expect(screen.queryByTestId('milestone-m1')).not.toBeInTheDocument()
+    expect(exiting()).toHaveLength(0)
+    expect(screen.getByTestId('lane-l1').style.height).toBe('96px')
+  })
+})
