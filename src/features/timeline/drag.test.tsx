@@ -24,6 +24,7 @@ const data: AppData = {
       start: '2026-11-09',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
   ],

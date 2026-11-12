@@ -18,6 +18,7 @@ const phase = {
   start: '2026-11-09',
   end: '2026-12-07',
   tentative: false,
+  done: false,
   note: '',
 }
 const withData = (patch: Partial<AppData>): AppData => ({
@@ -132,7 +133,9 @@ it('gives a lane with milestones a strip above its phases', () => {
   setup(
     withData({
       phases: [phase],
-      milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', note: '' }],
+      milestones: [
+        { id: 'm1', laneId: 'l1', name: '初试', date: '2026-12-19', done: false, note: '' },
+      ],
     }),
   )
   expect(screen.getByTestId('lane-l1').style.height).toBe('76px')
@@ -220,7 +223,11 @@ it.each([
   ['2026-11-01', '已过 9 天'],
   ['2026-11-10', '就是今天'],
 ])('shows countdown text for a milestone on %s on hover', async (date, text) => {
-  setup(withData({ milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date, note: '' }] }))
+  setup(
+    withData({
+      milestones: [{ id: 'm1', laneId: 'l1', name: '初试', date, done: false, note: '' }],
+    }),
+  )
   await userEvent.hover(screen.getByTestId('milestone-m1'))
   expect(await screen.findByRole('tooltip')).toHaveTextContent(text)
 })

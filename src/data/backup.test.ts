@@ -34,7 +34,7 @@ it.each([
       phases: [{ ...sample.phases[0], end: sample.phases[0].start }],
     }),
   ],
-  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 4 })],
+  ['newer-version', JSON.stringify({ ...sample, schemaVersion: 5 })],
   [
     'invalid-shape',
     JSON.stringify({ ...sample, todos: [{ ...sample.todos[0], laneId: 'missing' }] }),
@@ -86,7 +86,7 @@ it('upgrades a version 2 backup on import: no todos', () => {
   )
   expect(result.ok).toBe(true)
   if (!result.ok) return
-  expect(result.data.schemaVersion).toBe(3)
+  expect(result.data.schemaVersion).toBe(4)
   expect(result.data.todos).toEqual([])
   expect(result.data.phases).toEqual(sample.phases)
 })
@@ -102,8 +102,33 @@ it('upgrades a version 1 backup on import', () => {
   const result = parseImport(JSON.stringify(v1))
   expect(result.ok).toBe(true)
   if (!result.ok) return
-  expect(result.data.schemaVersion).toBe(3)
+  expect(result.data.schemaVersion).toBe(4)
   expect(result.data.todos).toEqual([])
   expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
   expect(result.data.phases).toEqual(sample.phases)
+})
+
+it('upgrades a version 3 backup on import: phases and milestones are not done', () => {
+  const stripDone = <T extends { done: boolean }>({ done: _done, ...rest }: T) => rest
+  const result = parseImport(
+    JSON.stringify({
+      ...sample,
+      schemaVersion: 3,
+      phases: sample.phases.map(stripDone),
+      milestones: sample.milestones.map(stripDone),
+    }),
+  )
+  expect(result.ok).toBe(true)
+  if (!result.ok) return
+  expect(result.data).toEqual(sample)
+})
+
+it('round-trips done phases and milestones', () => {
+  const data = {
+    ...sample,
+    phases: sample.phases.map((phase, index) => ({ ...phase, done: index === 0 })),
+    milestones: sample.milestones.map((milestone) => ({ ...milestone, done: true })),
+  }
+  const result = parseImport(serialize(data))
+  expect(result.ok && result.data).toEqual(data)
 })

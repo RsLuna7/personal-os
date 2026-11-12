@@ -148,6 +148,7 @@ describe('items on the cards', () => {
           start: '2026-11-04',
           end: '2026-11-12',
           tentative: false,
+          done: false,
           note: '',
         },
       ],
@@ -424,7 +425,10 @@ describe('a crowded day', () => {
   it('lists milestones first', () => {
     setup(
       '#/calendar',
-      crowded([], [{ id: 'mm', laneId: 'l1', name: '节点mm', date: '2026-11-09', note: '' }]),
+      crowded(
+        [],
+        [{ id: 'mm', laneId: 'l1', name: '节点mm', date: '2026-11-09', done: false, note: '' }],
+      ),
     )
     expect(titles('2026-11-09')).toEqual(['节点mm', '甲', '乙', '丙', '丁'])
   })

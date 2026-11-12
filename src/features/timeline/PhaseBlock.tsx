@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { Check } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Phase } from '@/data/schema'
@@ -170,10 +171,11 @@ export function PhaseBlock({
             aria-hidden={exiting || undefined}
             role={exiting ? undefined : readOnly ? 'img' : 'button'}
             tabIndex={exiting ? -1 : readOnly ? undefined : 0}
-            aria-label={`${phase.name}，${range}，${duration}${phase.tentative ? '，待确认' : ''}`}
+            aria-label={`${phase.name}，${range}，${duration}${phase.tentative ? '，待确认' : ''}${phase.done ? '，已完成' : ''}`}
             data-past={String(endDay <= today)}
             data-current={String(!phase.tentative && startDay <= today && today < endDay)}
             data-tentative={String(phase.tentative)}
+            data-done={String(phase.done)}
             data-selected={String(selected)}
             data-dragging={String(drag !== null)}
             data-settling={String(settling)}
@@ -195,8 +197,11 @@ export function PhaseBlock({
           >
             {width - LABEL_PADDING_PX >=
               Math.min(estimateLabelWidth(phase.name), MIN_TRUNCATED_LABEL_PX) && (
-              <span className="truncate" title={phase.name} style={{ marginLeft: labelInset }}>
-                {phase.name}
+              <span className="flex min-w-0 items-center gap-1" style={{ marginLeft: labelInset }}>
+                {phase.done && <Check aria-hidden className="size-3.5 shrink-0" />}
+                <span className="truncate" title={phase.name}>
+                  {phase.name}
+                </span>
               </span>
             )}
             {!readOnly && (
@@ -223,6 +228,7 @@ export function PhaseBlock({
           <div>
             {duration}
             {phase.tentative ? ' · 待确认' : ''}
+            {phase.done ? ' · 已完成' : ''}
           </div>
         </TooltipContent>
       </Tooltip>
