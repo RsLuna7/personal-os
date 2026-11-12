@@ -237,15 +237,16 @@
     var(--bg-card) 70%
   );
 }
-.day-cell[data-weekend='true']:not([data-tint]),
-.day-cell[data-weekend='true'][data-tint='none'] {
+.day-cell[data-weekend='true'][data-tint='none']:not([data-outside='true']) {
   background-color: color-mix(in srgb, var(--bg-card) 62%, var(--bg-canvas));
 }
-.day-cell[data-past='true'][data-tint='none'] {
+.day-cell[data-past='true'][data-tint='none']:not([data-outside='true']) {
   background-color: color-mix(in srgb, var(--bg-card) 55%, var(--bg-canvas));
 }
+/* 不在本月：整张卡片去掉（底色、晕染、阴影都清掉），不管这天有没有待办 */
 .day-cell[data-outside='true'] {
   background-color: transparent;
+  background-image: none;
   box-shadow: none;
 }
 .day-cell[data-outside='true'] .day-list {
@@ -403,8 +404,10 @@
 }
 .todo-item[data-dragging='true'],
 .day-cell .milestone-dot[data-dragging='true'] {
-  opacity: 0.6;
   cursor: grabbing;
+}
+.todo-item[data-dragging='true'] {
+  opacity: 0.6;
 }
 .todo-bar {
   width: 3px;
