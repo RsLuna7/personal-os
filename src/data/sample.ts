@@ -58,6 +58,7 @@ export function createSampleData(today: ISODate): AppData {
         start: at(-16),
         end: at(-4),
         tentative: false,
+        done: false,
         note: '',
       },
       {
@@ -67,6 +68,7 @@ export function createSampleData(today: ISODate): AppData {
         start: at(-4),
         end: at(12),
         tentative: false,
+        done: false,
         note: '这是一条示例备注。',
       },
       {
@@ -76,6 +78,7 @@ export function createSampleData(today: ISODate): AppData {
         start: at(12),
         end: at(20),
         tentative: false,
+        done: false,
         note: '',
       },
       {
@@ -85,6 +88,7 @@ export function createSampleData(today: ISODate): AppData {
         start: at(-10),
         end: at(6),
         tentative: false,
+        done: false,
         note: '',
       },
       {
@@ -94,6 +98,7 @@ export function createSampleData(today: ISODate): AppData {
         start: at(6),
         end: at(9),
         tentative: false,
+        done: false,
         note: '',
       },
       {
@@ -103,6 +108,7 @@ export function createSampleData(today: ISODate): AppData {
         start: at(22),
         end: at(34),
         tentative: true,
+        done: false,
         note: '',
       },
     ],
@@ -112,6 +118,7 @@ export function createSampleData(today: ISODate): AppData {
         laneId: 'sample-lane-exam',
         name: '模拟测试',
         date: at(8, 5),
+        done: false,
         note: '',
       },
       {
@@ -119,6 +126,7 @@ export function createSampleData(today: ISODate): AppData {
         laneId: 'sample-lane-exam',
         name: '示例考试',
         date: at(20, 5),
+        done: false,
         note: '',
       },
       {
@@ -126,6 +134,7 @@ export function createSampleData(today: ISODate): AppData {
         laneId: 'sample-lane-course',
         name: '期末考试',
         date: at(9, 2),
+        done: false,
         note: '',
       },
     ],

@@ -28,6 +28,7 @@ const data: AppData = {
       start: '2026-11-02',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
     {
@@ -37,6 +38,7 @@ const data: AppData = {
       start: '2026-09-01',
       end: '2026-10-01',
       tentative: false,
+      done: false,
       note: '',
     },
     {
@@ -46,6 +48,7 @@ const data: AppData = {
       start: '2026-12-14',
       end: '2026-12-28',
       tentative: true,
+      done: false,
       note: '',
     },
     {
@@ -55,13 +58,14 @@ const data: AppData = {
       start: '2026-11-02',
       end: '2026-12-07',
       tentative: false,
+      done: false,
       note: '',
     },
   ],
   milestones: [
-    { id: 'me', laneId: 'lB', name: '旧节点', date: '2026-11-01', note: '' },
-    { id: 'mc', laneId: 'lB', name: '初试', date: '2026-12-19', note: '' },
-    { id: 'ma', laneId: 'lA', name: 'A的节点', date: '2026-11-20', note: '' },
+    { id: 'me', laneId: 'lB', name: '旧节点', date: '2026-11-01', done: false, note: '' },
+    { id: 'mc', laneId: 'lB', name: '初试', date: '2026-12-19', done: false, note: '' },
+    { id: 'ma', laneId: 'lA', name: 'A的节点', date: '2026-11-20', done: false, note: '' },
   ],
 }
 

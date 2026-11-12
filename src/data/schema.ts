@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { isHttpUrl } from './links'
 
-export const CURRENT_SCHEMA_VERSION = 3
+export const CURRENT_SCHEMA_VERSION = 4
 
 export const LANE_COLORS = [
   'iris',
@@ -50,6 +50,8 @@ export interface Phase {
   /** 不含当天（半开区间） */
   end: ISODate
   tentative: boolean
+  /** 已完成 */
+  done: boolean
   note: string
 }
 
@@ -58,6 +60,8 @@ export interface Milestone {
   laneId: string
   name: string
   date: ISODate
+  /** 已完成 */
+  done: boolean
   note: string
 }
 
@@ -82,7 +86,7 @@ export interface Todo {
 }
 
 export interface AppData {
-  schemaVersion: 3
+  schemaVersion: 4
   lanes: Lane[]
   phases: Phase[]
   milestones: Milestone[]
@@ -126,6 +130,7 @@ const phaseSchema = z.object({
   start: dateSchema,
   end: dateSchema,
   tentative: z.boolean(),
+  done: z.boolean().default(false),
   note: noteSchema,
 })
 
@@ -134,6 +139,7 @@ const milestoneSchema = z.object({
   laneId: idSchema,
   name: nameSchema,
   date: dateSchema,
+  done: z.boolean().default(false),
   note: noteSchema,
 })
 

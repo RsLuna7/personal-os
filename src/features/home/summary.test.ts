@@ -11,6 +11,7 @@ const phase = (id: string, start: string, end: string, extra: Partial<Phase> = {
   start,
   end,
   tentative: false,
+  done: false,
   note: '',
   ...extra,
 })
@@ -78,9 +79,9 @@ describe('summarizeLane', () => {
 
   it('picks the nearest milestone today or later', () => {
     const milestones = [
-      { id: 'm0', laneId: 'l1', name: '过去', date: '2026-11-09', note: '' },
-      { id: 'm2', laneId: 'l1', name: '远', date: '2026-12-20', note: '' },
-      { id: 'm1', laneId: 'l1', name: '今天', date: '2026-11-10', note: '' },
+      { id: 'm0', laneId: 'l1', name: '过去', date: '2026-11-09', done: false, note: '' },
+      { id: 'm2', laneId: 'l1', name: '远', date: '2026-12-20', done: false, note: '' },
+      { id: 'm1', laneId: 'l1', name: '今天', date: '2026-11-10', done: false, note: '' },
     ]
     expect(summarizeLane(lane, [], milestones, today).nextMilestone?.id).toBe('m1')
   })
@@ -114,7 +115,9 @@ describe('nextMilestone', () => {
     const data: AppData = {
       ...createEmptyData(),
       lanes: [lane],
-      milestones: [{ id: 'm', laneId: 'l1', name: '过去', date: '2026-01-01', note: '' }],
+      milestones: [
+        { id: 'm', laneId: 'l1', name: '过去', date: '2026-01-01', done: false, note: '' },
+      ],
     }
     expect(nextMilestone(data, today)).toBeNull()
   })
