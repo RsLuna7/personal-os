@@ -1,6 +1,7 @@
 import {
   createEmptyData,
   type AppData,
+  type Habit,
   type ISODate,
   type Lane,
   type Milestone,
@@ -94,6 +95,30 @@ export function createShowcaseData(today: ISODate): AppData {
       createdAt: `${today}T07:${String(n).padStart(2, '0')}:00.000Z`,
     }
   }
+
+  const EVERY_DAY = [1, 2, 3, 4, 5, 6, 7]
+  /** n 天前是星期几：1 = 周一 … 7 = 周日 */
+  const weekdayAgo = (n: number) => ((((weekday - n) % 7) + 7) % 7) + 1
+  /** 隔一天一次、正好避开今天的三天 */
+  const gymDays = [weekdayAgo(-1), weekdayAgo(-3), weekdayAgo(-5)].sort((a, b) => a - b)
+  const range = (from: number, to: number) =>
+    Array.from({ length: to - from }, (_, index) => from + index)
+  const daysAgo = (n: number): ISODate => new Date(todayMs - n * DAY_MS).toISOString().slice(0, 10)
+  const habit = (
+    key: string,
+    name: string,
+    laneKey: string | null,
+    weekdays: number[],
+    createdDaysAgo: number,
+    checkedDaysAgo: number[],
+  ): Habit => ({
+    id: `showcase-habit-${key}`,
+    name,
+    laneId: laneKey === null ? null : `showcase-lane-${laneKey}`,
+    weekdays,
+    checks: [...checkedDaysAgo].sort((a, b) => b - a).map(daysAgo),
+    createdAt: `${daysAgo(createdDaysAgo)}T00:00:00.000Z`,
+  })
 
   return {
     ...createEmptyData(),
@@ -292,6 +317,24 @@ export function createShowcaseData(today: ISODate): AppData {
       todo('补完编译原理笔记', null, 'final'),
       todo('看一遍春招时间线', null, 'job'),
       todo('预约学校体检', null, null),
+    ],
+
+    habits: [
+      // 每天背单词，从今天往回一直没断
+      habit('words', '背考研单词', 'kaoyan', EVERY_DAY, 40, [...range(0, 12)]),
+      // 每天练听力，今天还没打，前天漏了一次
+      habit('listening', '六级听力 20 分钟', 'cet6', EVERY_DAY, 30, [1, 2, 4, 5, 6, 8, 9]),
+      // 一周三次健身，今天正好不用打（星期按 today 推算，哪天打开都一样）
+      habit(
+        'gym',
+        '健身',
+        null,
+        gymDays,
+        30,
+        range(1, 14).filter((n) => gymDays.includes(weekdayAgo(n))),
+      ),
+      // 刚开始的新习惯
+      habit('reading', '睡前读书', 'club', EVERY_DAY, 3, [1, 2]),
     ],
   }
 }
