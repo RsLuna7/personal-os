@@ -295,6 +295,20 @@ describe('todos', () => {
     expect(todos()[0].title).toBe('乙')
   })
 
+  it('moves several todos to one date as a single undo step', () => {
+    const a = s().addTodo({ title: '甲', date: '2026-11-09' })
+    const b = s().addTodo({ title: '乙', date: '2026-11-10' })
+    s().addTodo({ title: '丙', date: '2026-11-11' })
+    const n = s().past.length
+    s().moveTodos([a, b], '2026-11-12')
+    expect(todos().map((todo) => todo.date)).toEqual(['2026-11-12', '2026-11-12', '2026-11-11'])
+    expect(s().past.length).toBe(n + 1)
+    s().undo()
+    expect(todos().map((todo) => todo.date)).toEqual(['2026-11-09', '2026-11-10', '2026-11-11'])
+    s().moveTodos(['missing'], '2026-11-12')
+    expect(s().past.length).toBe(n)
+  })
+
   it('clears a date with null and does not record a no-op', () => {
     const id = s().addTodo({ date: '2026-11-12' })
     s().updateTodo(id, { date: null })
