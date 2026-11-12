@@ -7,6 +7,7 @@ import { useStore } from '@/data/store'
 import { openEditor } from '@/features/editor/editorStore'
 import { fromDay, toDay } from './days'
 import { formatDuration, formatRange, formatRangeWithYear } from './format'
+import { PhaseTip } from './ItemTips'
 import { ROW_HEIGHT } from './layout'
 import { dayToX, type Scale } from './scale'
 import { movePhase, resizePhase, WEEK } from './snap'
@@ -77,6 +78,7 @@ export function PhaseBlock({
   const selected = useStore(
     (state) => state.selection?.kind === 'phase' && state.selection.id === phase.id,
   )
+  const lane = useStore((state) => state.data.lanes.find((item) => item.id === phase.laneId))
   const blockRef = useRef<HTMLDivElement | null>(null)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [settling, setSettling] = useState(false)
@@ -232,14 +234,8 @@ export function PhaseBlock({
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent>
-          <div className="font-medium">{phase.name}</div>
-          <div>{range}</div>
-          <div>
-            {duration}
-            {phase.tentative ? ' · 待确认' : ''}
-            {phase.done ? ' · 已完成' : ''}
-          </div>
+        <TooltipContent data-lane-color={lane?.color}>
+          <PhaseTip phase={phase} today={today} />
         </TooltipContent>
       </Tooltip>
       {labelOutside && (
