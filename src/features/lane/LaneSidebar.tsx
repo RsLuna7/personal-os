@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, type KeyboardEvent } from 'react'
 import { PlusIcon } from 'lucide-react'
+import { SlidingPill, useSlidingPill } from '@/app/useSlidingPill'
 import type { Lane } from '@/data/schema'
 import { useStore } from '@/data/store'
 import { addLaneAndRename } from '@/features/editor/AddMenu'
@@ -25,34 +26,13 @@ function subtitle({ current, next, nextMilestone }: LaneSummary, today: number):
   return '暂无安排'
 }
 
-interface Pill {
-  top: number
-  height: number
-  color: string
-}
-
-function samePill(a: Pill | null, b: Pill | null): boolean {
-  if (a === null || b === null) return a === b
-  return a.top === b.top && a.height === b.height && a.color === b.color
-}
-
 /** 左侧板块列表：每行是指向该板块网址的链接。什么都没安排的板块变淡（和主页概览一样）。 */
 export function LaneSidebar({ lanes, selectedId, today }: LaneSidebarProps) {
   const phases = useStore((state) => state.data.phases)
   const milestones = useStore((state) => state.data.milestones)
   const list = useRef<HTMLElement | null>(null)
   // 选中那一行的底色是一块单独的“胶囊”：换板块时滑到新的那一行，颜色也渐变过去
-  const [pill, setPill] = useState<Pill | null>(null)
-  // 每次渲染后量一下选中行的位置；没变就不更新，免得反复渲染
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useLayoutEffect(() => {
-    const row = list.current?.querySelector<HTMLElement>('a[aria-current="page"]')
-    const next = row
-      ? { top: row.offsetTop, height: row.offsetHeight, color: row.dataset.laneColor ?? '' }
-      : null
-    if (samePill(pill, next)) return
-    setPill(next)
-  })
+  const pill = useSlidingPill(list, 'a[aria-current="page"]')
 
   const moveFocus = (event: KeyboardEvent) => {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
@@ -76,15 +56,11 @@ export function LaneSidebar({ lanes, selectedId, today }: LaneSidebarProps) {
         onKeyDown={moveFocus}
         className="relative flex flex-col gap-1"
       >
-        {pill && (
-          <span
-            aria-hidden
-            data-testid="lane-side-pill"
-            data-lane-color={pill.color}
-            className="lane-side-pill pointer-events-none absolute inset-x-0 top-0 rounded-[10px] bg-(--lane-fill)"
-            style={{ transform: `translateY(${pill.top}px)`, height: pill.height }}
-          />
-        )}
+        <SlidingPill
+          pill={pill}
+          testId="lane-side-pill"
+          className="lane-side-pill rounded-[10px] bg-(--lane-fill)"
+        />
         {lanes.map((lane) => {
           const summary = summarizeLane(lane, phases, milestones, today)
           const idle = isIdle(summary)

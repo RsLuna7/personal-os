@@ -655,10 +655,13 @@
   background-color: var(--lane-dot);
   transition: background-color var(--dur-fast) var(--ease-out);
 }
+/* 删除线是一条画出来的线：勾掉时从左往右划过去（标题都是单行，线压在文字中间） */
 .todo-title {
-  text-decoration: line-through;
-  text-decoration-color: transparent;
-  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: left 55%;
+  background-size: 0% 1px;
+  transition: background-size 320ms var(--ease-out);
 }
 [data-done='true'].todo-item {
   color: var(--text-muted);
@@ -667,7 +670,7 @@
   background-color: var(--done-bar);
 }
 [data-done='true'] .todo-title {
-  text-decoration-color: currentColor;
+  background-size: 100% 1px;
 }
 /* 勾选控件：悬停或聚焦在这一行上才出现 */
 .todo-check {
@@ -805,13 +808,17 @@
   }
 }
 
-/* ───────────── 板块页的动态 ─────────────
-   沿用时间线展开时“落笔、画出来”的手法。换板块时右侧整块重新挂载，入场会再播一遍。
+/* ───────────── 动态 ─────────────
+   全站共用一套手法：卡片依次浮起（motion-rise）、线条和进度条画出来（motion-grow / motion-wipe）、
+   圆点和勾选弹出来（motion-pop）、大数字对焦（motion-focus）、选中底色是滑动的胶囊（useSlidingPill）。
+   motion-* 是共用的关键帧，lane-* 只给板块页用。
+
+   板块页：沿用时间线展开时“落笔、画出来”的手法。换板块时右侧整块重新挂载，入场会再播一遍。
    系统开了“减少动态效果”时，tokens.css 里的全局规则把这些动画和过渡都关掉。 */
 
 /* 入场：卡片从上到下依次浮起 */
 .lane-detail > * {
-  animation: lane-rise 420ms var(--ease-out) backwards;
+  animation: motion-rise 420ms var(--ease-out) backwards;
 }
 .lane-detail > :nth-child(2) {
   animation-delay: 60ms;
@@ -822,7 +829,7 @@
 .lane-detail > :nth-child(4) {
   animation-delay: 180ms;
 }
-@keyframes lane-rise {
+@keyframes motion-rise {
   from {
     opacity: 0;
     translate: 0 8px;
@@ -849,9 +856,9 @@
 
 /* 标题从左往右擦出来 */
 .lane-title {
-  animation: lane-wipe 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms backwards;
+  animation: motion-wipe 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms backwards;
 }
-@keyframes lane-wipe {
+@keyframes motion-wipe {
   from {
     clip-path: inset(-4px 100% -4px -4px);
   }
@@ -872,7 +879,7 @@
 .lane-progress-fill {
   position: relative;
   overflow: hidden;
-  animation: lane-grow 720ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms backwards;
+  animation: motion-grow 720ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms backwards;
 }
 .lane-progress-fill::after {
   content: '';
@@ -885,22 +892,22 @@
     transparent 80%
   );
   translate: -100% 0;
-  animation: lane-sheen 900ms ease-in-out 1000ms;
+  animation: motion-sheen 900ms ease-in-out 1000ms;
 }
-@keyframes lane-grow {
+@keyframes motion-grow {
   from {
     width: 0;
   }
 }
-@keyframes lane-sheen {
+@keyframes motion-sheen {
   to {
     translate: 100% 0;
   }
 }
 .lane-progress-pct {
-  animation: lane-fade 320ms ease-out 900ms backwards;
+  animation: motion-fade 320ms ease-out 900ms backwards;
 }
-@keyframes lane-fade {
+@keyframes motion-fade {
   from {
     opacity: 0;
   }
@@ -908,7 +915,7 @@
 
 /* 三格的大字依次“对焦”出现 */
 .lane-stats > [data-testid^='lane-stat'] .font-serif {
-  animation: lane-focus 520ms var(--ease-out) 220ms backwards;
+  animation: motion-focus 520ms var(--ease-out) 220ms backwards;
 }
 .lane-stats > [data-testid^='lane-stat']:nth-child(2) .font-serif {
   animation-delay: 320ms;
@@ -916,7 +923,7 @@
 .lane-stats > [data-testid^='lane-stat']:nth-child(3) .font-serif {
   animation-delay: 420ms;
 }
-@keyframes lane-focus {
+@keyframes motion-focus {
   from {
     opacity: 0;
     filter: blur(6px);
@@ -927,10 +934,10 @@
 /* 三天之内的倒计时：橙色外圈柔和地脉动三下，然后停住 */
 .lane-stats > [data-soon='true'] .font-serif {
   animation:
-    lane-focus 520ms var(--ease-out) 320ms backwards,
-    lane-halo 1100ms ease-in-out 900ms 3;
+    motion-focus 520ms var(--ease-out) 320ms backwards,
+    motion-halo 1100ms ease-in-out 900ms 3;
 }
-@keyframes lane-halo {
+@keyframes motion-halo {
   50% {
     text-shadow: 0 0 14px color-mix(in srgb, var(--brand) 55%, transparent);
   }
@@ -940,7 +947,7 @@
    阶段的小色块像色条一样展开，节点的圆点弹出来 */
 .lane-items > li {
   --lane-row-delay: calc(220ms + min(var(--lane-row, 8), 8) * 35ms);
-  animation: lane-fade 360ms ease-out var(--lane-row-delay) backwards;
+  animation: motion-fade 360ms ease-out var(--lane-row-delay) backwards;
 }
 .lane-items > li:nth-child(1) {
   --lane-row: 0;
@@ -971,7 +978,7 @@
     backwards;
 }
 .lane-items .lane-item-dot {
-  animation: lane-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--lane-row-delay) + 80ms)
+  animation: motion-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--lane-row-delay) + 80ms)
     backwards;
 }
 @keyframes lane-swatch {
@@ -982,7 +989,7 @@
     clip-path: inset(0 0 0 0 round 3px);
   }
 }
-@keyframes lane-pop {
+@keyframes motion-pop {
   from {
     scale: 0;
   }
@@ -1086,9 +1093,11 @@
 
 /* 侧栏：选中的底色是一块胶囊，换板块时滑过去、颜色渐变；
    选中行的色点弹一下，悬停时色点变大，按下时整行轻轻一缩 */
-.lane-side-pill {
+/* 滑动的选中底色（useSlidingPill）：板块页侧栏、顶栏导航共用 */
+.sliding-pill {
   transition:
     transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
     height 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
     background-color 420ms ease-out;
 }
@@ -1107,5 +1116,295 @@
   scale: 1.3;
 }
 .lane-side-row[aria-current='page'] .lane-side-dot {
-  animation: lane-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms backwards;
+  animation: motion-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms backwards;
+}
+
+/* ───────────── 全站：顶栏 ───────────── */
+
+/* 打开应用时字标从左往右写出来，OS 随后淡入（顶栏不会重新挂载，只播这一次） */
+.brand-kairos {
+  animation: motion-wipe 700ms cubic-bezier(0.2, 0.8, 0.2, 1) 80ms backwards;
+}
+.brand-os {
+  animation: motion-focus 480ms var(--ease-out) 560ms backwards;
+}
+
+/* 时间线的缩放按钮、“回到今天”：按下时轻轻一缩 */
+[role='group'][aria-label='缩放'] button,
+[role='group'][aria-label='缩放'] + button {
+  transition: scale 120ms ease-out;
+}
+[role='group'][aria-label='缩放'] button:active,
+[role='group'][aria-label='缩放'] + button:active {
+  scale: 0.94;
+}
+
+/* 勾选框：勾上时那个勾是一笔画出来的（主页、今日、日历、打卡共用） */
+button[role='checkbox'][aria-checked='true'] svg path {
+  stroke-dasharray: 24;
+  animation: motion-draw 280ms var(--ease-out);
+}
+@keyframes motion-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ───────────── 全局（主页） ─────────────
+   从完整时间线收起回来时 data-enter 是 false，不做入场，免得和卡片缩回的动画打架。
+   时间线卡片本身是展开、收起动画的主体，不给它加入场。 */
+[data-enter='true'] .home-sections > :not(:has(.vt-timeline)) {
+  animation: motion-rise 380ms var(--ease-out) backwards;
+}
+[data-enter='true'] .home-sections > :nth-child(3) {
+  animation-delay: 60ms;
+}
+[data-enter='true'] .home-sections > :nth-child(4) {
+  animation-delay: 120ms;
+}
+
+/* “现在”一条：今天竖条像时间线的今天线一样从上往下画出，大字对焦出现 */
+[data-enter='true'] .now-today-bar {
+  animation: today-draw 420ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms backwards;
+}
+[data-enter='true'] [data-testid='now-strip'] .font-serif {
+  animation: motion-focus 420ms var(--ease-out) 160ms backwards;
+}
+/* 下一个节点三天之内：倒计时外圈柔和地脉动三下 */
+[data-testid='now-strip'] [data-soon='true'] .font-serif {
+  animation:
+    motion-focus 420ms var(--ease-out) 160ms backwards,
+    motion-halo 1100ms ease-in-out 700ms 3;
+}
+
+/* 待办：逐行淡入 */
+[data-enter='true'] [data-testid='todo-board'] li {
+  animation: motion-fade 320ms ease-out calc(140ms + var(--row, 0) * 40ms) backwards;
+}
+[data-testid='todo-board'] li:nth-child(2) {
+  --row: 1;
+}
+[data-testid='todo-board'] li:nth-child(3) {
+  --row: 2;
+}
+[data-testid='todo-board'] li:nth-child(n + 4) {
+  --row: 3;
+}
+
+/* 板块概览：卡片可以点进去，悬停时浮起一点；进度条按卡片依次长出来；没安排的小标签弹出来 */
+a[data-testid^='overview-'] {
+  transition:
+    box-shadow var(--dur-fast) var(--ease-out),
+    translate var(--dur-base) var(--ease-out);
+}
+a[data-testid^='overview-']:hover {
+  translate: 0 -2px;
+}
+[data-enter='true'] a[data-testid^='overview-'] [role='progressbar'] > div {
+  animation: motion-grow 640ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(260ms + var(--card, 0) * 70ms)
+    backwards;
+}
+a[data-testid^='overview-']:nth-child(2) {
+  --card: 1;
+}
+a[data-testid^='overview-']:nth-child(3) {
+  --card: 2;
+}
+a[data-testid^='overview-']:nth-child(4) {
+  --card: 3;
+}
+a[data-testid^='overview-']:nth-child(n + 5) {
+  --card: 4;
+}
+[data-enter='true'] a[data-testid^='idle-'] {
+  animation: motion-pop 360ms cubic-bezier(0.34, 1.56, 0.64, 1) 420ms backwards;
+}
+
+/* 时间线卡片的“展开”：悬停时图标往外撑一下 */
+a[href='#/timeline'] svg {
+  transition: scale var(--dur-base) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+a[href='#/timeline']:hover svg {
+  scale: 1.2;
+}
+
+/* ───────────── 日历 ─────────────
+   格子按对角线一波一波淡入（换月时格子重新挂载，会再播一遍）；只淡入不位移，编辑面板贴着格子里的条目。
+   今天的格子外圈柔和地闪一下；条目在新格子里挂上（比如拖到别的日子）时淡入，像落进去一样。 */
+[data-testid='month-grid'] > .day-cell {
+  animation: motion-fade 360ms ease-out calc(var(--col, 0) * 22ms + var(--row, 0) * 38ms) backwards;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(7n + 2) {
+  --col: 1;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(7n + 3) {
+  --col: 2;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(7n + 4) {
+  --col: 3;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(7n + 5) {
+  --col: 4;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(7n + 6) {
+  --col: 5;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(7n) {
+  --col: 6;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(n + 8) {
+  --row: 1;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(n + 15) {
+  --row: 2;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(n + 22) {
+  --row: 3;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(n + 29) {
+  --row: 4;
+}
+[data-testid='month-grid'] > .day-cell:nth-child(n + 36) {
+  --row: 5;
+}
+[data-testid='month-grid'] > .day-cell[data-today='true'] {
+  animation:
+    motion-fade 360ms ease-out calc(var(--col, 0) * 22ms + var(--row, 0) * 38ms) backwards,
+    calendar-today-ring 900ms ease-out 650ms;
+}
+@keyframes calendar-today-ring {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--today) 45%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+.day-cell .todo-row {
+  animation: motion-fade 260ms ease-out;
+}
+
+/* ───────────── 回顾 ─────────────
+   三组依次浮起，组里的条目依次淡入；换一周时整块重新挂载，再播一遍。读的页面，保持克制。 */
+[data-testid='review'] section[data-testid^='review-'] {
+  animation: motion-rise 380ms var(--ease-out) backwards;
+}
+[data-testid='review'] section[data-testid='review-overdue'] {
+  animation-delay: 70ms;
+}
+[data-testid='review'] section[data-testid='review-upcoming'] {
+  animation-delay: 140ms;
+}
+[data-testid='review'] section li {
+  animation: motion-fade 300ms ease-out 200ms backwards;
+}
+
+/* ───────────── 今日 ───────────── */
+
+/* 三栏依次浮起：按眼睛看到的顺序排（宽屏是收件箱、今天、打卡；窄屏是今天、打卡、收件箱） */
+[data-testid='today-page'] section[data-testid$='-column'] {
+  animation: motion-rise 380ms var(--ease-out) backwards;
+}
+[data-testid='today-page'] [data-testid='habit-column'] {
+  animation-delay: 60ms;
+}
+[data-testid='today-page'] [data-testid='inbox-column'] {
+  animation-delay: 120ms;
+}
+@media (min-width: 1024px) {
+  [data-testid='today-page'] [data-testid='inbox-column'] {
+    animation-delay: 0ms;
+  }
+  [data-testid='today-page'] [data-testid='today-column'] {
+    animation-delay: 60ms;
+  }
+  [data-testid='today-page'] [data-testid='habit-column'] {
+    animation-delay: 120ms;
+  }
+}
+
+/* 待办行挂上时淡入：拖进另一栏、推到明天、移回收件箱时，它在新位置“落”下来 */
+[data-testid='today-page'] li.todo-item {
+  animation: motion-fade 280ms ease-out;
+}
+
+/* 行尾的操作按钮先后出现 */
+[data-testid='today-page'] li.todo-item > span:last-child > button {
+  opacity: 0;
+  translate: 4px 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    translate var(--dur-base) var(--ease-out);
+}
+[data-testid='today-page'] li.todo-item > span:last-child > button:nth-child(2) {
+  transition-delay: 30ms;
+}
+[data-testid='today-page'] li.todo-item > span:last-child > button:nth-child(3) {
+  transition-delay: 60ms;
+}
+[data-testid='today-page'] li.todo-item:hover > span:last-child > button,
+[data-testid='today-page'] li.todo-item:focus-within > span:last-child > button {
+  opacity: 1;
+  translate: 0 0;
+}
+@media (hover: none) {
+  [data-testid='today-page'] li.todo-item > span:last-child > button {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* 拖着的影子：微微倾斜、放大，像被拿起来 */
+.drag-ghost {
+  rotate: -2deg;
+  scale: 1.04;
+  box-shadow:
+    0 10px 24px rgb(0 0 0 / 0.14),
+    0 2px 6px rgb(0 0 0 / 0.08);
+  animation: motion-pop 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 打卡格子：挂上时从左往右依次弹出；打卡那一下格子弹一下，扩散出一圈板块色的涟漪 */
+[data-testid='today-page'] button[data-mark] {
+  animation: motion-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--cell, 0) * 35ms + 160ms)
+    backwards;
+}
+[data-testid='today-page'] button[data-mark='done'] {
+  animation:
+    motion-pop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--cell, 0) * 35ms + 160ms) backwards,
+    habit-check 420ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+[data-testid='today-page'] button[data-mark]:nth-child(2) {
+  --cell: 1;
+}
+[data-testid='today-page'] button[data-mark]:nth-child(3) {
+  --cell: 2;
+}
+[data-testid='today-page'] button[data-mark]:nth-child(4) {
+  --cell: 3;
+}
+[data-testid='today-page'] button[data-mark]:nth-child(5) {
+  --cell: 4;
+}
+[data-testid='today-page'] button[data-mark]:nth-child(6) {
+  --cell: 5;
+}
+[data-testid='today-page'] button[data-mark]:nth-child(7) {
+  --cell: 6;
+}
+@keyframes habit-check {
+  0% {
+    scale: 1;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--lane-dot) 55%, transparent);
+  }
+  40% {
+    scale: 1.35;
+  }
+  100% {
+    scale: 1;
+    box-shadow: 0 0 0 7px transparent;
+  }
 }

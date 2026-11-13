@@ -60,3 +60,13 @@ it('only shows the collapse button on the full timeline', () => {
   render(<App />)
   expect(screen.queryByRole('link', { name: '收起' })).not.toBeInTheDocument()
 })
+
+it('slides one highlight behind the current nav item', async () => {
+  window.location.hash = '#/calendar'
+  render(<App />)
+  const nav = screen.getByRole('navigation', { name: '主导航' })
+  expect(nav.querySelectorAll('[data-testid="nav-pill"]')).toHaveLength(1)
+  await userEvent.click(screen.getByRole('link', { name: '回顾' }))
+  expect(nav.querySelectorAll('[data-testid="nav-pill"]')).toHaveLength(1)
+  expect(screen.getByRole('link', { name: '回顾' })).toHaveAttribute('aria-current', 'page')
+})
