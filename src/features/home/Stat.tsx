@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
 
+/** 节点在这么多天之内算“快到了”：倒计时换成醒目的颜色 */
+export const SOON_DAYS = 3
+
 /** 大字：每格的主数值，字号统一，几格的基线才能对齐 */
 export const BIG = 'font-serif text-[26px] leading-tight font-bold text-(--text)'
 /** 大字后面跟的单位或补充 */

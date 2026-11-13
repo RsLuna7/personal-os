@@ -1,11 +1,8 @@
 import { LaneMenu } from '@/features/editor/LaneMenu'
-import { BIG, Stat, UNIT } from '@/features/home/Stat'
+import { BIG, SOON_DAYS, Stat, UNIT } from '@/features/home/Stat'
 import type { LaneSummary } from '@/features/home/summary'
 import { toDay } from '@/features/timeline/days'
 import { formatDay } from '@/features/timeline/format'
-
-/** 下一个节点在这么多天之内，倒计时换成醒目的颜色 */
-export const SOON_DAYS = 3
 
 interface LaneHeaderProps {
   summary: LaneSummary

@@ -308,3 +308,36 @@ describe('to-do board', () => {
     }
   })
 })
+
+describe('entrance motion', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.vt
+  })
+
+  it('plays the entrance when the home page opens normally', () => {
+    setup()
+    expect(screen.getByTestId('home')).toHaveAttribute('data-enter', 'true')
+  })
+
+  it('skips the entrance while the timeline collapses back into the card', () => {
+    document.documentElement.dataset.vt = 'collapse'
+    setup()
+    expect(screen.getByTestId('home')).toHaveAttribute('data-enter', 'false')
+  })
+
+  it('marks the next milestone as soon when it is three days away or less', () => {
+    setup()
+    const strip = screen.getByTestId('now-strip')
+    const cell = strip.querySelector('[data-soon]')
+    expect(cell).not.toBeNull()
+    // 示例数据里下一个节点“模拟测试”在 11 月 10 日之后不到三天
+    expect(cell).toHaveAttribute('data-soon', String(cellDays(strip) <= 3))
+  })
+})
+
+/** 从“N 天后 / 今天”读出天数 */
+function cellDays(strip: HTMLElement): number {
+  const text = strip.querySelector('[data-soon]')!.textContent ?? ''
+  if (text.includes('今天')) return 0
+  return Number(text.match(/(\d+)\s*天后/)![1])
+}
