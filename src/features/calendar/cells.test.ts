@@ -1,11 +1,11 @@
 import type { Lane, Milestone, Todo } from '@/data/schema'
 import {
-  cellTint,
   colorOfLane,
   entriesByDay,
   entryId,
   NEUTRAL,
   unscheduledTodos,
+  visibleEntries,
   type CalendarData,
   type DayEntry,
 } from './cells'
@@ -105,52 +105,6 @@ describe('colorOfLane', () => {
   })
 })
 
-describe('cellTint', () => {
-  const tintOf = (todos: Todo[], milestones: Milestone[] = []) =>
-    cellTint(entriesByDay(data({ todos, milestones })).get('2026-11-12') ?? [], lanes)
-
-  it('is plain (null) with nothing on the day', () => expect(cellTint([], lanes)).toBeNull())
-
-  it('is plain with only finished todos', () => {
-    expect(tintOf([todo({ done: true, laneId: 'l1' })])).toBeNull()
-  })
-
-  it('is plain with only a milestone', () => expect(tintOf([], [milestone()])).toBeNull())
-
-  it('takes the lane colour of the first unfinished todo', () => {
-    expect(tintOf([todo({ laneId: 'l2' })])).toBe('teal')
-  })
-
-  it('goes by sorted order: the earlier lane wins over the later one', () => {
-    expect(tintOf([todo({ laneId: 'l2' }), todo({ laneId: 'l1' })])).toBe('iris')
-  })
-
-  it('is neutral when the first unfinished todo has no lane', () => {
-    expect(tintOf([todo({ laneId: null })])).toBe(NEUTRAL)
-  })
-
-  it('skips a finished todo to find the first unfinished one', () => {
-    expect(tintOf([todo({ done: true, laneId: 'l1' }), todo({ laneId: 'l2' })])).toBe('teal')
-  })
-
-  it('puts a todo with a lane ahead of one without, so the lane colour wins', () => {
-    expect(tintOf([todo({ laneId: null }), todo({ laneId: 'l2' })])).toBe('teal')
-  })
-
-  it('changes when the first unfinished todo is finished', () => {
-    const a = todo({ laneId: 'l1' })
-    const b = todo({ laneId: 'l2' })
-    expect(tintOf([a, b])).toBe('iris')
-    expect(tintOf([{ ...a, done: true }, b])).toBe('teal')
-    expect(
-      tintOf([
-        { ...a, done: true },
-        { ...b, done: true },
-      ]),
-    ).toBeNull()
-  })
-})
-
 describe('unscheduledTodos', () => {
   it('lists only undated todos, unfinished first', () => {
     const open = todo({ date: null })
@@ -160,5 +114,46 @@ describe('unscheduledTodos', () => {
       open.id,
       done.id,
     ])
+  })
+})
+
+describe('visibleEntries', () => {
+  const day = (n: number) =>
+    Array.from({ length: n }, (_, index): DayEntry => ({
+      kind: 'todo',
+      todo: todo({ id: `x${index}`, title: `事${index}` }),
+    }))
+  const ids = (entries: DayEntry[]) => entries.map(entryId)
+
+  it('shows everything up to the cap', () => {
+    const { shown, hidden } = visibleEntries(day(3))
+    expect(shown).toHaveLength(3)
+    expect(hidden).toBe(0)
+  })
+
+  it('shows the first three and counts the rest', () => {
+    const { shown, hidden } = visibleEntries(day(8))
+    expect(ids(shown)).toEqual(['x0', 'x1', 'x2'])
+    expect(hidden).toBe(5)
+  })
+
+  it('always shows a pinned entry, which takes the last visible place', () => {
+    const { shown, hidden } = visibleEntries(day(8), ['x6'])
+    expect(ids(shown)).toEqual(['x0', 'x1', 'x6'])
+    expect(hidden).toBe(5)
+  })
+
+  it('keeps entries in their original order and ignores empty pins', () => {
+    const { shown } = visibleEntries(day(8), [null, undefined, 'x4', 'x7'])
+    expect(ids(shown)).toEqual(['x0', 'x4', 'x7'])
+  })
+
+  it('does not change anything for a pin that is already visible', () => {
+    expect(ids(visibleEntries(day(8), ['x1']).shown)).toEqual(['x0', 'x1', 'x2'])
+  })
+
+  it('shows an extra entry when every visible place is pinned', () => {
+    const { shown } = visibleEntries(day(8), ['x0', 'x1', 'x2', 'x5'])
+    expect(ids(shown)).toEqual(['x0', 'x1', 'x2', 'x5'])
   })
 })

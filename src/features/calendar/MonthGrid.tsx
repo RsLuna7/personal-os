@@ -18,6 +18,9 @@ interface MonthGridProps {
   lanes: Lane[]
   byDay: Map<string, DayEntry[]>
   selection: Selection | null
+  pinnedIds: readonly (string | null | undefined)[]
+  expandedDay: number | null
+  onOpenDay: (day: number) => void
   gridRef: RefObject<HTMLDivElement | null>
   preview: Preview | null
   onMoveStart: (event: ReactPointerEvent<HTMLElement>, target: MoveTarget) => void
@@ -34,6 +37,9 @@ export function MonthGrid({
   lanes,
   byDay,
   selection,
+  pinnedIds,
+  expandedDay,
+  onOpenDay,
   gridRef,
   preview,
   onMoveStart,
@@ -64,6 +70,9 @@ export function MonthGrid({
             row={Math.floor(index / 7)}
             outside={!iso.startsWith(monthPrefix)}
             entries={byDay.get(iso) ?? []}
+            pinnedIds={pinnedIds}
+            expanded={expandedDay === day}
+            onOpenDay={onOpenDay}
             lanes={lanes}
             selection={selection}
             preview={preview}

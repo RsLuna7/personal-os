@@ -170,20 +170,10 @@ describe('ticking a todo off', () => {
     expect(idsIn('2026-11-12')).toEqual(['t2', 't1'])
   })
 
-  it('recolours the cell as the first unfinished todo changes', async () => {
-    const user = setup()
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'iris')
-    await user.click(screen.getByRole('checkbox', { name: '完成「写周报」' }))
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'neutral')
-    await user.click(screen.getByRole('checkbox', { name: '完成「买菜」' }))
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'none')
-  })
-
   it('unticks a finished todo', async () => {
     const user = setup()
     await user.click(screen.getByRole('checkbox', { name: '完成「交作业」' }))
     expect(todo('t3').done).toBe(false)
-    expect(cell('2026-11-13')).toHaveAttribute('data-tint', 'teal')
   })
 
   it('exposes the check box as a real, labelled control that is not a drag handle', () => {

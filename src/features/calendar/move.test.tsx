@@ -100,9 +100,6 @@ describe('moving a todo to another day', () => {
       'aria-label',
       expect.stringContaining('11月17日'),
     )
-    // 旧格子的颜色也跟着预览走
-    expect(cell('2026-11-12')).toHaveAttribute('data-tint', 'neutral')
-    expect(cell('2026-11-17')).toHaveAttribute('data-tint', 'iris')
     release('2026-11-17')
     expect(screen.getByTestId('todo-t1')).toHaveAttribute('data-dragging', 'false')
   })
@@ -221,6 +218,19 @@ describe('dragging an unscheduled todo into the grid', () => {
   const item = () => within(unscheduled()).getByTestId('todo-t4')
   const pressList = () => fireEvent.pointerDown(item(), { ...LIST_POINT, button: 0, pointerId: 1 })
 
+  it('shows the dragged todo on a day that already has three, instead of hiding it behind “+N”', () => {
+    for (const title of ['一', '二', '三'])
+      act(() => void s().addTodo({ title, date: '2026-11-18' }))
+    pressList()
+    move('2026-11-18')
+    expect(within(cell('2026-11-18')).getByTestId('todo-t4')).toHaveAttribute(
+      'data-dragging',
+      'true',
+    )
+    expect(within(cell('2026-11-18')).getAllByTestId(/^todo-/)).toHaveLength(3)
+    fireEvent.pointerUp(window, { ...LIST_POINT, pointerId: 1 })
+  })
+
   it('puts it on the day under the pointer in one undo step', async () => {
     const before = s().past.length
     pressList()
@@ -242,12 +252,10 @@ describe('dragging an unscheduled todo into the grid', () => {
       'data-dragging',
       'true',
     )
-    expect(cell('2026-11-18')).toHaveAttribute('data-tint', 'iris')
     expect(s().data).toBe(before)
 
     fireEvent.pointerMove(window, { ...LIST_POINT, pointerId: 1 })
     expect(within(unscheduled()).getByTestId('todo-t4')).toBeInTheDocument()
-    expect(cell('2026-11-18')).toHaveAttribute('data-tint', 'none')
   })
 
   it('does nothing when released outside the grid', () => {

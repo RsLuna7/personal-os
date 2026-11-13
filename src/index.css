@@ -212,6 +212,8 @@
  * 不在本月的格子去掉卡片，只剩淡淡的数字。虚线在这个产品里留给“待确认”，今天不再用。
  */
 .day-cell {
+  /* 窄屏下按格子自己的宽度调整右上角的按钮，见下面的 @container */
+  container-type: inline-size;
   background-color: var(--bg-card);
   /* 所有格子都有同宽的边框，今天只是换颜色，内容不会位移 */
   border: 1.5px solid transparent;
@@ -229,24 +231,15 @@
     0 1px 2px rgb(60 50 30 / 0.06),
     0 6px 16px rgb(60 50 30 / 0.1);
 }
-/* 板块色只是左上角一层淡淡的晕染，颜色主要由条目自己承担；整格涂满太吵，也说不清是哪个板块 */
-.day-cell:not([data-tint='none']) {
-  background-image: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--lane-fill) 80%, var(--bg-card)) 0%,
-    var(--bg-card) 70%
-  );
-}
-.day-cell[data-weekend='true'][data-tint='none']:not([data-outside='true']) {
+.day-cell[data-weekend='true']:not([data-outside='true']) {
   background-color: color-mix(in srgb, var(--bg-card) 62%, var(--bg-canvas));
 }
-.day-cell[data-past='true'][data-tint='none']:not([data-outside='true']) {
+.day-cell[data-past='true']:not([data-outside='true']) {
   background-color: color-mix(in srgb, var(--bg-card) 55%, var(--bg-canvas));
 }
-/* 不在本月：整张卡片去掉（底色、晕染、阴影都清掉），不管这天有没有待办 */
+/* 不在本月：整张卡片去掉（底色、阴影都清掉），不管这天有没有待办 */
 .day-cell[data-outside='true'] {
   background-color: transparent;
-  background-image: none;
   box-shadow: none;
 }
 .day-cell[data-outside='true'] .day-list {
@@ -347,7 +340,7 @@
 }
 /* 节点：板块色实心小胶囊，比待办有分量 */
 .day-cell .milestone-dot {
-  min-height: 22px;
+  min-height: 20px;
   padding: 0 7px 0 6px;
   border-radius: 6px;
   background-color: var(--lane-solid);
@@ -369,27 +362,273 @@
   }
 }
 
-/* 一天的条目装不下时在格子里滚动：不画滚动条，还有内容的那一侧边缘淡出 */
-.day-list {
-  scrollbar-width: none;
-  --fade-top: #000;
-  --fade-bottom: #000;
-  mask-image: linear-gradient(
-    to bottom,
-    var(--fade-top),
-    #000 16px,
-    #000 calc(100% - 16px),
-    var(--fade-bottom)
-  );
+/* 条目只显示前三条，剩下的收进右上角的“+N” */
+.day-more {
+  position: absolute;
+  top: 6px;
+  right: 30px;
+  z-index: 1;
+  height: 20px;
+  min-width: 24px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
 }
-.day-list::-webkit-scrollbar {
+/* 格子窄到放不下日期、“+N”和“＋”三样时，只留日期和“+N”（双击空白处仍然能新建） */
+@container (max-width: 90px) {
+  .day-more {
+    right: 4px;
+    min-width: 20px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+  .day-add {
+    display: none;
+  }
+}
+.day-more:hover,
+.day-more:focus-visible {
+  background-color: var(--text);
+  color: var(--bg-card);
+}
+.day-more:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+/*
+ * 一天的放大视图：格子放大成页面中央的卡片，其余页面渐隐成画布底色，最后只剩这张卡片。
+ * 过渡沿用主页时间线“展开”的那一套（View Transitions，同样的时长和缓动），
+ * 格子和卡片共用 view-transition-name: day-surface；不支持或开了“减少动态效果”时直接切换。
+ */
+.day-focus-root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.day-focus-backdrop {
+  position: absolute;
+  inset: 0;
+  /* 页面其余部分渐隐成纯画布底色，只留一点中心的亮，托住卡片 */
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 50%, rgb(255 255 255 / 0.55), transparent 70%),
+    var(--bg-canvas);
+}
+.day-focus-card {
+  view-transition-name: day-surface;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  width: min(560px, calc(100vw - 48px));
+  max-height: min(78vh, 680px);
+  flex-direction: column;
+  translate: -50% -50%;
+  border-radius: 20px;
+  background-color: var(--bg-card);
+  box-shadow:
+    0 1px 2px rgb(60 50 30 / 0.06),
+    0 24px 60px rgb(60 50 30 / 0.16);
+}
+::view-transition-group(day-surface) {
+  animation-duration: 480ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: clip;
+  border-radius: 14px;
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+/* 快照不拉伸：保持原大小贴左上角，由外框放大露出更多 */
+::view-transition-old(day-surface),
+::view-transition-new(day-surface) {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+  animation-duration: 260ms;
+}
+:root[data-vt='day-open']::view-transition-image-pair(day-surface) {
+  animation: vt-day-out 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+:root[data-vt='day-close']::view-transition-image-pair(day-surface) {
+  animation: vt-day-in 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes vt-day-out {
+  from {
+    border-radius: 14px;
+  }
+  to {
+    border-radius: 20px;
+  }
+}
+@keyframes vt-day-in {
+  from {
+    border-radius: 20px;
+  }
+  to {
+    border-radius: 14px;
+  }
+}
+.day-focus-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24px 24px 16px;
+}
+.day-focus-date {
+  font-family: var(--font-serif);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.day-focus-today {
+  align-self: center;
+  border-radius: 999px;
+  background-color: var(--today);
+  padding: 2px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+}
+.day-focus-close {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.day-focus-close:hover,
+.day-focus-close:focus-visible {
+  background-color: var(--bg-subtle);
+  color: var(--text);
+}
+.day-focus-list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.day-focus-row {
+  /* 卡片放大落定后，条目一条条淡入 */
+  animation: focus-row-in 320ms var(--ease-out) calc(280ms + var(--i, 0) * 28ms) backwards;
+}
+@keyframes focus-row-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+.day-focus-row .todo-item,
+.day-focus-row .milestone-dot {
+  min-height: 32px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.day-focus-row .todo-item {
+  padding-right: 28px;
+}
+.day-focus-row .todo-bar {
+  margin-block: 6px;
+}
+.day-focus-foot {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  padding: 8px 20px 12px;
+}
+.day-focus-add {
+  display: inline-flex;
+  height: 36px;
+  cursor: pointer;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+.day-focus-add:hover,
+.day-focus-add:focus-visible {
+  background-color: var(--bg-subtle);
+  color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-focus-row {
+    animation: none;
+  }
+}
+
+/* 页头的板块图例 / 筛选：色点加名字，选中的有淡底，筛选时没选中的退后 */
+.lane-filter {
+  scrollbar-width: none;
+}
+.lane-filter::-webkit-scrollbar {
   display: none;
 }
-.day-list[data-more-above='true'] {
-  --fade-top: transparent;
+.lane-chip {
+  display: inline-flex;
+  height: 28px;
+  flex-shrink: 0;
+  cursor: pointer;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
 }
-.day-list[data-more-below='true'] {
-  --fade-bottom: transparent;
+.lane-chip:hover {
+  background-color: var(--bg-subtle);
+  color: var(--text);
+}
+.lane-chip:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+.lane-chip[aria-pressed='true'] {
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-card);
+  color: var(--text);
+}
+.lane-chip[data-dim='true'] {
+  opacity: 0.55;
+}
+.lane-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: var(--lane-dot);
+}
+.lane-chip-clear {
+  margin-left: 4px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* 待办：细竖色条加标题；完成后标题变淡加删除线、色条变灰 */

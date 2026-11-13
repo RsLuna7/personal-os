@@ -12,9 +12,6 @@ export interface CalendarData {
 
 export type DayEntry = { kind: 'milestone'; milestone: Milestone } | { kind: 'todo'; todo: Todo }
 
-/** 格子的底色：null 是中性灰底（没有待办或都做完了），NEUTRAL 是中性浅色，其余是板块色。 */
-export type CellTint = EntryColor | null
-
 const UNKNOWN_LANE_ORDER = Number.MAX_SAFE_INTEGER
 
 function compareText(a: string, b: string): number {
@@ -39,6 +36,31 @@ function todoComparator(lanes: Lane[]): (a: Todo, b: Todo) => number {
 /** 条目的颜色：挂板块用板块色，不挂（或板块找不到）用中性色。 */
 export function colorOfLane(lanes: Lane[], laneId: string | null): EntryColor {
   return lanes.find((lane) => lane.id === laneId)?.color ?? NEUTRAL
+}
+
+/** 条目所属的筛选项：板块的 id；不挂板块（或板块找不到）是 NEUTRAL。 */
+export function laneKey(lanes: Lane[], laneId: string | null): string {
+  return lanes.some((lane) => lane.id === laneId) ? laneId! : NEUTRAL
+}
+
+/**
+ * 只显示选中板块的待办和节点（`active` 为空表示不筛选）。`keepIds` 里的条目不受筛选影响：
+ * 正在编辑、拖动的那一条要是被筛掉，编辑面板就找不到它了。
+ */
+export function filterByLanes(
+  data: CalendarData,
+  active: ReadonlySet<string>,
+  keepIds: readonly (string | null | undefined)[] = [],
+): CalendarData {
+  if (active.size === 0) return data
+  const keep = new Set(keepIds.filter((id): id is string => !!id))
+  const shown = (id: string, laneId: string | null) =>
+    keep.has(id) || active.has(laneKey(data.lanes, laneId))
+  return {
+    ...data,
+    milestones: data.milestones.filter((item) => shown(item.id, item.laneId)),
+    todos: data.todos.filter((item) => shown(item.id, item.laneId)),
+  }
 }
 
 export function entryId(entry: DayEntry): string {
@@ -69,12 +91,32 @@ export function entriesByDay(data: CalendarData): Map<ISODate, DayEntry[]> {
   return byDay
 }
 
-/** 格子底色：排序后第一条未完成待办所属的板块色；没有未完成待办就是 null。 */
-export function cellTint(entries: DayEntry[], lanes: Lane[]): CellTint {
-  for (const entry of entries) {
-    if (entry.kind === 'todo' && !entry.todo.done) return colorOfLane(lanes, entry.todo.laneId)
+/** 一格最多直接显示这么多条，其余收进“+N”，点开看全部。 */
+export const MAX_VISIBLE = 3
+
+/**
+ * 一格里显示哪些条目：前 `MAX_VISIBLE` 条；正在编辑、正在拖动的那一条（`pinnedIds`）
+ * 永远显示，哪怕它排在后面——不然新建的待办一出生就被藏起来，编辑面板也找不到它。
+ * 钉住的条目占掉后面的位置，顺序不变。`hidden` 是没显示的条数。
+ */
+export function visibleEntries(
+  entries: DayEntry[],
+  pinnedIds: readonly (string | null | undefined)[] = [],
+  cap: number = MAX_VISIBLE,
+): { shown: DayEntry[]; hidden: number } {
+  if (entries.length <= cap) return { shown: entries, hidden: 0 }
+  const pinned = new Set(pinnedIds.filter((id): id is string => !!id))
+  const isPinned = (entry: DayEntry) => pinned.has(entryId(entry))
+  const chosen = entries.slice(0, cap)
+  for (const entry of entries.slice(cap)) {
+    if (!isPinned(entry)) continue
+    // 挤掉最靠后的一条没钉住的；全是钉住的就多显示一条
+    const victim = chosen.findLastIndex((item) => !isPinned(item))
+    if (victim !== -1) chosen.splice(victim, 1)
+    chosen.push(entry)
   }
-  return null
+  const shown = entries.filter((entry) => chosen.includes(entry))
+  return { shown, hidden: entries.length - shown.length }
 }
 
 /** 没有日期的待办：未完成的在前，其余顺序同上。 */
