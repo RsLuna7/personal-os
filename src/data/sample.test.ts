@@ -52,3 +52,9 @@ it('keeps todo dates relative to the given day and does not read the clock', () 
   expect(a).not.toEqual(b)
   expect(createSampleData('2026-11-10')).toEqual(createSampleData('2026-11-10'))
 })
+
+it('includes a few habits with checks', () => {
+  const data = createSampleData('2026-11-10')
+  expect(data.habits.length).toBeGreaterThanOrEqual(2)
+  expect(data.habits.some((h) => h.checks.length > 0)).toBe(true)
+})

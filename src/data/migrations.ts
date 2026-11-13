@@ -41,8 +41,19 @@ function v3ToV4(old: unknown): unknown {
   }
 }
 
-/** 以后每升一版在这里登记：`{ 1: v1ToV2, 2: v2ToV3, 3: v3ToV4, 4: v4ToV5 }`。 */
-export const migrations: Record<number, Migration> = { 1: v1ToV2, 2: v2ToV3, 3: v3ToV4 }
+/** 版本 4 → 5：新增习惯（每日打卡），旧数据没有习惯。 */
+function v4ToV5(old: unknown): unknown {
+  const data = old as { habits?: unknown }
+  return { ...data, schemaVersion: 5, habits: Array.isArray(data.habits) ? data.habits : [] }
+}
+
+/** 以后每升一版在这里登记：`{ …, 4: v4ToV5, 5: v5ToV6 }`。 */
+export const migrations: Record<number, Migration> = {
+  1: v1ToV2,
+  2: v2ToV3,
+  3: v3ToV4,
+  4: v4ToV5,
+}
 
 export function runMigrations(
   raw: unknown,

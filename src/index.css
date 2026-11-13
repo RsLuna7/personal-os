@@ -804,3 +804,308 @@
     clip-path: inset(0 0 0 0 round 6px);
   }
 }
+
+/* ───────────── 板块页的动态 ─────────────
+   沿用时间线展开时“落笔、画出来”的手法。换板块时右侧整块重新挂载，入场会再播一遍。
+   系统开了“减少动态效果”时，tokens.css 里的全局规则把这些动画和过渡都关掉。 */
+
+/* 入场：卡片从上到下依次浮起 */
+.lane-detail > * {
+  animation: lane-rise 420ms var(--ease-out) backwards;
+}
+.lane-detail > :nth-child(2) {
+  animation-delay: 60ms;
+}
+.lane-detail > :nth-child(3) {
+  animation-delay: 120ms;
+}
+.lane-detail > :nth-child(4) {
+  animation-delay: 180ms;
+}
+@keyframes lane-rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+/* 页头色点像一滴墨落下：放大、回弹，再扩散出一圈板块色的涟漪 */
+.lane-dot-drop {
+  animation: lane-drop 620ms cubic-bezier(0.34, 1.56, 0.64, 1) 80ms backwards;
+}
+@keyframes lane-drop {
+  0% {
+    scale: 0;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--lane-dot) 45%, transparent);
+  }
+  55% {
+    scale: 1.15;
+  }
+  100% {
+    scale: 1;
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+/* 标题从左往右擦出来 */
+.lane-title {
+  animation: lane-wipe 520ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms backwards;
+}
+@keyframes lane-wipe {
+  from {
+    clip-path: inset(-4px 100% -4px -4px);
+  }
+  to {
+    clip-path: inset(-4px -4px -4px -4px);
+  }
+}
+
+/* 标题后的小箭头：菜单打开时转过来 */
+.lane-title-chevron {
+  transition: rotate var(--dur-base) var(--ease-out);
+}
+[data-state='open'] > .lane-title-chevron {
+  rotate: 180deg;
+}
+
+/* 进度条从 0 长到当前进度，长满后一道光扫过一次，百分比最后出现 */
+.lane-progress-fill {
+  position: relative;
+  overflow: hidden;
+  animation: lane-grow 720ms cubic-bezier(0.2, 0.8, 0.2, 1) 260ms backwards;
+}
+.lane-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, #fff 55%, transparent) 50%,
+    transparent 80%
+  );
+  translate: -100% 0;
+  animation: lane-sheen 900ms ease-in-out 1000ms;
+}
+@keyframes lane-grow {
+  from {
+    width: 0;
+  }
+}
+@keyframes lane-sheen {
+  to {
+    translate: 100% 0;
+  }
+}
+.lane-progress-pct {
+  animation: lane-fade 320ms ease-out 900ms backwards;
+}
+@keyframes lane-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 三格的大字依次“对焦”出现 */
+.lane-stats > [data-testid^='lane-stat'] .font-serif {
+  animation: lane-focus 520ms var(--ease-out) 220ms backwards;
+}
+.lane-stats > [data-testid^='lane-stat']:nth-child(2) .font-serif {
+  animation-delay: 320ms;
+}
+.lane-stats > [data-testid^='lane-stat']:nth-child(3) .font-serif {
+  animation-delay: 420ms;
+}
+@keyframes lane-focus {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    translate: 0 4px;
+  }
+}
+
+/* 三天之内的倒计时：橙色外圈柔和地脉动三下，然后停住 */
+.lane-stats > [data-soon='true'] .font-serif {
+  animation:
+    lane-focus 520ms var(--ease-out) 320ms backwards,
+    lane-halo 1100ms ease-in-out 900ms 3;
+}
+@keyframes lane-halo {
+  50% {
+    text-shadow: 0 0 14px color-mix(in srgb, var(--brand) 55%, transparent);
+  }
+}
+
+/* 阶段与节点：逐行淡入（只淡入不位移，免得刚新建的那一行和贴着它的编辑面板错位），
+   阶段的小色块像色条一样展开，节点的圆点弹出来 */
+.lane-items > li {
+  --lane-row-delay: calc(220ms + min(var(--lane-row, 8), 8) * 35ms);
+  animation: lane-fade 360ms ease-out var(--lane-row-delay) backwards;
+}
+.lane-items > li:nth-child(1) {
+  --lane-row: 0;
+}
+.lane-items > li:nth-child(2) {
+  --lane-row: 1;
+}
+.lane-items > li:nth-child(3) {
+  --lane-row: 2;
+}
+.lane-items > li:nth-child(4) {
+  --lane-row: 3;
+}
+.lane-items > li:nth-child(5) {
+  --lane-row: 4;
+}
+.lane-items > li:nth-child(6) {
+  --lane-row: 5;
+}
+.lane-items > li:nth-child(7) {
+  --lane-row: 6;
+}
+.lane-items > li:nth-child(8) {
+  --lane-row: 7;
+}
+.lane-items .lane-item-swatch {
+  animation: lane-swatch 420ms cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--lane-row-delay) + 80ms)
+    backwards;
+}
+.lane-items .lane-item-dot {
+  animation: lane-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--lane-row-delay) + 80ms)
+    backwards;
+}
+@keyframes lane-swatch {
+  from {
+    clip-path: inset(0 100% 0 0 round 3px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 3px);
+  }
+}
+@keyframes lane-pop {
+  from {
+    scale: 0;
+  }
+}
+
+/* 悬停：底色从左边刷进来，色块和圆点往右挪一点 */
+.lane-item-hover {
+  background-image: linear-gradient(var(--bg-subtle), var(--bg-subtle));
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  transition: background-size 280ms var(--ease-out);
+}
+.lane-item-hover:hover {
+  background-size: 100% 100%;
+}
+.lane-item-swatch,
+.lane-item-dot {
+  transition: translate var(--dur-base) var(--ease-out);
+}
+.lane-item-row:hover .lane-item-swatch,
+.lane-item-row:hover .lane-item-dot {
+  translate: 2px 0;
+}
+
+/* “添加…”按钮：悬停时加号转一下 */
+.lane-add svg {
+  transition: rotate var(--dur-slow) var(--ease-out);
+}
+.lane-add:hover svg {
+  rotate: 90deg;
+}
+
+/* 资料链接：悬停时标题下划线从左往右画出，修改、删除两个按钮先后出现 */
+.lane-link-title {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: left bottom;
+  background-size: 0% 1px;
+  transition: background-size 280ms var(--ease-out);
+}
+.lane-link-row a:hover .lane-link-title,
+.lane-link-row a:focus-visible .lane-link-title {
+  background-size: 100% 1px;
+}
+.lane-link-row > span > button {
+  opacity: 0;
+  translate: 4px 0;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    translate var(--dur-base) var(--ease-out);
+}
+.lane-link-row > span > button + button {
+  transition-delay: 30ms;
+}
+.lane-link-row:hover > span > button,
+.lane-link-row:focus-within > span > button {
+  opacity: 1;
+  translate: 0 0;
+}
+@media (hover: none) {
+  .lane-link-row > span > button {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* 备注框：聚焦时边框慢慢变成板块色，外面一圈柔光（代替默认的深色描边）；
+   字数计数出现时滑进来，超出上限时抖一下 */
+.lane-note {
+  transition:
+    border-color var(--dur-slow) var(--ease-out),
+    box-shadow var(--dur-slow) var(--ease-out);
+}
+.lane-note:focus-visible {
+  outline-color: transparent;
+  border-color: var(--lane-dot);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lane-dot) 18%, transparent);
+}
+.lane-note-count {
+  animation: lane-count-in var(--dur-slow) var(--ease-out);
+}
+.lane-note-count[data-over='true'] {
+  animation: lane-shake 360ms ease-in-out;
+}
+@keyframes lane-count-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+@keyframes lane-shake {
+  20%,
+  60% {
+    translate: -3px 0;
+  }
+  40%,
+  80% {
+    translate: 3px 0;
+  }
+}
+
+/* 侧栏：选中的底色是一块胶囊，换板块时滑过去、颜色渐变；
+   选中行的色点弹一下，悬停时色点变大，按下时整行轻轻一缩 */
+.lane-side-pill {
+  transition:
+    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 420ms ease-out;
+}
+.lane-side-row {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    scale 120ms ease-out;
+}
+.lane-side-row:active {
+  scale: 0.98;
+}
+.lane-side-dot {
+  transition: scale var(--dur-base) var(--ease-out);
+}
+.lane-side-row:hover .lane-side-dot {
+  scale: 1.3;
+}
+.lane-side-row[aria-current='page'] .lane-side-dot {
+  animation: lane-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms backwards;
+}

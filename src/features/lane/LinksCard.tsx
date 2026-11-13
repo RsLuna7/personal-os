@@ -125,7 +125,12 @@ export function LinksCard({ lane }: { lane: Lane }) {
         {full ? (
           <span className="text-[12px] text-(--text-muted)">最多 {LINKS_MAX} 条</span>
         ) : (
-          <Button variant="outline" size="sm" onClick={() => setMode({ kind: 'add' })}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="lane-add"
+            onClick={() => setMode({ kind: 'add' })}
+          >
             <PlusIcon className="size-3.5" aria-hidden />
             添加链接
           </Button>
@@ -162,36 +167,39 @@ export function LinksCard({ lane }: { lane: Lane }) {
                 />
               </li>
             ) : (
-              <li key={link.id} className="flex items-center gap-1">
+              <li key={link.id} className="lane-link-row group flex items-center gap-1">
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex min-w-0 flex-1 items-baseline gap-2 rounded-[6px] px-2 py-1.5 text-[14px] text-(--text) transition-colors duration-(--dur-fast) ease-(--ease-out) hover:bg-(--bg-subtle) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--text)"
                 >
-                  <span className="truncate font-medium" title={link.title}>
+                  <span className="lane-link-title truncate font-medium" title={link.title}>
                     {link.title}
                   </span>
                   <span className="ml-auto shrink-0 text-[12px] text-(--text-muted)">
                     {hostOf(link.url)}
                   </span>
                 </a>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`修改「${link.title}」`}
-                  onClick={() => setMode({ kind: 'edit', id: link.id })}
-                >
-                  <PencilIcon aria-hidden />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`删除「${link.title}」`}
-                  onClick={() => remove(link)}
-                >
-                  <Trash2Icon aria-hidden />
-                </Button>
+                {/* 修改、删除平时收起，悬停或键盘聚焦到这一行才出现；触屏没有悬停，一直显示 */}
+                <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--dur-fast) group-focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`修改「${link.title}」`}
+                    onClick={() => setMode({ kind: 'edit', id: link.id })}
+                  >
+                    <PencilIcon aria-hidden />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`删除「${link.title}」`}
+                    onClick={() => remove(link)}
+                  >
+                    <Trash2Icon aria-hidden />
+                  </Button>
+                </span>
               </li>
             ),
           )}

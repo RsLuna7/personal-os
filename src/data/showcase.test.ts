@@ -95,3 +95,12 @@ it('keeps every date relative to the given day and does not read the clock', () 
   expect(a.phases.map((p) => p.start)).not.toEqual(b.phases.map((p) => p.start))
   expect(createShowcaseData('2026-11-12')).toEqual(createShowcaseData('2026-11-12'))
 })
+
+it('has habits: some due today, one off today, with recent check-ins', () => {
+  const data = createShowcaseData(TODAY) // 周四
+  const thursday = 4
+  expect(data.habits.length).toBeGreaterThanOrEqual(3)
+  expect(data.habits.some((habit) => !habit.weekdays.includes(thursday))).toBe(true)
+  expect(data.habits.some((habit) => habit.checks.includes(TODAY))).toBe(true)
+  expect(data.habits.every((habit) => habit.checks.every((day) => day <= TODAY))).toBe(true)
+})
