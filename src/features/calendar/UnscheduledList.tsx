@@ -37,11 +37,13 @@ export function UnscheduledList({
       aria-label="未安排"
       data-testid="unscheduled"
       onKeyDown={onKeyDown}
-      className="flex min-h-0 w-60 shrink-0 flex-col gap-2 rounded-[12px] bg-(--bg-subtle) p-3"
+      className="flex min-h-0 w-64 shrink-0 flex-col gap-3 rounded-[16px] bg-(--bg-card) p-4 shadow-(--shadow-card)"
     >
-      <h2 className="flex items-baseline gap-1.5 text-[14px] font-medium text-(--text)">
+      <h2 className="flex items-center gap-2 font-serif text-[18px] font-bold text-(--text)">
         未安排
-        <span className="text-[12px] font-normal text-(--text-muted)">{todos.length}</span>
+        <span className="rounded-full bg-(--bg-panel) px-2 py-px font-sans text-[12px] font-medium text-(--text-muted)">
+          {todos.length}
+        </span>
       </h2>
       <form onSubmit={submit}>
         <Input

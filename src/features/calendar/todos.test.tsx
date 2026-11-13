@@ -88,6 +88,23 @@ describe('creating a todo by double-clicking a day', () => {
     expect(s().data.todos[0]).toMatchObject({ date: '2026-11-17', laneId: null })
   })
 
+  it('adds a todo on that day from the "+" button on the cell, a single click away', async () => {
+    const user = setup()
+    const before = s().data.todos.length
+    await user.click(
+      within(cell('2026-11-17')).getByRole('button', { name: '在2026年11月17日添加待办' }),
+    )
+
+    expect(s().data.todos).toHaveLength(before + 1)
+    expect(s().data.todos.at(-1)).toMatchObject({
+      title: '新待办',
+      date: '2026-11-17',
+      done: false,
+      laneId: null,
+    })
+    expect(await screen.findByRole('dialog', { name: '编辑待办' })).toBeInTheDocument()
+  })
+
   it('does nothing on a single click, on a blank cell or on the date number', async () => {
     const user = setup()
     await user.click(cell('2026-11-17'))

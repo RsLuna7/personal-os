@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useStore } from '@/data/store'
 import { closeEditor, useEditorStore, type Editing } from '@/features/editor/editorStore'
 import { MilestoneEditor } from '@/features/editor/MilestoneEditor'
@@ -12,20 +13,12 @@ import { MonthGrid } from './MonthGrid'
 import { UnscheduledList } from './UnscheduledList'
 import { useCalendarDrag, type Preview } from './useCalendarDrag'
 import { useCalendarKeys } from './useCalendarKeys'
-import {
-  MAX_YEAR,
-  MIN_YEAR,
-  monthParam,
-  monthTitle,
-  monthWeeks,
-  parseMonthParam,
-  shiftMonth,
-} from './month'
+import { MAX_YEAR, MIN_YEAR, monthParam, monthWeeks, parseMonthParam, shiftMonth } from './month'
 
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
 const navClass =
-  'inline-flex size-8 items-center justify-center rounded-[8px] text-[18px] text-(--text) hover:bg-(--bg-panel) disabled:cursor-not-allowed disabled:text-(--text-muted) disabled:opacity-50 disabled:hover:bg-transparent'
+  'inline-flex size-9 items-center justify-center rounded-full bg-(--bg-card) text-(--text) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover) disabled:cursor-not-allowed disabled:text-(--text-muted) disabled:opacity-50 disabled:shadow-none'
 
 type EditingItem = Pick<Editing, 'kind' | 'id'>
 
@@ -140,40 +133,42 @@ export function CalendarPage({ param }: CalendarPageProps) {
   const next = shiftMonth(month, 1)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-(--bg-page)">
-      <div className="flex shrink-0 items-center gap-2 px-6 pt-4 pb-3">
+    <div className="flex min-h-0 flex-1 flex-col bg-(--bg-canvas)">
+      <div className="flex shrink-0 items-center gap-2 px-6 pt-5 pb-4">
+        {/* 年份小字在前、月份大字在后；连起来读还是“2026年11月” */}
+        <h1 className="mr-3 flex min-w-[9ch] items-baseline gap-1.5 text-(--text)">
+          <span className="text-[14px] text-(--text-muted)">{month.year}年</span>
+          <span className="font-serif text-[30px] leading-none font-bold">{month.month}月</span>
+        </h1>
         {previous ? (
           <a
             href={routeHref('calendar', monthParam(previous))}
             aria-label="上个月"
             className={navClass}
           >
-            ‹
+            <ChevronLeftIcon aria-hidden className="size-4" />
           </a>
         ) : (
           <button type="button" disabled aria-label="上个月" className={navClass}>
-            ‹
+            <ChevronLeftIcon aria-hidden className="size-4" />
           </button>
         )}
-        <h1 className="min-w-[8ch] text-center text-[18px] font-medium text-(--text)">
-          {monthTitle(month)}
-        </h1>
         {next ? (
           <a
             href={routeHref('calendar', monthParam(next))}
             aria-label="下个月"
             className={navClass}
           >
-            ›
+            <ChevronRightIcon aria-hidden className="size-4" />
           </a>
         ) : (
           <button type="button" disabled aria-label="下个月" className={navClass}>
-            ›
+            <ChevronRightIcon aria-hidden className="size-4" />
           </button>
         )}
         <a
           href={routeHref('calendar')}
-          className="ml-2 inline-flex h-8 items-center rounded-[8px] border border-(--border) px-3 text-[14px] text-(--text) hover:bg-(--bg-panel)"
+          className="ml-1 inline-flex h-9 items-center rounded-full bg-(--bg-card) px-4 text-[14px] text-(--text) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover)"
         >
           今天
         </a>
@@ -182,10 +177,13 @@ export function CalendarPage({ param }: CalendarPageProps) {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <div
             data-testid="weekdays"
-            className="sticky top-0 z-10 grid shrink-0 grid-cols-7 gap-1.5 bg-(--bg-page) pb-1.5 text-center text-[13px] text-(--text-muted)"
+            className="sticky top-0 z-10 grid shrink-0 grid-cols-7 gap-1.5 bg-(--bg-canvas) pb-2 text-left text-[12px] font-medium tracking-wide text-(--text-muted)"
           >
-            {WEEKDAYS.map((name) => (
-              <span key={name}>{name}</span>
+            {/* 和格子里的日期数字左对齐；周末再淡一档 */}
+            {WEEKDAYS.map((name, index) => (
+              <span key={name} className={`px-2.5 ${index >= 5 ? 'opacity-60' : ''}`}>
+                {name}
+              </span>
             ))}
           </div>
           <MonthGrid
