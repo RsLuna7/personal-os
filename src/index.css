@@ -208,8 +208,8 @@
 
 /*
  * 日历：画布底色上每天一张白色圆角卡片，和主页同一套材质。
- * 时间感靠层层退后：今天最强（橙色实心日期徽标 + 外圈光），未来是白卡片，过去和周末淡一档，
- * 不在本月的格子去掉卡片，只剩淡淡的数字。虚线在这个产品里留给“待确认”，今天不再用。
+ * 时间感靠层层退后：今天最强（墨色日期徽标 + 淡淡的中性描边），未来是白卡片，过去只淡一点点，
+ * 周末只在数字上淡一档，不在本月的格子退成几乎看不见的底。虚线在这个产品里留给“待确认”，今天不再用。
  */
 .day-cell {
   /* 窄屏下按格子自己的宽度调整右上角的按钮，见下面的 @container */
@@ -217,8 +217,8 @@
   background-color: var(--bg-card);
   /* 所有格子都有同宽的边框，今天只是换颜色，内容不会位移 */
   border: 1.5px solid transparent;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(60 50 30 / 0.05);
+  border-radius: 14px;
+  box-shadow: 0 1px 1px rgb(60 50 30 / 0.03);
   transition:
     background-color var(--dur-base) var(--ease-out),
     box-shadow var(--dur-base) var(--ease-out),
@@ -231,15 +231,13 @@
     0 1px 2px rgb(60 50 30 / 0.06),
     0 6px 16px rgb(60 50 30 / 0.1);
 }
-.day-cell[data-weekend='true']:not([data-outside='true']) {
-  background-color: color-mix(in srgb, var(--bg-card) 62%, var(--bg-canvas));
-}
+/* 周末不再单独换底色（只在数字上淡一档），过去的日子只比未来淡一点点，整张网格读起来是一块 */
 .day-cell[data-past='true']:not([data-outside='true']) {
-  background-color: color-mix(in srgb, var(--bg-card) 55%, var(--bg-canvas));
+  background-color: color-mix(in srgb, var(--bg-card) 78%, var(--bg-canvas));
 }
-/* 不在本月：整张卡片去掉（底色、阴影都清掉），不管这天有没有待办 */
+/* 不在本月：留一张几乎看不见的底，网格首尾行保持完整的矩形；没有阴影 */
 .day-cell[data-outside='true'] {
-  background-color: transparent;
+  background-color: color-mix(in srgb, var(--bg-card) 30%, transparent);
   box-shadow: none;
 }
 .day-cell[data-outside='true'] .day-list {
@@ -250,9 +248,9 @@
   min-width: 24px;
   height: 24px;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   border-radius: 999px;
-  padding: 0 4px;
+  padding: 0 6px;
   font-size: 13px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -267,30 +265,21 @@
   font-weight: 400;
 }
 .day-cell[data-today='true'] {
-  border-color: color-mix(in srgb, var(--today) 55%, transparent);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--today) 14%, transparent),
-    0 8px 20px rgb(60 50 30 / 0.1);
+  border-color: color-mix(in srgb, var(--text) 16%, transparent);
+  box-shadow: 0 6px 18px rgb(60 50 30 / 0.08);
 }
+/* 今天的日期：墨色小圆徽标，不用彩色，免得和板块色撞 */
 .day-cell[data-today='true'] .day-number {
-  background-color: var(--today);
-  color: #fff;
+  min-width: 26px;
+  justify-content: center;
+  background-color: var(--text);
+  color: var(--bg-card);
   font-weight: 600;
-  /* 落地时外圈扩散一次，提醒“今天在这里” */
-  animation: today-ping 900ms ease-out 480ms 1 backwards;
 }
 @keyframes cell-in {
   from {
     opacity: 0;
     translate: 0 8px;
-  }
-}
-@keyframes today-ping {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--today) 50%, transparent);
-  }
-  to {
-    box-shadow: 0 0 0 10px transparent;
   }
 }
 /* 拖动中：目标格描边，被拖的条目浮起来 */
@@ -356,7 +345,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .day-cell,
-  .day-cell[data-today='true'] .day-number,
   .todo-check svg {
     animation: none;
   }
@@ -1277,10 +1265,10 @@ a[href='#/timeline']:hover svg {
 }
 @keyframes calendar-today-ring {
   from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--today) 45%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--text) 18%, transparent);
   }
   to {
-    box-shadow: 0 0 0 10px transparent;
+    box-shadow: 0 0 0 8px transparent;
   }
 }
 .day-cell .todo-row {
