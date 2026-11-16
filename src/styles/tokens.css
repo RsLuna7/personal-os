@@ -19,10 +19,9 @@
   --border: var(--sand-6);
   --text: var(--sand-12);
   --text-muted: var(--sand-11);
-  /* “今天”的强调色：中性墨色，不带色相，不和板块色撞（全站通用：时间线今天线、更多菜单小点等） */
-  --today: var(--sand-12);
+  --today: var(--orange-9);
   /* 品牌字标里 OS 的颜色：和“今天”同色系，深一档保证文字对比度 */
-  --brand: var(--sand-12);
+  --brand: var(--orange-11);
 
   /* 主页的层次：画布比卡片深一档，卡片靠明暗和阴影浮起来 */
   --bg-canvas: var(--sand-3);
