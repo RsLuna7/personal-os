@@ -53,6 +53,8 @@ interface StoreState {
   toggleTodo(id: string): void
   /** 把几条待办一起改到某天，算一步撤销（主页“全部移到今天”）。没有匹配的待办时数据不变。 */
   moveTodos(ids: string[], date: ISODate): void
+  /** 手动排序：把待办挪到另一条待办的前面或后面。待办在数据里的先后就是显示的先后。 */
+  reorderTodo(id: string, targetId: string, position: 'before' | 'after'): void
   removeTodo(id: string): void
   /** 返回新习惯的 id。默认叫“新习惯”、每天打、不挂板块。 */
   addHabit(input?: { name?: string; weekdays?: number[]; laneId?: string | null }): string
@@ -316,6 +318,16 @@ export const useStore = create<StoreState>()((set, get) => {
         ...data,
         todos: data.todos.map((todo) => (targets.has(todo.id) ? { ...todo, date } : todo)),
       })
+    },
+
+    reorderTodo(id, targetId, position) {
+      const { data } = get()
+      if (id === targetId) return
+      const moving = data.todos.find((todo) => todo.id === id)
+      if (!moving || !data.todos.some((todo) => todo.id === targetId)) return
+      const rest = data.todos.filter((todo) => todo.id !== id)
+      const at = rest.findIndex((todo) => todo.id === targetId) + (position === 'after' ? 1 : 0)
+      commit({ ...data, todos: [...rest.slice(0, at), moving, ...rest.slice(at)] })
     },
 
     removeTodo(id) {

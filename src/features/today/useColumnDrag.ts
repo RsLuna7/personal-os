@@ -39,6 +39,40 @@ function zonesOnPage(): { zone: DropZone; rect: GridRect }[] {
   }))
 }
 
+export interface InsertMark {
+  /** 插入线画在这条待办的前面或后面 */
+  id: string
+  position: 'before' | 'after'
+}
+
+/**
+ * 在同一组（data-group 相同）的待办里，找指针落在哪两行之间：落在某行上半截就插到它前面，
+ * 全都在指针上方就插到最后一行后面。组里除了被拖的就没有别的行时返回 null。
+ */
+export function insertAtPoint(
+  rows: { id: string; group: string; rect: GridRect }[],
+  group: string,
+  draggedId: string,
+  y: number,
+): InsertMark | null {
+  const peers = rows.filter((row) => row.group === group && row.id !== draggedId)
+  if (peers.length === 0) return null
+  const next = peers.find((row) => y < row.rect.top + row.rect.height / 2)
+  return next
+    ? { id: next.id, position: 'before' }
+    : { id: peers[peers.length - 1].id, position: 'after' }
+}
+
+function rowsOnPage(): { id: string; group: string; rect: GridRect }[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('[data-item-id][data-group]')).map(
+    (element) => ({
+      id: element.dataset.itemId!,
+      group: element.dataset.group!,
+      rect: element.getBoundingClientRect(),
+    }),
+  )
+}
+
 export interface ColumnDragging {
   todo: Todo
   from: DropZone
@@ -54,15 +88,19 @@ interface Options {
 
 /**
  * 今日页的栏间拖拽：收件箱拖进今天 → 日期改成今天；今天拖回收件箱 → 变成未安排。
+ * 在本栏里拖到同一组的另一行之间 → 手动排序（直接拖行本身，不需要把手）。
  * 移动不到 4px 就松手算点击，不改任何东西；真的拖过之后，松手时那一下点击会被吞掉，免得顺手打开编辑。
  */
 export function useColumnDrag({ today, isEnabled = wideEnough }: Options): {
   dragging: ColumnDragging | null
   over: DropZone | null
+  /** 在本栏同一组里拖时，松手会插到哪里 */
+  insert: InsertMark | null
   onRowPointerDown: (event: ReactPointerEvent<HTMLElement>, todo: Todo, from: DropZone) => void
 } {
   const [dragging, setDragging] = useState<ColumnDragging | null>(null)
   const [over, setOver] = useState<DropZone | null>(null)
+  const [insert, setInsert] = useState<InsertMark | null>(null)
   const stopRef = useRef<(() => void) | null>(null)
 
   useEffect(() => () => stopRef.current?.(), [])
@@ -73,7 +111,14 @@ export function useColumnDrag({ today, isEnabled = wideEnough }: Options): {
       stopRef.current?.()
       const startX = event.clientX
       const startY = event.clientY
+      // 这一行属于哪一组：有分组才能在栏内手动排序（过期的按日期排，不在其中）
+      const group = event.currentTarget.dataset.group ?? null
       let moved = false
+
+      const insertFor = (x: number, y: number): InsertMark | null => {
+        if (group === null || zoneAtPoint(zonesOnPage(), x, y) !== from) return null
+        return insertAtPoint(rowsOnPage(), group, todo.id, y)
+      }
 
       const stop = () => {
         window.removeEventListener('pointermove', onMove)
@@ -83,6 +128,7 @@ export function useColumnDrag({ today, isEnabled = wideEnough }: Options): {
         stopRef.current = null
         setDragging(null)
         setOver(null)
+        setInsert(null)
       }
       const onMove = (move: PointerEvent) => {
         if (!moved && !exceedsThreshold(move.clientX - startX, move.clientY - startY)) return
@@ -90,15 +136,21 @@ export function useColumnDrag({ today, isEnabled = wideEnough }: Options): {
         setDragging({ todo, from, x: move.clientX, y: move.clientY })
         const zone = zoneAtPoint(zonesOnPage(), move.clientX, move.clientY)
         setOver(zone !== null && zone !== from ? zone : null)
+        setInsert(insertFor(move.clientX, move.clientY))
       }
       const onUp = (up: PointerEvent) => {
         const zone = moved ? zoneAtPoint(zonesOnPage(), up.clientX, up.clientY) : null
+        const mark = moved ? insertFor(up.clientX, up.clientY) : null
         stop()
         if (!moved) return
         swallowNextClick()
-        if (zone === null || zone === from) return
+        if (zone === null) return
         const store = useStore.getState()
         if (!store.data.todos.some((item) => item.id === todo.id)) return
+        if (zone === from) {
+          if (mark) store.reorderTodo(todo.id, mark.id, mark.position)
+          return
+        }
         store.updateTodo(todo.id, { date: zone === 'today' ? fromDay(today) : null })
       }
       const onKey = (key: KeyboardEvent) => {
@@ -114,7 +166,7 @@ export function useColumnDrag({ today, isEnabled = wideEnough }: Options): {
     [isEnabled, today],
   )
 
-  return { dragging, over, onRowPointerDown }
+  return { dragging, over, insert, onRowPointerDown }
 }
 
 /**

@@ -15,6 +15,10 @@ interface TodayTodoRowProps {
   /** 按下时可能开始拖拽（宽屏才有） */
   onPointerDown?: (event: PointerEvent<HTMLLIElement>, todo: Todo) => void
   dragging?: boolean
+  /** 同一组里可以互相排序的待办用同一个标记；没有就不能在栏内排序 */
+  group?: string
+  /** 拖着别的待办时，插入线画在这一行的上面还是下面 */
+  insert?: 'before' | 'after' | null
 }
 
 /** 今日页的一行待办：勾选框、板块色条、标题（点开编辑）、悬停操作。 */
@@ -26,6 +30,8 @@ export function TodayTodoRow({
   actions,
   onPointerDown,
   dragging = false,
+  group,
+  insert = null,
 }: TodayTodoRowProps) {
   return (
     <li
@@ -34,8 +40,10 @@ export function TodayTodoRow({
       data-lane-color={colorOfLane(lanes, todo.laneId)}
       data-done={String(todo.done)}
       data-dragging={String(dragging)}
+      data-group={group}
+      data-insert={insert ?? undefined}
       onPointerDown={onPointerDown && ((event) => onPointerDown(event, todo))}
-      className="todo-item group flex min-h-9 items-center gap-2.5 text-[14px]"
+      className="todo-item group flex min-h-9 items-center gap-2.5 text-[14px] data-[insert=after]:shadow-[0_1px_0_0_var(--brand)] data-[insert=before]:shadow-[0_-1px_0_0_var(--brand)]"
     >
       <button
         type="button"

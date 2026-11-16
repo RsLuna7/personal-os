@@ -15,10 +15,6 @@ export interface InboxGroup {
   todos: Todo[]
 }
 
-function byCreated(a: Todo, b: Todo): number {
-  return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
-}
-
 function dayTitle(day: number, today: number): string {
   if (day === today + 1) return '明天'
   if (day === today + 2) return '后天'
@@ -34,7 +30,7 @@ export function inboxGroups(
   today: number,
   keep: ReadonlySet<string> = new Set(),
 ): InboxGroup[] {
-  const open = todos.filter((todo) => !todo.done || keep.has(todo.id)).sort(byCreated)
+  const open = todos.filter((todo) => !todo.done || keep.has(todo.id))
   const groups: InboxGroup[] = []
   const unscheduled = open.filter((todo) => todo.date === null)
   if (unscheduled.length > 0) {

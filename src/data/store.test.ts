@@ -248,6 +248,25 @@ describe('lane notes and links', () => {
 })
 
 describe('todos', () => {
+  it('reorderTodo moves a todo before or after another, persists in list order and undoes', () => {
+    const { addTodo, reorderTodo, undo } = useStore.getState()
+    const a = addTodo({ title: 'a' })
+    const b = addTodo({ title: 'b' })
+    const c = addTodo({ title: 'c' })
+    const ids = () => useStore.getState().data.todos.map((todo) => todo.id)
+    reorderTodo(c, a, 'before')
+    expect(ids()).toEqual([c, a, b])
+    reorderTodo(c, b, 'after')
+    expect(ids()).toEqual([a, b, c])
+    reorderTodo(a, 'missing', 'before')
+    reorderTodo(a, a, 'after')
+    expect(ids()).toEqual([a, b, c])
+    reorderTodo(a, c, 'after')
+    expect(ids()).toEqual([b, c, a])
+    undo()
+    expect(ids()).toEqual([a, b, c])
+  })
+
   const todos = () => s().data.todos
 
   it('adds an undated todo without a lane by default', () => {

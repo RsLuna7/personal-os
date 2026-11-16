@@ -73,6 +73,7 @@ export function TodayPage() {
             today={today}
             dropActive={drag.over === 'today'}
             draggingId={draggingId}
+            insert={drag.insert}
             onRowPointerDown={(event, todo) => drag.onRowPointerDown(event, todo, 'today')}
           />
           <HabitColumn
@@ -88,6 +89,7 @@ export function TodayPage() {
             today={today}
             dropActive={drag.over === 'inbox'}
             draggingId={draggingId}
+            insert={drag.insert}
             onRowPointerDown={(event, todo) => drag.onRowPointerDown(event, todo, 'inbox')}
           />
         </div>
