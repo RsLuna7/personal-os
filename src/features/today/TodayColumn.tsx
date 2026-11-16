@@ -7,6 +7,7 @@ import { homeTodos } from '@/features/home/todayTodos'
 import { useLinger } from '@/features/home/useLinger'
 import { fromDay, toDay } from '@/features/timeline/days'
 import { formatDay } from '@/features/timeline/format'
+import type { InsertMark } from './useColumnDrag'
 import { GroupTitle, TodaySection } from './TodaySection'
 import { RowAction, TodayTodoRow } from './TodayTodoRow'
 
@@ -18,6 +19,7 @@ interface TodayColumnProps {
   dropActive?: boolean
   onRowPointerDown?: (event: PointerEvent<HTMLLIElement>, todo: Todo) => void
   draggingId?: string | null
+  insert?: InsertMark | null
   className?: string
 }
 
@@ -32,6 +34,7 @@ export function TodayColumn({
   dropActive = false,
   onRowPointerDown,
   draggingId = null,
+  insert = null,
   className,
 }: TodayColumnProps) {
   const { lingering, toggle } = useLinger()
@@ -70,7 +73,7 @@ export function TodayColumn({
     )
   }
 
-  const row = (todo: Todo, overdue: boolean) => (
+  const row = (todo: Todo, overdue: boolean, group?: string) => (
     <TodayTodoRow
       key={todo.id}
       todo={todo}
@@ -78,6 +81,8 @@ export function TodayColumn({
       onToggle={toggle}
       onPointerDown={todo.done ? undefined : onRowPointerDown}
       dragging={draggingId === todo.id}
+      group={group}
+      insert={insert?.id === todo.id ? insert.position : null}
       meta={
         overdue && todo.date ? (
           <span className="shrink-0 text-[12px] text-(--danger)">
@@ -123,7 +128,7 @@ export function TodayColumn({
       {groups.today.length > 0 && (
         <>
           <GroupTitle>今天 {groups.today.length}</GroupTitle>
-          <ul>{groups.today.map((todo) => row(todo, false))}</ul>
+          <ul>{groups.today.map((todo) => row(todo, false, 'today'))}</ul>
         </>
       )}
       {empty && <p className="py-2 text-[14px] text-(--text-muted)">今天没有待办</p>}

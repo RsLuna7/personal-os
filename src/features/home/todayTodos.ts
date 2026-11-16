@@ -13,12 +13,8 @@ export interface HomeTodos {
   doneToday: Todo[]
 }
 
-function byCreated(a: Todo, b: Todo): number {
-  return a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
-}
-
 /**
- * 主页“待办”板块要显示的内容：过期没做完的、今天没做完的、今天做完的。没安排日期的不算。
+ * 主页“待办”板块要显示的内容（同一组里按待办在数据里的先后排，也就是手动排的顺序）：过期没做完的、今天没做完的、今天做完的。没安排日期的不算。
  * keep 里的待办刚被勾掉：先留在原来的位置（显示删除线），过一会儿再收进“已完成”，免得一勾列表就跳。
  */
 export function homeTodos(
@@ -29,12 +25,12 @@ export function homeTodos(
   const open = (todo: Todo) => !todo.done || keep.has(todo.id)
   const overdue = todos
     .filter((todo) => todo.date !== null && toDay(todo.date) < today && open(todo))
-    .sort((a, b) => a.date!.localeCompare(b.date!) || byCreated(a, b))
+    .sort((a, b) => a.date!.localeCompare(b.date!))
   const ofToday = todos.filter((todo) => todo.date !== null && toDay(todo.date) === today)
   return {
     overdue,
-    today: ofToday.filter(open).sort(byCreated),
-    doneToday: ofToday.filter((todo) => !open(todo)).sort(byCreated),
+    today: ofToday.filter(open),
+    doneToday: ofToday.filter((todo) => !open(todo)),
   }
 }
 

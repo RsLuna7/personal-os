@@ -5,6 +5,7 @@ import { useStore } from '@/data/store'
 import { useLinger } from '@/features/home/useLinger'
 import { fromDay } from '@/features/timeline/days'
 import { inboxGroups } from './inbox'
+import type { InsertMark } from './useColumnDrag'
 import { GroupTitle, TodaySection } from './TodaySection'
 import { RowAction, TodayTodoRow } from './TodayTodoRow'
 
@@ -16,6 +17,7 @@ interface InboxColumnProps {
   dropActive?: boolean
   onRowPointerDown?: (event: PointerEvent<HTMLLIElement>, todo: Todo) => void
   draggingId?: string | null
+  insert?: InsertMark | null
   className?: string
 }
 
@@ -27,6 +29,7 @@ export function InboxColumn({
   dropActive = false,
   onRowPointerDown,
   draggingId = null,
+  insert = null,
   className,
 }: InboxColumnProps) {
   const { lingering, toggle } = useLinger()
@@ -55,6 +58,8 @@ export function InboxColumn({
                 // 刚勾掉、还在停留的不给挪：挪进今天也只会躲进“已完成”
                 onPointerDown={todo.done ? undefined : onRowPointerDown}
                 dragging={draggingId === todo.id}
+                group={group.key}
+                insert={insert?.id === todo.id ? insert.position : null}
                 actions={
                   !todo.done && (
                     <RowAction

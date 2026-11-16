@@ -53,8 +53,8 @@ it('hides done todos unless they are lingering', () => {
   expect(inboxGroups([done], today, new Set(['a']))[0].todos).toEqual([done])
 })
 
-it('sorts each group by creation time', () => {
+it('keeps each group in the order of the todo list (manual order)', () => {
   const late = todo('late', null, { createdAt: '2026-11-05T00:00:00.000Z' })
   const early = todo('early', null, { createdAt: '2026-11-02T00:00:00.000Z' })
-  expect(inboxGroups([late, early], today)[0].todos.map((t) => t.id)).toEqual(['early', 'late'])
+  expect(inboxGroups([late, early], today)[0].todos.map((t) => t.id)).toEqual(['late', 'early'])
 })

@@ -5,7 +5,7 @@ import { resetEditor, useEditorStore } from '@/features/editor/editorStore'
 import { toDay } from '@/features/timeline/days'
 import { InboxColumn } from './InboxColumn'
 import { TodayColumn } from './TodayColumn'
-import { useColumnDrag, zoneAtPoint } from './useColumnDrag'
+import { insertAtPoint, useColumnDrag, zoneAtPoint } from './useColumnDrag'
 
 const s = () => useStore.getState()
 const today = toDay('2026-11-12')
@@ -40,6 +40,7 @@ function Harness() {
         today={today}
         dropActive={drag.over === 'inbox'}
         draggingId={drag.dragging?.todo.id ?? null}
+        insert={drag.insert}
         onRowPointerDown={(event, todo) => drag.onRowPointerDown(event, todo, 'inbox')}
       />
       <TodayColumn
@@ -48,6 +49,7 @@ function Harness() {
         today={today}
         dropActive={drag.over === 'today'}
         draggingId={drag.dragging?.todo.id ?? null}
+        insert={drag.insert}
         onRowPointerDown={(event, todo) => drag.onRowPointerDown(event, todo, 'today')}
       />
     </>
@@ -200,4 +202,117 @@ it('does not drag a done todo', () => {
   fireEvent.click(screen.getByRole('button', { name: /已完成 1/ }))
   drag('a', { x: 400, y: 50 }, { x: 100, y: 50 })
   expect(todo('a')?.date).toBe('2026-11-12')
+})
+
+describe('insertAtPoint', () => {
+  const rect = (top: number) => ({ left: 0, top, width: 300, height: 36 })
+  const rows = [
+    { id: 'a', group: 'g', rect: rect(0) },
+    { id: 'b', group: 'g', rect: rect(40) },
+    { id: 'c', group: 'g', rect: rect(80) },
+    { id: 'x', group: 'other', rect: rect(120) },
+  ]
+  it('inserts before the first row whose upper half holds the pointer', () => {
+    expect(insertAtPoint(rows, 'g', 'c', 5)).toEqual({ id: 'a', position: 'before' })
+    expect(insertAtPoint(rows, 'g', 'c', 50)).toEqual({ id: 'b', position: 'before' })
+  })
+  it('inserts after the last row when the pointer is below all of them', () => {
+    expect(insertAtPoint(rows, 'g', 'a', 200)).toEqual({ id: 'c', position: 'after' })
+  })
+  it('ignores the dragged row and other groups', () => {
+    expect(insertAtPoint(rows, 'g', 'c', 200)).toEqual({ id: 'b', position: 'after' })
+    expect(insertAtPoint([rows[0]], 'g', 'a', 10)).toBeNull()
+  })
+})
+
+describe('reordering inside a column', () => {
+  function placeRows(ids: string[]) {
+    ids.forEach((id, index) => {
+      const top = index * 40
+      vi.spyOn(screen.getByTestId(`todo-${id}`), 'getBoundingClientRect').mockReturnValue({
+        left: 340,
+        top,
+        width: 340,
+        height: 36,
+        x: 340,
+        y: top,
+        right: 680,
+        bottom: top + 36,
+        toJSON: () => ({}),
+      })
+    })
+  }
+  const order = () => s().data.todos.map((item) => item.id)
+
+  it('moves a today todo above another by dragging the row itself', () => {
+    setup([
+      { id: 'a', date: '2026-11-12' },
+      { id: 'b', date: '2026-11-12' },
+      { id: 'c', date: '2026-11-12' },
+    ])
+    placeRows(['a', 'b', 'c'])
+    drag('c', { x: 400, y: 100 }, { x: 400, y: 5 })
+    expect(order()).toEqual(['c', 'a', 'b'])
+    expect(todo('c')?.date).toBe('2026-11-12')
+  })
+
+  it('moves a todo to the end of its group when dropped below it', () => {
+    setup([
+      { id: 'a', date: '2026-11-12' },
+      { id: 'b', date: '2026-11-12' },
+      { id: 'c', date: '2026-11-12' },
+    ])
+    placeRows(['a', 'b', 'c'])
+    drag('a', { x: 400, y: 10 }, { x: 400, y: 300 })
+    expect(order()).toEqual(['b', 'c', 'a'])
+  })
+
+  it('shows an insertion line while dragging', () => {
+    setup([
+      { id: 'a', date: '2026-11-12' },
+      { id: 'b', date: '2026-11-12' },
+    ])
+    placeRows(['a', 'b'])
+    fireEvent.pointerDown(screen.getByTestId('todo-b'), {
+      clientX: 400,
+      clientY: 50,
+      button: 0,
+      pointerId: 1,
+    })
+    fireEvent.pointerMove(window, { clientX: 400, clientY: 5, pointerId: 1 })
+    expect(screen.getByTestId('todo-a')).toHaveAttribute('data-insert', 'before')
+    fireEvent.pointerUp(window, { clientX: 400, clientY: 5, pointerId: 1 })
+    expect(screen.getByTestId('todo-a')).not.toHaveAttribute('data-insert')
+  })
+
+  it('does not reorder across inbox day groups', () => {
+    setup([
+      { id: 'a', date: '2026-11-13' },
+      { id: 'b', date: '2026-11-14' },
+    ])
+    vi.spyOn(screen.getByTestId('todo-a'), 'getBoundingClientRect').mockReturnValue({
+      left: 20,
+      top: 0,
+      width: 260,
+      height: 36,
+      x: 20,
+      y: 0,
+      right: 280,
+      bottom: 36,
+      toJSON: () => ({}),
+    })
+    drag('b', { x: 100, y: 100 }, { x: 100, y: 5 })
+    expect(order()).toEqual(['a', 'b'])
+    expect(todo('b')?.date).toBe('2026-11-14')
+  })
+
+  it('keeps overdue rows out of manual ordering', () => {
+    setup([
+      { id: 'a', date: '2026-11-09' },
+      { id: 'b', date: '2026-11-10' },
+    ])
+    placeRows(['a', 'b'])
+    drag('b', { x: 400, y: 50 }, { x: 400, y: 5 })
+    expect(order()).toEqual(['a', 'b'])
+  })
 })
