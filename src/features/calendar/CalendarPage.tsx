@@ -28,7 +28,7 @@ import { MAX_YEAR, MIN_YEAR, monthParam, monthWeeks, parseMonthParam, shiftMonth
 const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
 
 const navClass =
-  'inline-flex size-9 items-center justify-center rounded-full bg-(--bg-card) text-(--text) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover) disabled:cursor-not-allowed disabled:text-(--text-muted) disabled:opacity-50 disabled:shadow-none'
+  'inline-flex size-9 items-center justify-center rounded-full bg-(--bg-card) text-(--text) shadow-[0_1px_2px_rgb(60_50_30/0.06)] transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card) disabled:cursor-not-allowed disabled:text-(--text-muted) disabled:opacity-50 disabled:shadow-none'
 
 type EditingItem = Pick<Editing, 'kind' | 'id'>
 
@@ -233,7 +233,7 @@ export function CalendarPage({ param }: CalendarPageProps) {
         )}
         <a
           href={routeHref('calendar')}
-          className="ml-1 inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-(--bg-card) px-4 text-[14px] text-(--text) shadow-(--shadow-card) transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card-hover)"
+          className="ml-1 inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full bg-(--bg-card) px-4 text-[14px] text-(--text) shadow-[0_1px_2px_rgb(60_50_30/0.06)] transition-shadow duration-(--dur-fast) ease-(--ease-out) hover:shadow-(--shadow-card)"
         >
           今天
         </a>
@@ -257,7 +257,7 @@ export function CalendarPage({ param }: CalendarPageProps) {
           >
             {/* 和格子里的日期数字左对齐；周末再淡一档 */}
             {WEEKDAYS.map((name, index) => (
-              <span key={name} className={`px-2.5 ${index >= 5 ? 'opacity-60' : ''}`}>
+              <span key={name} className={`px-[13.5px] ${index >= 5 ? 'opacity-60' : ''}`}>
                 {name}
               </span>
             ))}

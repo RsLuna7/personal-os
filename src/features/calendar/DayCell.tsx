@@ -52,7 +52,7 @@ function onBlankDoubleClick(event: MouseEvent<HTMLElement>, day: number): void {
 
 /**
  * 一天的卡片：日期数字在左上，条目紧跟在它下面，最多直接显示三条；多出来的在右上角写“+N”，点开看全部。
- * 今天是橙色实心日期徽标；过去的日子和周末淡一档；悬停时右上角出现“＋”。
+ * 今天是墨色日期徽标加淡淡的中性描边；过去的日子和周末淡一档；悬停时右上角出现“＋”。
  */
 export function DayCell({
   day,
