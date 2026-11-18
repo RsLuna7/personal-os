@@ -5,6 +5,8 @@ import { setTemplateOpen, setTermsOpen, useEditorStore } from '@/features/editor
 import { TemplateDialog } from '@/features/editor/TemplateDialog'
 import { TermsDialog } from '@/features/editor/TermsDialog'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
+import { FocusPage } from '@/features/focus/FocusPage'
+import { FocusRuntime } from '@/features/focus/FocusRuntime'
 import { Home } from '@/features/home/Home'
 import { ReviewPage } from '@/features/review/ReviewPage'
 import { TodayPage } from '@/features/today/TodayPage'
@@ -67,6 +69,8 @@ export function App({ persistence }: AppProps) {
           <CalendarPage param={param} />
         ) : route === 'modules' ? (
           <LanePage param={param} />
+        ) : route === 'focus' ? (
+          <FocusPage />
         ) : route === 'review' ? (
           <ReviewPage />
         ) : (
@@ -75,6 +79,7 @@ export function App({ persistence }: AppProps) {
       </main>
       <TermsDialog open={termsOpen} onOpenChange={setTermsOpen} />
       <TemplateDialog open={templateOpen} onOpenChange={setTemplateOpen} />
+      <FocusRuntime />
       <Toaster position="bottom-center" />
     </div>
   )

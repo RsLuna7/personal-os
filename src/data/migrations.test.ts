@@ -39,7 +39,7 @@ describe('migrations[1] (v1 to v2)', () => {
   })
 
   it('produces data that passes the current schema once every step has run', () => {
-    expect(appDataSchema.safeParse(runMigrations(v1, migrations, 5).data).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v1, migrations, 6).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -102,7 +102,7 @@ describe('migrations[3] (v3 to v4)', () => {
   })
 
   it('produces data that passes the current schema', () => {
-    expect(appDataSchema.safeParse(runMigrations(v3, migrations, 5).data).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v3, migrations, 6).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -112,7 +112,7 @@ describe('migrations[3] (v3 to v4)', () => {
   })
 
   it('runs from version 3 up to the current version', () => {
-    expect(runMigrations(v3, migrations, 5).from).toBe(3)
+    expect(runMigrations(v3, migrations, 6).from).toBe(3)
   })
 })
 
@@ -134,7 +134,7 @@ describe('migrations[2] (v2 to v3)', () => {
   })
 
   it('produces data that passes the current schema', () => {
-    expect(appDataSchema.safeParse(runMigrations(v2, migrations, 5).data).success).toBe(true)
+    expect(appDataSchema.safeParse(runMigrations(v2, migrations, 6).data).success).toBe(true)
   })
 
   it('does not mutate its input', () => {
@@ -144,7 +144,7 @@ describe('migrations[2] (v2 to v3)', () => {
   })
 
   it('runs from version 2 up to the current version', () => {
-    expect(runMigrations(v2, migrations, 5).from).toBe(2)
+    expect(runMigrations(v2, migrations, 6).from).toBe(2)
   })
 })
 
@@ -162,7 +162,7 @@ describe('migrations[4] (v4 to v5)', () => {
   it('adds an empty habit list', () => {
     const result = migrations[4](v4)
     expect(result).toEqual({ ...v4, schemaVersion: 5, habits: [] })
-    expect(appDataSchema.safeParse(result).success).toBe(true)
+    expect(appDataSchema.safeParse(migrations[5](result)).success).toBe(true)
   })
 
   it('keeps habits that are already there', () => {
@@ -177,5 +177,62 @@ describe('migrations[4] (v4 to v5)', () => {
       },
     ]
     expect((migrations[4]({ ...v4, habits }) as { habits: unknown }).habits).toEqual(habits)
+  })
+})
+
+describe('migrations[5] (v5 to v6)', () => {
+  const v5 = {
+    schemaVersion: 5,
+    lanes: [],
+    phases: [],
+    milestones: [],
+    terms: [],
+    todos: [],
+    habits: [],
+    lastExportAt: null,
+  }
+
+  it('adds an empty focus list and bumps the version', () => {
+    const result = migrations[5](v5)
+    expect(result).toEqual({ ...v5, schemaVersion: 6, focusSessions: [] })
+    expect(appDataSchema.safeParse(result).success).toBe(true)
+  })
+
+  it('keeps focus sessions that are already there', () => {
+    const focusSessions = [
+      {
+        id: 'f1',
+        mode: 'stopwatch',
+        tag: '学习',
+        note: '',
+        startAt: '2026-11-01T01:00:00.000Z',
+        endAt: '2026-11-01T01:30:00.000Z',
+        focusMs: 1_800_000,
+        completed: true,
+      },
+    ]
+    const result = migrations[5]({ ...v5, focusSessions }) as { focusSessions: unknown }
+    expect(result.focusSessions).toEqual(focusSessions)
+  })
+
+  it('does not mutate its input', () => {
+    const copy = structuredClone(v5)
+    migrations[5](v5)
+    expect(v5).toEqual(copy)
+  })
+
+  it('upgrades a version 1 file all the way to the current version', () => {
+    const v1 = {
+      schemaVersion: 1,
+      lanes: [],
+      phases: [],
+      milestones: [],
+      terms: [],
+      lastExportAt: null,
+    }
+    const { data, from } = runMigrations(v1, migrations, 6)
+    expect(from).toBe(1)
+    expect(appDataSchema.safeParse(data).success).toBe(true)
+    expect((data as { focusSessions: unknown[] }).focusSessions).toEqual([])
   })
 })

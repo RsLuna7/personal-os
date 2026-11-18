@@ -446,3 +446,55 @@ describe('habits', () => {
     expect(s().data.habits[0].laneId).toBeNull()
   })
 })
+
+describe('focus sessions', () => {
+  const session = (id: string, tag = '学习') => ({
+    id,
+    mode: 'pomodoro' as const,
+    tag,
+    note: '',
+    startAt: '2026-11-12T01:00:00.000Z',
+    endAt: '2026-11-12T01:25:00.000Z',
+    focusMs: 1_500_000,
+    completed: true,
+  })
+
+  it('adds a session as one undo step', () => {
+    s().addFocus(session('a'))
+    expect(s().data.focusSessions.map((f) => f.id)).toEqual(['a'])
+    s().undo()
+    expect(s().data.focusSessions).toEqual([])
+  })
+  it('ignores a session whose id is already there', () => {
+    s().addFocus(session('a'))
+    s().addFocus({ ...session('a'), tag: '别的' })
+    expect(s().data.focusSessions).toHaveLength(1)
+    expect(s().data.focusSessions[0].tag).toBe('学习')
+    expect(s().past).toHaveLength(1)
+  })
+  it('changes the tag and note, trimming the tag', () => {
+    s().addFocus(session('a'))
+    s().updateFocus('a', { tag: ' 英语 ', note: '阅读' })
+    expect(s().data.focusSessions[0]).toMatchObject({ tag: '英语', note: '阅读' })
+  })
+  it('refuses a blank or overlong tag and an overlong note', () => {
+    s().addFocus(session('a'))
+    s().updateFocus('a', { tag: '  ' })
+    s().updateFocus('a', { tag: 'x'.repeat(21) })
+    s().updateFocus('a', { note: 'x'.repeat(201) })
+    expect(s().data.focusSessions[0]).toMatchObject({ tag: '学习', note: '' })
+  })
+  it('removes a session and undo brings it back', () => {
+    s().addFocus(session('a'))
+    s().removeFocus('a')
+    expect(s().data.focusSessions).toEqual([])
+    s().undo()
+    expect(s().data.focusSessions.map((f) => f.id)).toEqual(['a'])
+  })
+  it('leaves sessions alone when a lane is removed', () => {
+    const l = s().addLane()
+    s().addFocus(session('a'))
+    s().removeLane(l)
+    expect(s().data.focusSessions).toHaveLength(1)
+  })
+})

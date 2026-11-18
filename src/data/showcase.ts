@@ -1,6 +1,7 @@
 import {
   createEmptyData,
   type AppData,
+  type FocusSession,
   type Habit,
   type ISODate,
   type Lane,
@@ -119,6 +120,26 @@ export function createShowcaseData(today: ISODate): AppData {
     checks: [...checkedDaysAgo].sort((a, b) => b - a).map(daysAgo),
     createdAt: `${daysAgo(createdDaysAgo)}T00:00:00.000Z`,
   })
+
+  // 专注记录：最近四个月，有的天多有的天少，也有完全没做的天；时刻取 UTC 凌晨，各时区都落在同一天
+  const focusTags = ['考研 408', '英语二', '毕设', '六级']
+  const focusSessions: FocusSession[] = []
+  for (let back = 0; back < 120; back++) {
+    for (let k = 0; k < ((back * 7 + 3) % 5) % 4; k++) {
+      const minutes = [25, 25, 45, 50][(back + k) % 4]
+      const start = todayMs - back * DAY_MS + (2 + k * 3) * 3_600_000
+      focusSessions.push({
+        id: `showcase-focus-${back}-${k}`,
+        mode: 'pomodoro',
+        tag: focusTags[(back + k) % 4],
+        note: '',
+        startAt: new Date(start).toISOString(),
+        endAt: new Date(start + minutes * 60_000).toISOString(),
+        focusMs: minutes * 60_000,
+        completed: true,
+      })
+    }
+  }
 
   return {
     ...createEmptyData(),
@@ -336,5 +357,6 @@ export function createShowcaseData(today: ISODate): AppData {
       // 刚开始的新习惯
       habit('reading', '睡前读书', 'club', EVERY_DAY, 3, [1, 2]),
     ],
+    focusSessions,
   }
 }

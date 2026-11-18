@@ -2,12 +2,15 @@ import { create } from 'zustand'
 import {
   appDataSchema,
   createEmptyData,
+  FOCUS_NOTE_MAX,
   LANE_COLORS,
   LINKS_MAX,
   NAME_MAX,
   NOTE_MAX,
+  TAG_MAX,
   URL_MAX,
   type AppData,
+  type FocusSession,
   type Habit,
   type ISODate,
   type Lane,
@@ -63,6 +66,11 @@ interface StoreState {
   /** 那天打卡或取消打卡。 */
   toggleCheck(id: string, date: ISODate): void
   removeHabit(id: string): void
+  /** 记一次专注。id 已存在就忽略（计时补算时两个标签页可能各记一次）。 */
+  addFocus(session: FocusSession): void
+  /** 改标签、备注；标签为空或太长时不生效。 */
+  updateFocus(id: string, patch: Partial<Pick<FocusSession, 'tag' | 'note'>>): void
+  removeFocus(id: string): void
   setTerms(terms: Term[]): void
   /** 把模板按开始日期追加到现有数据后面，算一步撤销。 */
   addFromTemplate(template: Template, startDate: ISODate): void
@@ -386,6 +394,30 @@ export const useStore = create<StoreState>()((set, get) => {
     removeHabit(id) {
       const { data } = get()
       commit({ ...data, habits: data.habits.filter((habit) => habit.id !== id) })
+    },
+
+    addFocus(session) {
+      const { data } = get()
+      if (data.focusSessions.some((item) => item.id === session.id)) return
+      commit({ ...data, focusSessions: [...data.focusSessions, session] })
+    },
+
+    updateFocus(id, patch) {
+      const { data } = get()
+      const tag = patch.tag?.trim()
+      if (tag !== undefined && (tag === '' || tag.length > TAG_MAX)) return
+      if (patch.note !== undefined && patch.note.length > FOCUS_NOTE_MAX) return
+      commit({
+        ...data,
+        focusSessions: data.focusSessions.map((item) =>
+          item.id === id ? { ...item, ...patch, ...(tag === undefined ? {} : { tag }) } : item,
+        ),
+      })
+    },
+
+    removeFocus(id) {
+      const { data } = get()
+      commit({ ...data, focusSessions: data.focusSessions.filter((item) => item.id !== id) })
     },
 
     setTerms(terms) {

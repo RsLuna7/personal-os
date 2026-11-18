@@ -74,7 +74,7 @@ it('reports corrupt for unparseable or invalid content and leaves it in place', 
 })
 
 it('reports corrupt for data from a newer version', () => {
-  const st = mem({ [DATA_KEY]: JSON.stringify({ ...sample, schemaVersion: 6 }) })
+  const st = mem({ [DATA_KEY]: JSON.stringify({ ...sample, schemaVersion: 7 }) })
   expect(loadData(st).status).toBe('corrupt')
 })
 
@@ -100,13 +100,14 @@ it('writes a backup of the old version before saving migrated data', () => {
     2: migrations[2],
     3: migrations[3],
     4: migrations[4],
+    5: migrations[5],
   }
   const st = mem({ [DATA_KEY]: old })
   const result = loadData(st, registry)
   expect(result.status).toBe('ok')
-  expect(result).toMatchObject({ data: { schemaVersion: 5, terms: [], todos: [] } })
+  expect(result).toMatchObject({ data: { schemaVersion: 6, terms: [], todos: [] } })
   expect(st.getItem(backupKey(0))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(5)
+  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(6)
 })
 
 it('hydrates the store from storage on start', () => {
@@ -246,32 +247,34 @@ it('upgrades stored version 1 data with the real migrations and keeps a v1 backu
   const result = loadData(st)
   expect(result.status).toBe('ok')
   if (result.status !== 'ok') return
-  expect(result.data.schemaVersion).toBe(5)
+  expect(result.data.schemaVersion).toBe(6)
   expect(result.data.todos).toEqual([])
   expect(result.data.lanes.every((lane) => lane.note === '' && lane.links.length === 0)).toBe(true)
   expect(st.getItem(backupKey(1))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(5)
+  expect(JSON.parse(st.getItem(DATA_KEY)!).schemaVersion).toBe(6)
 })
 
 it('upgrades stored version 2 data to the current version with no todos and keeps a v2 backup', () => {
   const old = JSON.stringify({
     ...sample,
     todos: undefined, // 旧版本没有待办（JSON 里整个字段不存在）
+    focusSessions: undefined,
     schemaVersion: 2,
   })
   const st = mem({ [DATA_KEY]: old })
   const result = loadData(st)
   expect(result.status).toBe('ok')
   if (result.status !== 'ok') return
-  expect(result.data).toEqual({ ...sample, todos: [] })
+  expect(result.data).toEqual({ ...sample, todos: [], focusSessions: [] })
   expect(st.getItem(backupKey(2))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!)).toMatchObject({ schemaVersion: 5, todos: [] })
+  expect(JSON.parse(st.getItem(DATA_KEY)!)).toMatchObject({ schemaVersion: 6, todos: [] })
 })
 
 it('upgrades stored version 3 data to the current version with done false and keeps a v3 backup', () => {
   const stripDone = <T extends { done: boolean }>({ done: _done, ...rest }: T) => rest
   const old = JSON.stringify({
     ...sample,
+    focusSessions: undefined,
     schemaVersion: 3,
     phases: sample.phases.map(stripDone),
     milestones: sample.milestones.map(stripDone),
@@ -280,19 +283,24 @@ it('upgrades stored version 3 data to the current version with done false and ke
   const result = loadData(st)
   expect(result.status).toBe('ok')
   if (result.status !== 'ok') return
-  expect(result.data).toEqual(sample)
+  expect(result.data).toEqual({ ...sample, focusSessions: [] })
   expect(result.data.phases.every((phase) => phase.done === false)).toBe(true)
   expect(result.data.milestones.every((milestone) => milestone.done === false)).toBe(true)
   expect(st.getItem(backupKey(3))).toBe(old)
-  expect(JSON.parse(st.getItem(DATA_KEY)!)).toMatchObject({ schemaVersion: 5 })
+  expect(JSON.parse(st.getItem(DATA_KEY)!)).toMatchObject({ schemaVersion: 6 })
 })
 
 it('upgrades stored version 4 data with an empty habit list and keeps a v4 backup', () => {
-  const old = JSON.stringify({ ...sample, schemaVersion: 4, habits: undefined })
+  const old = JSON.stringify({
+    ...sample,
+    schemaVersion: 4,
+    habits: undefined,
+    focusSessions: undefined,
+  })
   const st = mem({ [DATA_KEY]: old })
   const result = loadData(st)
   expect(result.status).toBe('ok')
   if (result.status !== 'ok') return
-  expect(result.data).toEqual({ ...sample, habits: [] })
+  expect(result.data).toEqual({ ...sample, habits: [], focusSessions: [] })
   expect(st.getItem(backupKey(4))).toBe(old)
 })

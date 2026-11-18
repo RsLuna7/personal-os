@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/data/store'
+import { FocusWidget } from '@/features/focus/FocusWidget'
 import { EmptyState } from '@/features/timeline/EmptyState'
 import { useToday } from '@/features/timeline/useToday'
 import { LaneOverview } from './LaneOverview'
@@ -21,7 +22,14 @@ export function Home() {
     [summaries],
   )
 
-  if (data.lanes.length === 0) return <EmptyState />
+  if (data.lanes.length === 0) {
+    return (
+      <>
+        <EmptyState />
+        <FocusWidget />
+      </>
+    )
+  }
 
   return (
     <div
@@ -29,12 +37,13 @@ export function Home() {
       data-enter={String(enter)}
       className="min-h-0 flex-1 overflow-y-auto bg-(--bg-canvas)"
     >
-      <div className="home-sections mx-auto flex max-w-[1280px] flex-col gap-6 px-6 py-6">
+      <div className="home-sections mx-auto flex max-w-[1280px] flex-col gap-6 px-6 pt-6 pb-24">
         <NowStrip today={today} activeCount={activePhaseCount(summaries)} upcoming={upcoming} />
         <TimelineCard plannedLaneIds={plannedLaneIds} />
         <TodoBoard todos={data.todos} lanes={data.lanes} today={today} />
         <LaneOverview summaries={summaries} today={today} />
       </div>
+      <FocusWidget />
     </div>
   )
 }
