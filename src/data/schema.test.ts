@@ -85,7 +85,8 @@ it.each([
     'term whose start is not before end',
     { ...base, terms: [{ id: 't1', name: '大三上', start: '2027-01-10', end: '2027-01-10' }] },
   ],
-  ['a newer schema version', { ...base, schemaVersion: 6 }],
+  ['a newer schema version', { ...base, schemaVersion: 7 }],
+  ['the previous schema version (5)', { ...base, schemaVersion: 5 }],
   ['the old schema version', { ...base, schemaVersion: 1 }],
   ['an older schema version', { ...base, schemaVersion: 2 }],
   ['the previous schema version', { ...base, schemaVersion: 4 }],
@@ -187,4 +188,48 @@ describe('habits', () => {
     expect(appDataSchema.safeParse({ ...withHabit({ id: 't1' }), todos: [todo] }).success).toBe(
       false,
     ))
+})
+
+describe('focus sessions', () => {
+  const focus = {
+    id: 'f1',
+    mode: 'pomodoro',
+    tag: '学习',
+    note: '整理错题',
+    startAt: '2026-11-12T01:00:00.000Z',
+    endAt: '2026-11-12T01:30:00.000Z',
+    focusMs: 1_500_000,
+    completed: true,
+  }
+  const withFocus = (overrides: object) => ({
+    ...base,
+    focusSessions: [{ ...focus, ...overrides }],
+  })
+
+  it('accepts a valid session, with or without a note', () => {
+    expect(appDataSchema.safeParse(withFocus({})).success).toBe(true)
+    expect(appDataSchema.safeParse(withFocus({ note: '' })).success).toBe(true)
+  })
+  it('accepts a session with no pause (focus time equals the span)', () =>
+    expect(appDataSchema.safeParse(withFocus({ focusMs: 1_800_000 })).success).toBe(true))
+  it.each([
+    ['a blank tag', { tag: '  ' }],
+    ['a tag longer than 20', { tag: 'x'.repeat(21) }],
+    ['a note longer than 200', { note: 'x'.repeat(201) }],
+    ['an unknown mode', { mode: 'timer' }],
+    ['less than a minute of focus', { focusMs: 59_999 }],
+    ['a fractional duration', { focusMs: 60_000.5 }],
+    ['more focus time than the span', { focusMs: 1_800_001 }],
+    ['an end before the start', { endAt: '2026-11-12T00:59:00.000Z' }],
+    ['a broken time', { startAt: 'yesterday' }],
+    ['a missing completed flag', { completed: undefined }],
+  ])('rejects %s', (_, overrides) =>
+    expect(appDataSchema.safeParse(withFocus(overrides)).success).toBe(false),
+  )
+  it('rejects a session whose id clashes with a todo', () =>
+    expect(
+      appDataSchema.safeParse({ ...withFocus({ id: 't1' }), lanes: [lane], todos: [todo] }).success,
+    ).toBe(false))
+  it('rejects two sessions with the same id', () =>
+    expect(appDataSchema.safeParse({ ...base, focusSessions: [focus, focus] }).success).toBe(false))
 })

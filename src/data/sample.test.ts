@@ -58,3 +58,11 @@ it('includes a few habits with checks', () => {
   expect(data.habits.length).toBeGreaterThanOrEqual(2)
   expect(data.habits.some((h) => h.checks.length > 0)).toBe(true)
 })
+
+it('includes focus sessions over several days and tags so the stats are not empty', () => {
+  const data = createSampleData('2026-11-10')
+  const days = new Set(data.focusSessions.map((f) => f.startAt.slice(0, 10)))
+  expect(days.size).toBeGreaterThanOrEqual(5)
+  expect(new Set(data.focusSessions.map((f) => f.tag)).size).toBeGreaterThanOrEqual(3)
+  expect(data.focusSessions.some((f) => f.mode === 'stopwatch')).toBe(true)
+})

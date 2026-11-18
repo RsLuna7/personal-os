@@ -1,4 +1,4 @@
-import { createEmptyData, type AppData, type ISODate, type Todo } from './schema'
+import { createEmptyData, type AppData, type FocusSession, type ISODate, type Todo } from './schema'
 
 const DAY_MS = 86_400_000
 
@@ -21,6 +21,29 @@ export function createSampleData(today: ISODate): AppData {
     laneId,
     createdAt: `${today}T08:${String(n).padStart(2, '0')}:00.000Z`,
   })
+
+  /** 几天前的一次专注：hour 是 UTC 时刻，避开零点附近，各时区都落在同一天 */
+  const focus = (
+    n: number,
+    daysBack: number,
+    hour: number,
+    tag: string,
+    minutes: number,
+    note = '',
+    mode: FocusSession['mode'] = 'pomodoro',
+  ): FocusSession => {
+    const start = Date.parse(`${daysAgo(daysBack)}T${String(hour).padStart(2, '0')}:00:00.000Z`)
+    return {
+      id: `sample-focus-${n}`,
+      mode,
+      tag,
+      note,
+      startAt: new Date(start).toISOString(),
+      endAt: new Date(start + minutes * 60_000).toISOString(),
+      focusMs: minutes * 60_000,
+      completed: true,
+    }
+  }
 
   return {
     ...createEmptyData(),
@@ -183,6 +206,22 @@ export function createSampleData(today: ISODate): AppData {
         checks: ago(0, 1),
         createdAt: `${daysAgo(10)}T00:00:00.000Z`,
       },
+    ],
+    focusSessions: [
+      focus(1, 0, 9, '示例复习', 25, '整理错题'),
+      focus(2, 0, 10, '示例复习', 25, '整理错题'),
+      focus(3, 1, 9, '示例课程', 50, '课程作业'),
+      focus(4, 1, 12, '示例英语', 25),
+      focus(5, 2, 9, '示例复习', 50, '模拟题'),
+      focus(6, 3, 10, '示例英语', 45, '阅读', 'stopwatch'),
+      focus(7, 4, 9, '示例课程', 25),
+      focus(8, 4, 11, '示例复习', 25),
+      focus(9, 6, 9, '示例复习', 50),
+      focus(10, 8, 10, '示例英语', 25),
+      focus(11, 9, 9, '示例课程', 50),
+      focus(12, 12, 9, '示例复习', 25),
+      focus(13, 15, 11, '示例课程', 25),
+      focus(14, 20, 9, '示例英语', 50),
     ],
   }
 }

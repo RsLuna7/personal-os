@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { isHttpUrl } from './links'
 
-export const CURRENT_SCHEMA_VERSION = 5
+export const CURRENT_SCHEMA_VERSION = 6
 
 export const LANE_COLORS = [
   'iris',
@@ -22,6 +22,10 @@ export const NAME_MAX = 40
 export const NOTE_MAX = 2000
 export const LINKS_MAX = 50
 export const URL_MAX = 2048
+export const TAG_MAX = 20
+export const FOCUS_NOTE_MAX = 200
+/** 不足 1 分钟的专注不保存 */
+export const FOCUS_MIN_MS = 60_000
 
 export interface Link {
   id: string
@@ -99,14 +103,31 @@ export interface Habit {
   createdAt: string
 }
 
+/** 一次专注的记录（只记专注，休息不记） */
+export interface FocusSession {
+  id: string
+  mode: 'pomodoro' | 'stopwatch'
+  tag: string
+  note: string
+  /** ISO 时间 */
+  startAt: string
+  /** ISO 时间，不早于 startAt */
+  endAt: string
+  /** 扣掉暂停后的专注时长，毫秒 */
+  focusMs: number
+  /** 番茄钟跑满、或正计时手动完成；番茄钟提前完成为 false */
+  completed: boolean
+}
+
 export interface AppData {
-  schemaVersion: 5
+  schemaVersion: 6
   lanes: Lane[]
   phases: Phase[]
   milestones: Milestone[]
   terms: Term[]
   todos: Todo[]
   habits: Habit[]
+  focusSessions: FocusSession[]
   lastExportAt: string | null
 }
 
@@ -180,6 +201,19 @@ const habitSchema = z.object({
   createdAt: z.string().refine((value) => !Number.isNaN(Date.parse(value)), '时间不合法'),
 })
 
+const isoTime = z.string().refine((value) => !Number.isNaN(Date.parse(value)), '时间不合法')
+
+const focusSchema = z.object({
+  id: idSchema,
+  mode: z.enum(['pomodoro', 'stopwatch']),
+  tag: z.string().trim().min(1).max(TAG_MAX),
+  note: z.string().max(FOCUS_NOTE_MAX),
+  startAt: isoTime,
+  endAt: isoTime,
+  focusMs: z.number().int().min(FOCUS_MIN_MS),
+  completed: z.boolean(),
+})
+
 const termSchema = z.object({
   id: idSchema,
   name: nameSchema,
@@ -196,6 +230,7 @@ export const appDataSchema: z.ZodType<AppData> = z
     terms: z.array(termSchema),
     todos: z.array(todoSchema),
     habits: z.array(habitSchema),
+    focusSessions: z.array(focusSchema),
     lastExportAt: z.string().nullable(),
   })
   .superRefine((data, ctx) => {
@@ -211,6 +246,7 @@ export const appDataSchema: z.ZodType<AppData> = z
       ...data.terms,
       ...data.todos,
       ...data.habits,
+      ...data.focusSessions,
     ]) {
       if (seen.has(item.id)) issue(`id 重复：${item.id}`)
       seen.add(item.id)
@@ -233,6 +269,12 @@ export const appDataSchema: z.ZodType<AppData> = z
       }
     }
 
+    for (const session of data.focusSessions) {
+      const span = Date.parse(session.endAt) - Date.parse(session.startAt)
+      if (span < 0) issue(`专注「${session.tag}」的结束早于开始`)
+      else if (session.focusMs > span) issue(`专注「${session.tag}」的专注时长超过了起止之间的时间`)
+    }
+
     for (const item of [...data.phases, ...data.terms]) {
       if (item.start >= item.end) issue(`「${item.name}」的开始必须早于结束`)
     }
@@ -247,6 +289,7 @@ export function createEmptyData(): AppData {
     terms: [],
     todos: [],
     habits: [],
+    focusSessions: [],
     lastExportAt: null,
   }
 }

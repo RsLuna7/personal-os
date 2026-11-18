@@ -47,12 +47,23 @@ function v4ToV5(old: unknown): unknown {
   return { ...data, schemaVersion: 5, habits: Array.isArray(data.habits) ? data.habits : [] }
 }
 
-/** 以后每升一版在这里登记：`{ …, 4: v4ToV5, 5: v5ToV6 }`。 */
+/** 版本 5 → 6：新增专注记录，旧数据没有记录。 */
+function v5ToV6(old: unknown): unknown {
+  const data = old as { focusSessions?: unknown }
+  return {
+    ...data,
+    schemaVersion: 6,
+    focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [],
+  }
+}
+
+/** 以后每升一版在这里登记：`{ …, 5: v5ToV6, 6: v6ToV7 }`。 */
 export const migrations: Record<number, Migration> = {
   1: v1ToV2,
   2: v2ToV3,
   3: v3ToV4,
   4: v4ToV5,
+  5: v5ToV6,
 }
 
 export function runMigrations(

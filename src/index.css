@@ -1396,3 +1396,28 @@ a[href='#/timeline']:hover svg {
     box-shadow: 0 0 0 7px transparent;
   }
 }
+
+/* 专注页的日历热力图：五档橙色，格子颜色渐变过渡；今天之后的格子不画 */
+.heat-cell {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background-color: var(--sand-4);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+.heat-cell[data-level='1'] {
+  background-color: var(--orange-5);
+}
+.heat-cell[data-level='2'] {
+  background-color: var(--orange-7);
+}
+.heat-cell[data-level='3'] {
+  background-color: var(--orange-9);
+}
+.heat-cell[data-level='4'] {
+  background-color: var(--orange-11);
+}
+.heat-cell[data-future] {
+  visibility: hidden;
+}

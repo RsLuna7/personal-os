@@ -12,6 +12,7 @@ const NAV: { route: Route; label: string }[] = [
   { route: 'calendar', label: '日历' },
   { route: 'modules', label: '板块' },
   { route: 'today', label: '今日' },
+  { route: 'focus', label: '专注' },
   { route: 'review', label: '回顾' },
 ]
 
