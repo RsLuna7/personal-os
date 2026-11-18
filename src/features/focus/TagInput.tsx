@@ -28,8 +28,11 @@ export function TagInput({
   const id = useId()
   const typed = value.trim()
   const matches = history.filter((tag) => tag.includes(typed)).slice(0, SUGGESTION_MAX)
+  // 已经输入了一个完整的历史标签就不再补全：Tab 只是去下一个输入框
   const completion =
-    typed === '' ? undefined : history.find((tag) => tag.startsWith(typed) && tag !== typed)
+    typed === '' || history.includes(typed)
+      ? undefined
+      : history.find((tag) => tag.startsWith(typed))
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Tab' && !event.shiftKey && completion) {

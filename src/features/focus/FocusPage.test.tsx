@@ -136,6 +136,20 @@ describe('starting', () => {
     expect(screen.getByLabelText('标签')).toHaveValue('英语听力')
   })
 
+  it('does not complete a tag that is already typed in full', async () => {
+    const user = setup({
+      focusSessions: [
+        session('a', [11, 10, 9, 0], 25, '英语'),
+        session('b', [11, 12, 9, 0], 25, '英语听力'),
+      ],
+    })
+    await user.type(screen.getByLabelText('标签'), '英语')
+    await user.tab()
+    expect(screen.getByLabelText('标签')).toHaveValue('英语')
+    // Tab 照常把焦点交给下一个控件，而不是留在输入框里补全
+    expect(screen.getByLabelText('标签')).not.toHaveFocus()
+  })
+
   it('fills the tag from a chip', async () => {
     const user = setup({ focusSessions: [session('a', [11, 10, 9, 0], 25, '数学')] })
     await user.click(screen.getByRole('button', { name: '数学' }))

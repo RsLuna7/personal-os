@@ -104,3 +104,12 @@ it('has habits: some due today, one off today, with recent check-ins', () => {
   expect(data.habits.some((habit) => habit.checks.includes(TODAY))).toBe(true)
   expect(data.habits.every((habit) => habit.checks.every((day) => day <= TODAY))).toBe(true)
 })
+
+it('has focus sessions over the last few months, on several tags, valid and not in the future', () => {
+  const data = createShowcaseData(TODAY)
+  expect(appDataSchema.safeParse(data).success).toBe(true)
+  const days = new Set(data.focusSessions.map((session) => session.startAt.slice(0, 10)))
+  expect(days.size).toBeGreaterThan(40)
+  expect(new Set(data.focusSessions.map((session) => session.tag)).size).toBeGreaterThanOrEqual(4)
+  expect(data.focusSessions.some((session) => session.startAt.startsWith(TODAY))).toBe(true)
+})

@@ -1400,8 +1400,8 @@ a[href='#/timeline']:hover svg {
 /* 专注页的日历热力图：五档橙色，格子颜色渐变过渡；今天之后的格子不画 */
 .heat-cell {
   display: block;
-  width: 14px;
-  height: 14px;
+  aspect-ratio: 1;
+  min-width: 0;
   border-radius: 3px;
   background-color: var(--sand-4);
   transition: background-color var(--dur-base) var(--ease-out);

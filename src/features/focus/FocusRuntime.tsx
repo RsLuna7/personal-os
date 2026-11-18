@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { announce } from './alerts'
 import { useFocusStore, watchRunStorage } from './focusStore'
-import { runClock, type Phase, type RunState } from './timer'
+import { runClock, targetMs, type Phase, type RunState } from './timer'
 import { useNow } from './useNow'
 
 const PHASE_LABEL: Record<Phase, string> = { focus: '专注', break: '休息', ready: '休息结束' }
@@ -23,15 +23,29 @@ export function FocusRuntime() {
 
   useEffect(() => watchRunStorage(window), [])
 
-  // 推进计时。用 getState 取最新的状态：同一个时刻可能已经被别的地方推进过
-  useEffect(() => {
-    const store = useFocusStore.getState()
-    const events = store.tick(now)
+  /** 按此刻推进计时，刚发生的事（专注到点、休息结束）发提醒。 */
+  const process = useCallback(() => {
+    const at = Date.now()
+    const events = useFocusStore.getState().tick(at)
     if (events.length > 0) {
-      const state = useFocusStore.getState()
-      announce(events, state.run, state.prefs, now)
+      const { run: current, prefs } = useFocusStore.getState()
+      announce(events, current, prefs, at)
     }
-  }, [now, run])
+  }, [])
+
+  // 页面刷新、重新可见、时钟走了一格：重新算一次
+  useEffect(() => process(), [now, run, process])
+
+  // 另外在阶段该结束的那一刻设一个一次性的定时器：后台标签页里反复触发的定时器会被浏览器
+  // 降到每分钟一次，单独设的这个不受影响，提醒不会晚太多
+  useEffect(() => {
+    if (!run || run.pausedAt !== null) return
+    const target = targetMs(run)
+    if (target === null) return
+    const due = run.startedAt + run.pausedMs + target - Date.now()
+    const timer = setTimeout(process, Math.max(0, due) + 50)
+    return () => clearTimeout(timer)
+  }, [run, process])
 
   useEffect(() => {
     document.title = run ? titleFor(run, now) : baseTitle.current
